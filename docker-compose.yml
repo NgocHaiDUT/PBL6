@@ -1,0 +1,38 @@
+version : '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: pbl6
+      POSTGRES_PASSWORD: pbl6
+      POSTGRES_DB: pbl6_db
+    ports:
+      - '5432:5432'
+    networks:
+      - postgres_network
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  
+
+  backend:
+    build: . 
+    ports:
+      - '3000:3000'
+      - '5555:5555'
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    networks:
+      - postgres_network
+    volumes:
+      - ./uploads:/app/uploads
+
+      
+networks:
+  postgres_network:
+    driver: bridge
+
+volumes:
+  pgdata:
