@@ -27,6 +27,7 @@ CREATE TABLE "public"."users" (
     "full_name" TEXT,
     "avatar_url" TEXT,
     "phone" TEXT,
+    "firstlogin" BOOLEAN DEFAULT true,
     "role" "public"."user_role" NOT NULL DEFAULT 'user',
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
