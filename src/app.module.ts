@@ -7,6 +7,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { PostsModule } from './posts/posts.module';
+import { ProfileModule } from './profile/profile.module';
 @Module({
   imports: [
     AuthModule,
@@ -39,6 +40,7 @@ import { PostsModule } from './posts/posts.module';
     }),
     PrismaModule,
     PostsModule,
+    ProfileModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -144,10 +144,12 @@ model addresses {
 ///////////////////////////////////////////////////////
 model shops {
   id          Int        @id @default(autoincrement())
-  owner_id    Int
+  owner_id    Int        @unique
   name        String
   slug        String     @unique
   logo_url    String?
+  phone       String?
+  email       String?
   cover_url   String?
   description String?
   is_verified Boolean    @default(false)
