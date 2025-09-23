@@ -1,21 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthService } from './auth.service';
+import { MessagesService } from './messages.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-describe('AuthService', () => {
-  let service: AuthService;
+describe('MessagesService', () => {
+  let service: MessagesService;
   let prismaMock: Partial<Record<keyof PrismaService, any>>;
 
   beforeEach(async () => {
     prismaMock = {} as any;
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        AuthService,
+        MessagesService,
         { provide: PrismaService, useValue: prismaMock },
       ],
     }).compile();
 
-    service = module.get<AuthService>(AuthService);
+    service = module.get<MessagesService>(MessagesService);
   });
 
   it('should be defined', () => {
