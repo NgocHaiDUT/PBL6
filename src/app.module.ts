@@ -8,6 +8,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { PostsModule } from './posts/posts.module';
 import { ProfileModule } from './profile/profile.module';
+import { MessagesModule } from './messages/messages.module';
+import { MakeupModule } from './makeup/makeup.module';
+import { HttpModule } from '@nestjs/axios';
 @Module({
   imports: [
     AuthModule,
@@ -41,6 +44,13 @@ import { ProfileModule } from './profile/profile.module';
     PrismaModule,
     PostsModule,
     ProfileModule,
+    MessagesModule,
+    MakeupModule,
+    HttpModule.register({
+      timeout: 30000,
+      maxContentLength: 50 * 1024 * 1024, // 50MB
+    }),
+    MakeupModule,
   ],
   controllers: [AppController],
   providers: [AppService],
