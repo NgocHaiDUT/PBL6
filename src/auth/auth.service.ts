@@ -10,6 +10,14 @@ export class AuthService {
         if (existingUser) {
             return {success:false, message: 'Email đã được sử dụng' };
         }
+        const roleuserid = await this.PrismaService.role.findUnique ({
+            where : {name : "user"}
+        });
+
+        if (!roleuserid) {
+        return { success: false, message: 'Lỗi hệ thống: Không tìm thấy role user' };
+        }
+        
         const newUser = await this.PrismaService.users.create({
             data: { 
                 email : email, 
@@ -17,6 +25,7 @@ export class AuthService {
                 phone  : phone,
                 password_hash : password,
                 avatar_url : "",
+                role_id : roleuserid.id
                 },
         });
         return {success:true, message: 'Đăng ký thành công,mật khẩu được gửi về email của bạn' };

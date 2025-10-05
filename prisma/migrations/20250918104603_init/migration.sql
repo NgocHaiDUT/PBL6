@@ -27,7 +27,6 @@ CREATE TABLE "public"."users" (
     "full_name" TEXT,
     "avatar_url" TEXT,
     "phone" TEXT,
-    "firstlogin" BOOLEAN DEFAULT true,
     "role" "public"."user_role" NOT NULL DEFAULT 'user',
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -75,8 +74,6 @@ CREATE TABLE "public"."shops" (
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "logo_url" TEXT,
-    "phone" TEXT,
-    "email" TEXT,
     "cover_url" TEXT,
     "description" TEXT,
     "is_verified" BOOLEAN NOT NULL DEFAULT false,
@@ -540,9 +537,6 @@ CREATE UNIQUE INDEX "users_email_key" ON "public"."users"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "auth_identities_provider_provider_user_id_key" ON "public"."auth_identities"("provider", "provider_user_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "shops_owner_id_key" ON "public"."shops"("owner_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "shops_slug_key" ON "public"."shops"("slug");

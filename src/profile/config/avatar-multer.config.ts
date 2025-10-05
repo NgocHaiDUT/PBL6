@@ -24,7 +24,7 @@ export const avatarMulterConfig = {
     }
   },
   limits: {
-    fileSize: 20 * 1024 * 1024, 
+    fileSize: 5 * 1024 * 1024, 
     files: 1, 
   },
 };
@@ -51,7 +51,7 @@ export const logoshopMulterConfig = {
     }
   },
   limits: {
-    fileSize: 20 * 1024 * 1024, 
+    fileSize: 5 * 1024 * 1024, 
     files: 1, 
   },
 };
@@ -78,7 +78,7 @@ export const bannershopMulterConfig = {
     }
   },
   limits: {
-    fileSize: 20 * 1024 * 1024, 
+    fileSize: 5 * 1024 * 1024, 
     files: 1, 
   },
 };

@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "name": "Trang điểm mặt",
+    "slug": "trang-diem-matj",
+    "children": [
+      { "id": 2, "name": "Kem nền", "slug": "kem-nen" },
+      { "id": 3, "name": "Kem che khuyết điểm", "slug": "kem-che-khuyet-diem" },
+      { "id": 4, "name": "Phấn phủ", "slug": "phan-phu" },
+      { "id": 5, "name": "Phấn má hồng", "slug": "phan-ma-hong" },
+      { "id": 6, "name": "Phấn tạo khối", "slug": "phan-tao-khoi" }
+    ]
+  },
+  {
+    "id": 7,
+    "name": "Trang điểm mắt",
+    "slug": "trang-diem-mats",
+    "children": [
+      { "id": 8, "name": "Phấn mắt", "slug": "phan-mat" },
+      { "id": 9, "name": "Kẻ mắt", "slug": "ke-mat" },
+      { "id": 10, "name": "Mascara", "slug": "mascara" },
+      { "id": 11, "name": "Chì kẻ mày", "slug": "chi-ke-may" },
+      { "id": 12, "name": "Mi giả", "slug": "mi-gia" }
+    ]
+  },
+  {
+    "id": 13,
+    "name": "Trang điểm môi",
+    "slug": "trang-diem-moi",
+    "children": [
+      { "id": 14, "name": "Son thỏi", "slug": "son-thoi" },
+      { "id": 15, "name": "Son kem", "slug": "son-kem" },
+      { "id": 16, "name": "Son tint", "slug": "son-tint" },
+      { "id": 17, "name": "Son dưỡng có màu", "slug": "son-duong-mau" }
+    ]
+  }
+  
+]
