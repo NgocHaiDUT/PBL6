@@ -1,0 +1,9 @@
+[
+    {"name" : "user"},
+
+    {"name" : "seller"},
+
+    {"name" : "admin"},
+    
+    {"name" : "staff"}
+]

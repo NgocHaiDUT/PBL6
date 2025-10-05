@@ -18,6 +18,7 @@ enum user_role {
   user
   seller
   admin
+  staff
 }
 
 enum auth_provider {
@@ -79,8 +80,8 @@ model users {
   full_name     String?
   avatar_url    String?
   phone         String?
+  role_id       Int?         
   firstlogin    Boolean?      @default(true)
-  role          user_role     @default(user)
   is_active     Boolean       @default(true)
   created_at    DateTime      @default(now())
   updated_at    DateTime      @default(now())
@@ -91,6 +92,8 @@ model users {
   wishlists     wishlists[]
   follows_follower follows[]  @relation("follower")
   follows_following follows[] @relation("following")
+  role          role?    @relation(fields: [role_id], references: [id])
+  userPermissions userpermission[]
   posts         posts[]
   likes         likes[]
   comments      comments[]
@@ -138,6 +141,41 @@ model addresses {
   user        users    @relation(fields: [user_id], references: [id])
   orders      orders[]
 }
+
+model role {
+  id          Int    @id @default(autoincrement())
+  name        String @unique
+  users       users[]
+  rolePermissions rolepermission[]
+}
+
+model permission {
+  id          Int    @id @default(autoincrement())
+  name        String @unique
+  rolePermissions rolepermission[]
+  userPermissions userpermission[]
+}
+
+model rolepermission {
+  role_id       Int
+  permission_id Int
+
+  role       role       @relation(fields: [role_id], references: [id])
+  permission permission @relation(fields: [permission_id], references: [id])
+
+  @@id([role_id, permission_id])
+}
+
+model userpermission {
+  user_id      Int
+  permission_id Int
+
+  user       users       @relation(fields: [user_id], references: [id])
+  permission permission @relation(fields: [permission_id], references: [id])
+
+  @@id([user_id, permission_id])
+}
+
 
 ///////////////////////////////////////////////////////
 // SELLER / SHOP
@@ -244,7 +282,7 @@ model product_media {
   product    products @relation(fields: [product_id], references: [id])
 }
 
-model product_variants {
+model product_variants { 
   id               Int       @id @default(autoincrement())
   product_id       Int
   sku              String    @unique
