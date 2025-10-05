@@ -11,6 +11,8 @@ import { ProfileModule } from './profile/profile.module';
 import { MessagesModule } from './messages/messages.module';
 import { MakeupModule } from './makeup/makeup.module';
 import { HttpModule } from '@nestjs/axios';
+import { ProductModule } from './product/product.module';
+import { DataInitModule } from './data-init/data-init.module';
 @Module({
   imports: [
     AuthModule,
@@ -51,6 +53,8 @@ import { HttpModule } from '@nestjs/axios';
       maxContentLength: 50 * 1024 * 1024, // 50MB
     }),
     MakeupModule,
+    ProductModule,
+    DataInitModule,
   ],
   controllers: [AppController],
   providers: [AppService],

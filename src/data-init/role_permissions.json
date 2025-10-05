@@ -1,0 +1,39 @@
+[
+
+  { "role_id": 1, "permission_name": "view_products" },
+  { "role_id": 1, "permission_name": "add_to_cart" },
+  { "role_id": 1, "permission_name": "checkout" },
+  { "role_id": 1, "permission_name": "view_orders" },
+  { "role_id": 1, "permission_name": "create_review" },
+  { "role_id": 1, "permission_name": "edit_profile" },
+  { "role_id": 1, "permission_name": "create_shop" },  
+
+  { "role_id": 2, "permission_name": "view_products" },
+  { "role_id": 2, "permission_name": "create_product" },
+  { "role_id": 2, "permission_name": "edit_product" },
+  { "role_id": 2, "permission_name": "delete_product" },
+  { "role_id": 2, "permission_name": "manage_orders" },
+  { "role_id": 2, "permission_name": "view_shop_dashboard" },
+  { "role_id": 2, "permission_name": "manage_shop_staff" },
+  { "role_id": 2, "permission_name": "edit_profile_shop" },
+
+  { "role_id": 4, "permission_name": "view_shop_orders" },
+  { "role_id": 4, "permission_name": "update_order_status" },
+  { "role_id": 4, "permission_name": "moderate_reviews" },
+
+
+  { "role_id": 3, "permission_name": "view_products" },
+  { "role_id": 3, "permission_name": "create_product" },
+  { "role_id": 3, "permission_name": "edit_product" },
+  { "role_id": 3, "permission_name": "delete_product" },
+  { "role_id": 3, "permission_name": "manage_orders" },
+  { "role_id": 3, "permission_name": "view_shop_dashboard" },
+  { "role_id": 3, "permission_name": "manage_shop_staff" },
+  { "role_id": 3, "permission_name": "manage_users" },
+  { "role_id": 3, "permission_name": "manage_roles" },
+  { "role_id": 3, "permission_name": "manage_permissions" },
+  { "role_id": 3, "permission_name": "moderate_posts" },
+  { "role_id": 3, "permission_name": "moderate_products" },
+  { "role_id": 3, "permission_name": "view_system_logs" },
+  { "role_id": 3, "permission_name": "manage_coupons" }
+]
