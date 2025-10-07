@@ -13,11 +13,15 @@ import { MakeupModule } from './makeup/makeup.module';
 import { HttpModule } from '@nestjs/axios';
 import { ProductModule } from './product/product.module';
 import { DataInitModule } from './data-init/data-init.module';
+
 @Module({
   imports: [
     AuthModule,
     MailerModule.forRootAsync({
-      imports: [ConfigModule],
+      imports: [ConfigModule.forRoot({
+      isGlobal: true,        
+      envFilePath: '.env',  
+      }),],
       useFactory: async (ConfigService: ConfigService) => ({
         transport: {
         host: 'smtp.gmail.com',
