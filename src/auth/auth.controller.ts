@@ -1,4 +1,5 @@
-import {  Controller, Get, Req, UseGuards,Post,Body, BadRequestException  } from '@nestjs/common';
+import {  Controller, Get, Req, UseGuards,Post,Body, BadRequestException, Res, Headers } from '@nestjs/common';
+import type { Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { MailerService } from '@nestjs-modules/mailer';
@@ -85,9 +86,17 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  googleCallback(@Req() req) {
-    // req.user chứa thông tin user Google
-    return req.user;
+  googleCallback(@Req() req, @Res() res: Response) {
+    console.log('OAuth user (Google):', req.user);
+    const frontend = process.env.FRONTEND_URL || 'http://localhost:5173';
+    // Nhanh: đính kèm token demo qua query để frontend bắt và hiển thị toast
+    try {
+      const payload = { uid: req.user?.id, t: Date.now() };
+      const token = Buffer.from(JSON.stringify(payload)).toString('base64url');
+      return res.redirect(`${frontend}/?oauth=google&token=${encodeURIComponent(token)}`);
+    } catch {
+      return res.redirect(frontend);
+    }
   }
 
   @Get('facebook')
@@ -96,7 +105,32 @@ export class AuthController {
 
   @Get('facebook/callback')
   @UseGuards(AuthGuard('facebook'))
-  facebookCallback(@Req() req) {
-    return req.user;
+  facebookCallback(@Req() req, @Res() res: Response) {
+    console.log('OAuth user (Facebook):', req.user);
+    const frontend = process.env.FRONTEND_URL || 'http://localhost:5173';
+    try {
+      const payload = { uid: req.user?.id, t: Date.now() };
+      const token = Buffer.from(JSON.stringify(payload)).toString('base64url');
+      return res.redirect(`${frontend}/?oauth=facebook&token=${encodeURIComponent(token)}`);
+    } catch {
+      return res.redirect(frontend);
+    }
+  }
+
+  @Get('me')
+  async me(@Headers('authorization') authorization?: string) {
+    try {
+      if (!authorization) return { user: null };
+      const [scheme, token] = authorization.split(' ');
+      if (scheme?.toLowerCase() !== 'bearer' || !token) return { user: null };
+      // Demo: token là base64url của { uid }
+      const payloadStr = Buffer.from(token, 'base64url').toString('utf8');
+      const payload = JSON.parse(payloadStr);
+      if (!payload?.uid) return { user: null };
+      const user = await this.authService.getUserById(Number(payload.uid));
+      return { user };
+    } catch {
+      return { user: null };
+    }
   }
 }

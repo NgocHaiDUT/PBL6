@@ -78,7 +78,9 @@ export class AuthService {
         return { success: true, message: 'Đổi mật khẩu thành công' };
     }
 
-    
+    async getUserById(id: number) {
+        return await this.PrismaService.users.findUnique({ where: { id } });
+    }
 
 
 
