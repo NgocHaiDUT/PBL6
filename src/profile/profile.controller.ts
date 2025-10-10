@@ -1,8 +1,8 @@
-import { Controller ,Post,Body,Get,UploadedFile, BadRequestException, Query} from '@nestjs/common';
+import { Controller ,Post,Body,Get,UploadedFile, UploadedFiles, BadRequestException, Query} from '@nestjs/common';
 import { ProfileService } from './profile.service';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { UseInterceptors } from '@nestjs/common';
-import {avatarMulterConfig, bannershopMulterConfig, logoshopMulterConfig} from './config/avatar-multer.config';
+import {avatarMulterConfig, bannershopMulterConfig,logoshopMulterConfig, createShopMulterConfig} from './config/avatar-multer.config';
 @Controller('profile')
 export class ProfileController {
     constructor(private readonly profileService: ProfileService) {}
@@ -73,8 +73,49 @@ export class ProfileController {
     }
 
     @Post('create-shop')
-    async createshop(@Body() body: { userid: string, shop_name: string, slug: string, description: string, avatar_url: string, banner_url: string, phone: string, email: string}) {
-        return this.profileService.createshop(Number(body.userid), body.shop_name, body.slug, body.description, body.avatar_url, body.banner_url, body.phone, body.email);
+    @UseInterceptors(
+        FileFieldsInterceptor([
+            { name: 'logo', maxCount: 1 },
+            { name: 'banner', maxCount: 1 }
+        ], createShopMulterConfig)
+    )
+    async createshop(
+        @Body() body: { 
+            userid: string; 
+            shop_name: string; 
+            slug: string; 
+            description: string; 
+            phone: string; 
+            email: string;
+        },
+        @UploadedFiles() files: { logo?: Express.Multer.File[]; banner?: Express.Multer.File[] }
+    ) {
+        if (!body?.userid || !body?.shop_name || !body?.slug) {
+            throw new BadRequestException('userid, shop_name, and slug are required');
+        }
+
+        
+        let logoUrl = '';
+        let bannerUrl = '';
+
+        if (files?.logo?.[0]) {
+            logoUrl = `/uploads/logoshops/${files.logo[0].filename}`;
+        }
+
+        if (files?.banner?.[0]) {
+            bannerUrl = `/uploads/bannershops/${files.banner[0].filename}`;
+        }
+
+        return this.profileService.createshop(
+            Number(body.userid), 
+            body.shop_name, 
+            body.slug, 
+            body.description || '', 
+            logoUrl, 
+            bannerUrl, 
+            body.phone || '', 
+            body.email || ''
+        );
     }
 
     @Post('get-shop')
