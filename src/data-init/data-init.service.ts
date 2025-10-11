@@ -1,11 +1,15 @@
 import { Injectable ,Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { S3UploadService } from './s3-upload.service';
 import * as fs from 'fs';
 import * as path from 'path';
 @Injectable()
 export class DataInitService implements OnModuleInit {
     private readonly logger = new Logger(DataInitService.name);
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private s3UploadService: S3UploadService
+    ) {}
     async onModuleInit()
     {
         await this.seedData();
@@ -19,11 +23,31 @@ export class DataInitService implements OnModuleInit {
             await this.seedRoles();
             await this.seedPermissions();
             await this.seedRolePermissions();
+            
+            // Upload brand logos to S3 (optional - chỉ chạy khi cần)
+            // await this.uploadBrandLogosIfNeeded();
+            
             this.logger.log('Dữ liệu khởi tạo thành công')
         }
         catch(error)
         {
             this.logger.error('Lỗi khi tạo dữ liệu : ', error);
+        }
+    }
+
+    // Method để upload brand logos nếu cần
+    async uploadBrandLogosIfNeeded() {
+        try {
+            // Chỉ upload nếu có ảnh local và chưa upload
+            const localBrandPath = path.join(process.cwd(), 'uploads', 'brands');
+            if (fs.existsSync(localBrandPath)) {
+                this.logger.log('Bắt đầu upload brand logos lên S3...');
+                await this.s3UploadService.uploadBrandLogosToS3();
+            } else {
+                this.logger.log('Không tìm thấy thư mục brand logos local, bỏ qua upload S3');
+            }
+        } catch (error) {
+            this.logger.error('Lỗi khi upload brand logos:', error);
         }
     }
 
