@@ -1,5 +1,5 @@
 import { S3Client } from '@aws-sdk/client-s3';
-import * as multerS3 from 'multer-s3';
+import multerS3 from 'multer-s3';
 
 // Cấu hình S3 client
 const s3 = new S3Client({
