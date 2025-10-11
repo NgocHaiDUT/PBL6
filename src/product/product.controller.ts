@@ -1,7 +1,8 @@
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
 import { Controller,Body,Post , Get, UploadedFile ,Query, UseInterceptors, BadRequestException} from '@nestjs/common';
-import { brandMulterConfig } from './config/product-multer.config';
+// Import S3 config instead of local file config
+import { s3BrandConfig } from './config/s3-product.config';
 @Controller('product')
 export class ProductController {
     constructor(private readonly productservice : ProductService ) {}
@@ -13,7 +14,7 @@ export class ProductController {
     }
 
     @Post('add-brand')
-    @UseInterceptors(FileInterceptor('file',brandMulterConfig))
+    @UseInterceptors(FileInterceptor('file', s3BrandConfig))
     async addbrand(
         @Body() body : {name: string,slug : string},
         @UploadedFile() file: any,
@@ -22,7 +23,8 @@ export class ProductController {
         if(!file) {
             throw new BadRequestException('Thiếu file ảnh');
         }
-        const brandUrl = `/uploads/brands/${file.filename}`;
+        // S3 trả về full URL trong file.location
+        const brandUrl = file.location;
         return this.productservice.addbrand(body.name,body.slug,brandUrl);
     }
 
@@ -43,15 +45,17 @@ export class ProductController {
     }
 
     @Post('edit-brand-logo')
-    @UseInterceptors(FileInterceptor('file',brandMulterConfig))
+    @UseInterceptors(FileInterceptor('file', s3BrandConfig))
     async editbrandlogo(
         @Body() body : {id : string},
         @UploadedFile() file: any, 
     )
     {
-        if(!body.id)
-            return {success : false , message : 'Thiếu trường'};
-        const brandUrl = `/uploads/brands/${file.filename}`;
+        if(!body.id || !file) {
+            return {success : false , message : 'Thiếu trường hoặc file ảnh'};
+        }
+        // S3 trả về full URL trong file.location
+        const brandUrl = file.location;
         return this.productservice.editbrandslogo(Number(body.id),brandUrl);
     }
 

@@ -2,7 +2,8 @@ import { Controller ,Post,Body,Get,UploadedFile, UploadedFiles, BadRequestExcept
 import { ProfileService } from './profile.service';
 import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { UseInterceptors } from '@nestjs/common';
-import {avatarMulterConfig, bannershopMulterConfig,logoshopMulterConfig, createShopMulterConfig} from './config/avatar-multer.config';
+// Import S3 config instead of local file config
+import { s3AvatarConfig, s3LogoShopConfig, s3BannerShopConfig, s3CreateShopConfig } from './config/s3-multer.config';
 @Controller('profile')
 export class ProfileController {
     constructor(private readonly profileService: ProfileService) {}
@@ -24,8 +25,7 @@ export class ProfileController {
     }
 
     @Post('update-avatar')
-    @UseInterceptors(FileInterceptor('file', avatarMulterConfig))
-
+    @UseInterceptors(FileInterceptor('file', s3AvatarConfig))
     async updateAvatar(
         @Body() body: { userId: string},
         @UploadedFile() file: any,
@@ -36,7 +36,8 @@ export class ProfileController {
         if (!file) {
             throw new BadRequestException('file is required');
         }
-        const avatarUrl = `/uploads/avatars/${file.filename}`;
+        // S3 trả về full URL trong file.location
+        const avatarUrl = file.location;
         return this.profileService.updateavatar(Number(body.userId), avatarUrl);
     }
 
@@ -77,7 +78,7 @@ export class ProfileController {
         FileFieldsInterceptor([
             { name: 'logo', maxCount: 1 },
             { name: 'banner', maxCount: 1 }
-        ], createShopMulterConfig)
+        ], s3CreateShopConfig)
     )
     async createshop(
         @Body() body: { 
@@ -94,16 +95,17 @@ export class ProfileController {
             throw new BadRequestException('userid, shop_name, and slug are required');
         }
 
-        
         let logoUrl = '';
         let bannerUrl = '';
 
         if (files?.logo?.[0]) {
-            logoUrl = `/uploads/logoshops/${files.logo[0].filename}`;
+            // S3 trả về full URL trong file.location
+            logoUrl = (files.logo[0] as any).location;
         }
 
         if (files?.banner?.[0]) {
-            bannerUrl = `/uploads/bannershops/${files.banner[0].filename}`;
+            // S3 trả về full URL trong file.location
+            bannerUrl = (files.banner[0] as any).location;
         }
 
         return this.profileService.createshop(
@@ -124,24 +126,36 @@ export class ProfileController {
     }
 
     @Post('update-logo-shop')
-    @UseInterceptors(FileInterceptor('file', logoshopMulterConfig))
-
+    @UseInterceptors(FileInterceptor('file', s3LogoShopConfig))
     async updatelogoshop(
         @Body() body: { shopid: string},
         @UploadedFile() file: any,
     ) {
-        const logourl = `/uploads/logoshops/${file.filename}`;
+        if (!body?.shopid) {
+            throw new BadRequestException('shopid is required');
+        }
+        if (!file) {
+            throw new BadRequestException('file is required');
+        }
+        // S3 trả về full URL trong file.location
+        const logourl = file.location;
         return this.profileService.updatelogoshop(Number(body.shopid), logourl);
     }
 
     @Post('update-banner-shop')
-    @UseInterceptors(FileInterceptor('file', bannershopMulterConfig))
-
+    @UseInterceptors(FileInterceptor('file', s3BannerShopConfig))
     async updatebannershop(
         @Body() body: { shopid: string},
         @UploadedFile() file: any,
     ) {
-        const bannerurl = `/uploads/bannershops/${file.filename}`;
+        if (!body?.shopid) {
+            throw new BadRequestException('shopid is required');
+        }
+        if (!file) {
+            throw new BadRequestException('file is required');
+        }
+        // S3 trả về full URL trong file.location
+        const bannerurl = file.location;
         return this.profileService.updatebannershop(Number(body.shopid), bannerurl);
     }
 
