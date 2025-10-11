@@ -27,7 +27,7 @@ export class ProductController {
         const brandUrl = file.location;
         return this.productservice.addbrand(body.name,body.slug,brandUrl);
     }
-
+    
     @Post('edit-brand-name')
     async editbrandname(@Body() body : {id : string, name : string}){
         if(!body.id || !body.name){
