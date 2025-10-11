@@ -10,7 +10,7 @@ export class S3UploadService {
 
     constructor() {
         this.s3Client = new S3Client({
-            region: process.env.AWS_REGION || 'ap-northeast-1',
+            region: process.env.AWS_REGION || 'ap-southeast-7',
             credentials: {
                 accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
                 secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
@@ -67,7 +67,7 @@ export class S3UploadService {
 
     generateS3Url(key: string): string {
         const bucketName = process.env.AWS_S3_BUCKET_NAME!;
-        const region = process.env.AWS_REGION || 'ap-northeast-1';
+        const region = process.env.AWS_REGION || 'ap-southeast-7';
         return `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
     }
 }
