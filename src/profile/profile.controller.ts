@@ -94,6 +94,7 @@ export class ProfileController {
         if (!body?.userid || !body?.shop_name || !body?.slug) {
             throw new BadRequestException('userid, shop_name, and slug are required');
         }
+
         let logoUrl = '';
         let bannerUrl = '';
 
