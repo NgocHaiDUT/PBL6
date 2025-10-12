@@ -1,8 +1,9 @@
-import {  Controller, Get, Req, UseGuards,Post,Body, BadRequestException  } from '@nestjs/common';
+import {  Controller, Get, Req, UseGuards,Post,Body, BadRequestException, Res  } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { MailerService } from '@nestjs-modules/mailer';
 import * as bcrypt from 'bcrypt';
+import type { Response } from 'express';
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -80,14 +81,36 @@ export class AuthController {
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleLogin() {
-    // chuyển hướng sang Google OAuth
   }
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  googleCallback(@Req() req) {
-    // req.user chứa thông tin user Google
-    return req.user;
+  googleCallback(@Req() req, @Res() res: Response) {
+    try {
+      const user = req.user;
+      
+      if (!user) {
+        const frontendUrl = `http://localhost:5173/auth/callback?success=false&error=authentication_failed`;
+        return res.redirect(frontendUrl);
+      }
+      
+      const userData = {
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        avatar_url: user.avatar_url
+      };
+      
+      const encodedData = encodeURIComponent(JSON.stringify(userData));
+      
+      const frontendUrl = `http://localhost:5173/auth/callback?user=${encodedData}&success=true`;
+      
+      return res.redirect(frontendUrl);
+    } catch (error) {
+      console.error('Google callback error:', error);
+      const frontendUrl = `http://localhost:5173/auth/callback?success=false&error=callback_error`;
+      return res.redirect(frontendUrl);
+    }
   }
 
   @Get('facebook')
@@ -96,7 +119,30 @@ export class AuthController {
 
   @Get('facebook/callback')
   @UseGuards(AuthGuard('facebook'))
-  facebookCallback(@Req() req) {
-    return req.user;
+  facebookCallback(@Req() req, @Res() res: Response) {
+    try {
+      const user = req.user;
+      
+      if (!user) {
+        const frontendUrl = `http://localhost:5173/auth/callback?success=false&error=authentication_failed`;
+        return res.redirect(frontendUrl);
+      }
+      
+      const userData = {
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        avatar_url: user.avatar_url
+      };
+      
+      const encodedData = encodeURIComponent(JSON.stringify(userData));
+      const frontendUrl = `http://localhost:5173/auth/callback?user=${encodedData}&success=true`;
+      
+      return res.redirect(frontendUrl);
+    } catch (error) {
+      console.error('Facebook callback error:', error);
+      const frontendUrl = `http://localhost:5173/auth/callback?success=false&error=callback_error`;
+      return res.redirect(frontendUrl);
+    }
   }
 }
