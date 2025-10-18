@@ -18,11 +18,11 @@ export class CreatePostDto {
 
   @IsOptional()
   @IsString()
-  cover_url?: string;
+  cover_url?: string; // Ảnh đại diện chính của bài viết
 
   @IsOptional()
   @IsString()
-  video_url?: string;
+  video_url?: string; // Video chính của bài viết
 
   @IsOptional()
   @IsEnum(['public', 'private', 'friends'])
@@ -31,7 +31,7 @@ export class CreatePostDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  media_urls?: string[];
+  media_urls?: string[]; // Các media bổ sung (sẽ lưu vào post_media)
 
   @IsOptional()
   @IsArray()

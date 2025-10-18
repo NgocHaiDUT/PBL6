@@ -1,4 +1,4 @@
-import {  Controller, Get, Req, UseGuards,Post,Body, BadRequestException, Res  } from '@nestjs/common';
+import {  Controller, Get, Req, UseGuards,Post,Body, BadRequestException, Res, Headers } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { MailerService } from '@nestjs-modules/mailer';
