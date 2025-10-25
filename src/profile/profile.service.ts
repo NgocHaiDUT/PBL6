@@ -28,6 +28,14 @@ export class ProfileService {
         return { message: 'Cập nhật số điện thoại thành công' };
     }
 
+    async updatestory(userId: number, story: string): Promise<{ message: string }> {
+        await this.prisma.users.update({
+            where: { id: userId },
+            data: { story: story },
+        });
+        return { message: 'Cập nhật giới thiệu thành công' };
+    }
+
     async addaddress(userid: number,label : string, receiver_name : string, phone : string, line1 : string, line2 : string, city : string,state : string,postal_code : string,country: string, is_default : boolean) {
         await this.prisma.addresses.create({
             data : {
@@ -148,5 +156,43 @@ export class ProfileService {
         return { message: 'Cập nhật mô tả cửa hàng thành công' };
     }
 
-    
+    async getUserInfo(userId: number) {
+        try {
+            const user = await this.prisma.users.findUnique({
+                where: { id: userId },
+                select: {
+                    id: true,
+                    full_name: true,
+                    email: true,
+                    avatar_url: true,
+                    phone: true,
+                    story: true,
+                    created_at: true,
+                    role: true
+                }
+            });
+
+            if (!user) {
+                return { success: false, message: 'User not found' };
+            }
+
+            return {
+                success: true,
+                data: {
+                    id: user.id,
+                    full_name: user.full_name,
+                    email: user.email,
+                    Avatar: user.avatar_url, // Map to match UserInfo interface
+                    phone: user.phone,
+                    story: user.story,
+                    created_at: user.created_at,
+                    role: user.role
+                }
+            };
+        } catch (error) {
+            console.error('Error getting user info:', error);
+            return { success: false, message: 'Internal server error' };
+        }
+    }
+
 }

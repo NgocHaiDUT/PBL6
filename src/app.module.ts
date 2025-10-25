@@ -10,6 +10,11 @@ import { PostsModule } from './posts/posts.module';
 import { ProfileModule } from './profile/profile.module';
 import { MessagesModule } from './messages/messages.module';
 import { MakeupModule } from './makeup/makeup.module';
+import { CommentsModule } from './comments/comments.module';
+import { LikesModule } from './likes/likes.module';
+import { FollowsModule } from './follows/follows.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { ChatModule } from './chat/chat.module';
 import { HttpModule } from '@nestjs/axios';
 @Module({
   imports: [
@@ -46,11 +51,15 @@ import { HttpModule } from '@nestjs/axios';
     ProfileModule,
     MessagesModule,
     MakeupModule,
+    CommentsModule,
+    LikesModule,
+    FollowsModule,
+    NotificationsModule,
+    ChatModule,
     HttpModule.register({
       timeout: 30000,
       maxContentLength: 50 * 1024 * 1024, // 50MB
     }),
-    MakeupModule,
   ],
   controllers: [AppController],
   providers: [AppService],

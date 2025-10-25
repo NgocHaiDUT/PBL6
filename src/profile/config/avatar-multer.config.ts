@@ -5,7 +5,7 @@ import { existsSync, mkdirSync } from 'fs';
 export const avatarMulterConfig = {
   storage: diskStorage({
     destination: (req, file, cb) => {
-      const dir = './uploads/avatars';
+      const dir = 'uploads/avatars';
       if (!existsSync(dir)) {
         mkdirSync(dir, { recursive: true });
       }
@@ -32,7 +32,7 @@ export const avatarMulterConfig = {
 export const logoshopMulterConfig = {
   storage: diskStorage({
     destination: (req, file, cb) => {
-      const dir = './uploads/logoshops';
+      const dir = 'uploads/logoshops';
       if (!existsSync(dir)) {
         mkdirSync(dir, { recursive: true });
       }
@@ -59,7 +59,7 @@ export const logoshopMulterConfig = {
 export const bannershopMulterConfig = {
   storage: diskStorage({
     destination: (req, file, cb) => {
-      const dir = './uploads/bannershops';
+      const dir = 'uploads/bannershops';
       if (!existsSync(dir)) {
         mkdirSync(dir, { recursive: true });
       }

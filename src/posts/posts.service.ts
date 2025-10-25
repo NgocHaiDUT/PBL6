@@ -2,12 +2,52 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
-import { CreateCommentDto } from './dto/create-comment.dto';
+
 import { QueryPostsDto } from './dto/query-posts.dto';
 
 @Injectable()
 export class PostsService {
   constructor(private prisma: PrismaService) {}
+
+  // Helper function to normalize URLs for frontend
+  private normalizeUrl(url: string | null): string | null {
+    if (!url) return null;
+    // If already absolute URL, return as is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    // For relative paths, they will be prefixed with API_BASE_URL on frontend
+    return url;
+  }
+
+  // Helper function to normalize post object URLs
+  private normalizePostUrls(post: any): any {
+    // Process post_media and extract cover/video URLs
+    const processedMedia = post.post_media ? post.post_media.map((media: any) => ({
+      ...media,
+      media_url: this.normalizeUrl(media.media_url)
+    })) : [];
+
+    // Find cover image (sort_order: 0) and first video
+    const coverImage = processedMedia.find(media => media.sort_order === 0 && media.media_type === 'image');
+    const firstVideo = processedMedia.find(media => media.media_type === 'video');
+
+    return {
+      ...post,
+      // Provide backward compatibility fields
+      cover_url: coverImage ? coverImage.media_url : null,
+      video_url: firstVideo ? firstVideo.media_url : null,
+      user: post.user ? {
+        ...post.user,
+        avatar_url: this.normalizeUrl(post.user.avatar_url)
+      } : null,
+      shop: post.shop ? {
+        ...post.shop,
+        logo_url: this.normalizeUrl(post.shop.logo_url)
+      } : null,
+      post_media: processedMedia
+    };
+  }
 
   async createPost(userId: number, createPostDto: CreatePostDto) {
     const { media_urls, product_ids, tags, ...postData } = createPostDto;
@@ -67,7 +107,12 @@ export class PostsService {
       }
     }
 
-    return this.getPostById(post.id);
+    const createdPost = await this.getPostById(post.id);
+    return {
+      success: true,
+      message: 'Post created successfully',
+      data: createdPost.data
+    };
   }
 
   async getPosts(queryDto: QueryPostsDto) {
@@ -75,7 +120,7 @@ export class PostsService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      moderation_status: 'approved',
+      // moderation_status: 'approved', // Temporary comment for testing
     };
 
     if (user_id) where.user_id = user_id;
@@ -135,34 +180,43 @@ export class PostsService {
               },
             },
           },
-
         },
       }),
       this.prisma.posts.count({ where }),
     ]);
 
-    // Thêm likes và comments count cho mỗi post
+    // Add like count and comment count for each post
     const postsWithCounts = await Promise.all(
       posts.map(async (post) => {
-        const [likesCount, commentsCount] = await Promise.all([
+        const [likeCount, commentCount] = await Promise.all([
           this.prisma.likes.count({
-            where: { target_type: 'post', target_id: post.id },
+            where: {
+              target_type: 'post',
+              target_id: post.id,
+            },
           }),
           this.prisma.comments.count({
-            where: { target_type: 'post', target_id: post.id },
+            where: {
+              target_type: 'post',
+              target_id: post.id,
+            },
           }),
         ]);
 
         return {
           ...post,
-          likes_count: likesCount,
-          comments_count: commentsCount,
+          like_count: likeCount,
+          comment_count: commentCount,
         };
       })
     );
 
+    // Normalize post URLs
+    const normalizedPosts = postsWithCounts.map(post => this.normalizePostUrls(post));
+
     return {
-      data: postsWithCounts,
+      success: true,
+      data: normalizedPosts,
       pagination: {
         page,
         limit,
@@ -229,20 +283,11 @@ export class PostsService {
       data: { view_count: { increment: 1 } },
     });
 
-    // Thêm likes và comments count
-    const [likesCount, commentsCount] = await Promise.all([
-      this.prisma.likes.count({
-        where: { target_type: 'post', target_id: id },
-      }),
-      this.prisma.comments.count({
-        where: { target_type: 'post', target_id: id },
-      }),
-    ]);
+    const normalizedPost = this.normalizePostUrls(post);
 
     return {
-      ...post,
-      likes_count: likesCount,
-      comments_count: commentsCount,
+      success: true,
+      data: normalizedPost
     };
   }
 
@@ -372,8 +417,13 @@ export class PostsService {
     return { message: 'Post deleted successfully' };
   }
 
-  async likePost(postId: number, userId: number) {
-    // Kiểm tra post có tồn tại không
+
+
+  // Upload cover image for post
+  async uploadCoverImage(postId: number, userId: number, file: Express.Multer.File) {
+    console.log('🔍 uploadCoverImage called with:', { postId, userId });
+    
+    // Verify post exists and user owns it
     const post = await this.prisma.posts.findUnique({
       where: { id: postId },
     });
@@ -382,304 +432,180 @@ export class PostsService {
       throw new NotFoundException('Post not found');
     }
 
-    // Kiểm tra đã like chưa
-    const existingLike = await this.prisma.likes.findUnique({
-      where: {
-        user_id_target_type_target_id: {
-          user_id: userId,
-          target_type: 'post',
-          target_id: postId,
-        },
-      },
-    });
+    console.log('📝 Post details:', { postId: post.id, postUserId: post.user_id, requestUserId: userId });
 
-    if (existingLike) {
-      throw new ForbiddenException('You already liked this post');
+    if (post.user_id !== userId) {
+      console.error('❌ User ID mismatch:', { postUserId: post.user_id, requestUserId: userId });
+      throw new ForbiddenException('You can only update your own posts');
     }
 
-    // Tạo like
-    await this.prisma.likes.create({
-      data: {
-        user_id: userId,
-        target_type: 'post',
-        target_id: postId,
+    // File path relative to project root (stored in DB)
+    const coverUrl = file.path.replace(/\\/g, '/');
+    
+    // Create or update cover image in post_media table
+    // First, check if there's already a cover image (sort_order: 0)
+    const existingCover = await this.prisma.post_media.findFirst({
+      where: { 
+        post_id: postId,
+        sort_order: 0
       },
     });
 
-    // Cập nhật like count
-    await this.prisma.posts.update({
-      where: { id: postId },
-      data: { like_count: { increment: 1 } },
-    });
-
-    return { message: 'Post liked successfully' };
-  }
-
-  async unlikePost(postId: number, userId: number) {
-    // Kiểm tra post có tồn tại không
-    const post = await this.prisma.posts.findUnique({
-      where: { id: postId },
-    });
-
-    if (!post) {
-      throw new NotFoundException('Post not found');
+    if (existingCover) {
+      // Update existing cover
+      await this.prisma.post_media.update({
+        where: { id: existingCover.id },
+        data: { 
+          media_url: coverUrl,
+          media_type: 'image'
+        },
+      });
+    } else {
+      // Create new cover media
+      await this.prisma.post_media.create({
+        data: {
+          post_id: postId,
+          media_url: coverUrl,
+          media_type: 'image',
+          sort_order: 0,
+        },
+      });
     }
-
-    // Tìm like
-    const like = await this.prisma.likes.findUnique({
-      where: {
-        user_id_target_type_target_id: {
-          user_id: userId,
-          target_type: 'post',
-          target_id: postId,
-        },
-      },
-    });
-
-    if (!like) {
-      throw new NotFoundException('Like not found');
-    }
-
-    // Xóa like
-    await this.prisma.likes.delete({
-      where: { id: like.id },
-    });
-
-    // Cập nhật like count
-    await this.prisma.posts.update({
-      where: { id: postId },
-      data: { like_count: { decrement: 1 } },
-    });
-
-    return { message: 'Post unliked successfully' };
-  }
-
-  async addComment(postId: number, userId: number, createCommentDto: CreateCommentDto) {
-    // Kiểm tra post có tồn tại không
-    const post = await this.prisma.posts.findUnique({
-      where: { id: postId },
-    });
-
-    if (!post) {
-      throw new NotFoundException('Post not found');
-    }
-
-    // Tạo comment
-    const comment = await this.prisma.comments.create({
-      data: {
-        ...createCommentDto,
-        user_id: userId,
-        target_type: 'post',
-        target_id: postId,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            full_name: true,
-            avatar_url: true,
-          },
-        },
-      },
-    });
-
-    return comment;
-  }
-
-  async getComments(postId: number, page: number = 1, limit: number = 10) {
-    const skip = (page - 1) * limit;
-
-    const [comments, total] = await Promise.all([
-      this.prisma.comments.findMany({
-        where: {
-          target_type: 'post',
-          target_id: postId,
-          parent_id: null, // Chỉ lấy comment gốc
-        },
-        skip,
-        take: limit,
-        orderBy: { created_at: 'desc' },
-        include: {
-          user: {
-            select: {
-              id: true,
-              full_name: true,
-              avatar_url: true,
-            },
-          },
-        },
-      }),
-      this.prisma.comments.count({
-        where: {
-          target_type: 'post',
-          target_id: postId,
-          parent_id: null,
-        },
-      }),
-    ]);
-
-    // Thêm likes count cho mỗi comment
-    const commentsWithLikes = await Promise.all(
-      comments.map(async (comment) => {
-        const likesCount = await this.prisma.likes.count({
-          where: { target_type: 'comment', target_id: comment.id },
-        });
-
-        return {
-          ...comment,
-          likes_count: likesCount,
-        };
-      })
-    );
 
     return {
-      data: commentsWithLikes,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
+      success: true,
+      message: 'Cover image uploaded successfully',
+      data: { cover_url: coverUrl },
     };
   }
 
-  async deleteComment(commentId: number, userId: number) {
-    const comment = await this.prisma.comments.findUnique({
-      where: { id: commentId },
+  // Upload video for post
+  async uploadVideo(postId: number, userId: number, file: Express.Multer.File) {
+    // Verify post exists and user owns it
+    const post = await this.prisma.posts.findUnique({
+      where: { id: postId },
     });
 
-    if (!comment) {
-      throw new NotFoundException('Comment not found');
+    if (!post) {
+      throw new NotFoundException('Post not found');
     }
 
-    if (comment.user_id !== userId) {
-      throw new ForbiddenException('You can only delete your own comments');
+    if (post.user_id !== userId) {
+      throw new ForbiddenException('You can only update your own posts');
     }
 
-    await this.prisma.comments.delete({
-      where: { id: commentId },
+    // File path relative to project root (stored in DB)
+    const videoUrl = file.path.replace(/\\/g, '/');
+    
+    // Get current max sort_order for this post
+    const maxSortOrder = await this.prisma.post_media.findFirst({
+      where: { post_id: postId },
+      orderBy: { sort_order: 'desc' },
+      select: { sort_order: true },
     });
 
-    return { message: 'Comment deleted successfully' };
-  }
-
-  async likeComment(commentId: number, userId: number) {
-    // Kiểm tra comment có tồn tại không
-    const comment = await this.prisma.comments.findUnique({
-      where: { id: commentId },
-    });
-
-    if (!comment) {
-      throw new NotFoundException('Comment not found');
-    }
-
-    // Kiểm tra đã like chưa
-    const existingLike = await this.prisma.likes.findUnique({
-      where: {
-        user_id_target_type_target_id: {
-          user_id: userId,
-          target_type: 'comment',
-          target_id: commentId,
-        },
-      },
-    });
-
-    if (existingLike) {
-      throw new ForbiddenException('You already liked this comment');
-    }
-
-    // Tạo like
-    await this.prisma.likes.create({
+    const nextOrder = (maxSortOrder?.sort_order || -1) + 1;
+    
+    // Create video media record
+    await this.prisma.post_media.create({
       data: {
-        user_id: userId,
-        target_type: 'comment',
-        target_id: commentId,
+        post_id: postId,
+        media_url: videoUrl,
+        media_type: 'video',
+        sort_order: nextOrder,
       },
     });
-
-    return { message: 'Comment liked successfully' };
-  }
-
-  async unlikeComment(commentId: number, userId: number) {
-    // Kiểm tra comment có tồn tại không
-    const comment = await this.prisma.comments.findUnique({
-      where: { id: commentId },
-    });
-
-    if (!comment) {
-      throw new NotFoundException('Comment not found');
-    }
-
-    // Tìm like
-    const like = await this.prisma.likes.findUnique({
-      where: {
-        user_id_target_type_target_id: {
-          user_id: userId,
-          target_type: 'comment',
-          target_id: commentId,
-        },
-      },
-    });
-
-    if (!like) {
-      throw new NotFoundException('Like not found');
-    }
-
-    // Xóa like
-    await this.prisma.likes.delete({
-      where: { id: like.id },
-    });
-
-    return { message: 'Comment unliked successfully' };
-  }
-
-  async getCommentLikes(commentId: number, page: number = 1, limit: number = 10) {
-    const skip = (page - 1) * limit;
-
-    // Kiểm tra comment có tồn tại không
-    const comment = await this.prisma.comments.findUnique({
-      where: { id: commentId },
-    });
-
-    if (!comment) {
-      throw new NotFoundException('Comment not found');
-    }
-
-    const [likes, total] = await Promise.all([
-      this.prisma.likes.findMany({
-        where: {
-          target_type: 'comment',
-          target_id: commentId,
-        },
-        skip,
-        take: limit,
-        orderBy: { created_at: 'desc' },
-        include: {
-          user: {
-            select: {
-              id: true,
-              full_name: true,
-              avatar_url: true,
-            },
-          },
-        },
-      }),
-      this.prisma.likes.count({
-        where: {
-          target_type: 'comment',
-          target_id: commentId,
-        },
-      }),
-    ]);
 
     return {
-      data: likes,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
+      success: true,
+      message: 'Video uploaded successfully',
+      data: { video_url: videoUrl },
+    };
+  }
+
+  // Upload additional media (images/videos)
+  async uploadAdditionalMedia(postId: number, userId: number, files: Express.Multer.File[]) {
+    console.log('🔍 uploadAdditionalMedia called with:', { postId, userId });
+    
+    // Verify post exists and user owns it
+    const post = await this.prisma.posts.findUnique({
+      where: { id: postId },
+    });
+
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+
+    console.log('📝 Post details:', { postId: post.id, postUserId: post.user_id, requestUserId: userId });
+
+    if (post.user_id !== userId) {
+      console.error('❌ User ID mismatch:', { postUserId: post.user_id, requestUserId: userId });
+      throw new ForbiddenException('You can only update your own posts');
+    }
+
+    // Get current max sort_order
+    const maxSortOrder = await this.prisma.post_media.findFirst({
+      where: { post_id: postId },
+      orderBy: { sort_order: 'desc' },
+      select: { sort_order: true },
+    });
+
+    const startOrder = (maxSortOrder?.sort_order || -1) + 1;
+
+    // Create media records using actual file paths
+    const mediaData = files.map((file, index) => {
+      const mediaUrl = file.path.replace(/\\/g, '/');
+      const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
+      
+      return {
+        post_id: postId,
+        media_url: mediaUrl,
+        media_type: mediaType,
+        sort_order: startOrder + index,
+      };
+    });
+
+    const createdMedia = await this.prisma.post_media.createMany({
+      data: mediaData,
+    });
+
+    return {
+      success: true,
+      message: `${files.length} media files uploaded successfully`,
+      data: { count: createdMedia.count, media: mediaData },
+    };
+  }
+
+  // Delete media from post
+  async deleteMedia(mediaId: number, userId: number) {
+    // Find media and verify ownership
+    const media = await this.prisma.post_media.findUnique({
+      where: { id: mediaId },
+      include: {
+        post: {
+          select: { user_id: true },
+        },
       },
+    });
+
+    if (!media) {
+      throw new NotFoundException('Media not found');
+    }
+
+    if (media.post.user_id !== userId) {
+      throw new ForbiddenException('You can only delete media from your own posts');
+    }
+
+    // Delete media record
+    await this.prisma.post_media.delete({
+      where: { id: mediaId },
+    });
+
+    // TODO: Delete actual file from storage
+
+    return {
+      success: true,
+      message: 'Media deleted successfully',
     };
   }
 }

@@ -79,6 +79,7 @@ model users {
   full_name     String?
   avatar_url    String?
   phone         String?
+  story         String?
   firstlogin    Boolean?      @default(true)
   role          user_role     @default(user)
   is_active     Boolean       @default(true)
@@ -399,8 +400,6 @@ model posts {
   post_type         String           @default("post")
   title             String?
   content_md        String
-  cover_url         String?
-  video_url         String?
   moderation_status moderation_status @default(pending)
   visibility        String           @default("public")
   view_count        Int              @default(0)
@@ -461,14 +460,16 @@ model likes {
 }
 
 model comments {
-  id          Int      @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   user_id     Int
   target_type String
   target_id   Int
   content     String
   parent_id   Int?
-  created_at  DateTime @default(now())
-  user        users    @relation(fields: [user_id], references: [id])
+  created_at  DateTime   @default(now())
+  user        users      @relation(fields: [user_id], references: [id])
+  parent      comments?  @relation("CommentReplies", fields: [parent_id], references: [id])
+  replies     comments[] @relation("CommentReplies")
 }
 
 ///////////////////////////////////////////////////////
@@ -611,6 +612,8 @@ model messages {
   conversation_id Int
   sender_id       Int
   content         String?
+  post_id         Int?     // Shared post ID
+  message_type    String?  // Message type (text, shared_post, etc.)
   created_at      DateTime @default(now())
   conversation    conversations @relation(fields: [conversation_id], references: [id])
   sender          users         @relation(fields: [sender_id], references: [id])

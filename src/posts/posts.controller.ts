@@ -10,12 +10,24 @@ import {
   ParseIntPipe,
   UseGuards,
   Req,
+  UseInterceptors,
+  UploadedFile,
+  UploadedFiles,
 } from '@nestjs/common';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
-import { CreateCommentDto } from './dto/create-comment.dto';
+
 import { QueryPostsDto } from './dto/query-posts.dto';
+import { 
+  coverImageStorage, 
+  videoStorage, 
+  mediaStorage,
+  imageFileFilter,
+  videoFileFilter,
+  mediaFileFilter 
+} from './config/multer.config';
 
 @Controller('posts')
 export class PostsController {
@@ -25,8 +37,15 @@ export class PostsController {
   // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
   create(@Body() createPostDto: CreatePostDto, @Req() req: any) {
     // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
-    return this.postsService.createPost(userId, createPostDto);
+    
+    // Lấy userId từ body hoặc từ headers
+    const userId = createPostDto.user_id || req.headers['x-user-id'] || req.body.user_id;
+    
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+    
+    return this.postsService.createPost(Number(userId), createPostDto);
   }
 
   @Get()
@@ -47,94 +66,97 @@ export class PostsController {
     @Req() req: any,
   ) {
     // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
-    return this.postsService.updatePost(id, userId, updatePostDto);
+    const userId = updatePostDto.user_id || req.headers['x-user-id'] || req.body.user_id || 1;
+    return this.postsService.updatePost(id, Number(userId), updatePostDto);
   }
 
   @Delete(':id')
   // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
   remove(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
-    return this.postsService.deletePost(id, userId);
+    const userId = req.headers['x-user-id'] || req.body.user_id || 1;
+    return this.postsService.deletePost(id, Number(userId));
   }
 
-  @Post(':id/like')
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
-  likePost(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
-    return this.postsService.likePost(id, userId);
-  }
 
-  @Delete(':id/like')
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
-  unlikePost(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
-    return this.postsService.unlikePost(id, userId);
-  }
 
-  @Post(':id/comments')
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
-  addComment(
+
+
+  // Upload cover image for post
+  @Post(':id/upload-cover')
+  @UseInterceptors(FileInterceptor('cover', {
+    storage: coverImageStorage,
+    fileFilter: imageFileFilter,
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  }))
+  // @UseGuards(JwtAuthGuard)
+  uploadCoverImage(
     @Param('id', ParseIntPipe) id: number,
-    @Body() createCommentDto: CreateCommentDto,
+    @UploadedFile() file: Express.Multer.File,
     @Req() req: any,
   ) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
-    return this.postsService.addComment(id, userId, createCommentDto);
+    // const userId = req.user.id;
+    const userId = req.headers['x-user-id'] || req.body.user_id || 1;
+    console.log('🔍 uploadCoverImage controller:', { 
+      postId: id, 
+      headerUserId: req.headers['x-user-id'], 
+      bodyUserId: req.body.user_id,
+      finalUserId: userId 
+    });
+    return this.postsService.uploadCoverImage(id, Number(userId), file);
   }
 
-  @Get(':id/comments')
-  getComments(
+  // Upload video for post
+  @Post(':id/upload-video')
+  @UseInterceptors(FileInterceptor('video', {
+    storage: videoStorage,
+    fileFilter: videoFileFilter,
+    limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit for videos
+  }))
+  // @UseGuards(JwtAuthGuard)
+  uploadVideo(
     @Param('id', ParseIntPipe) id: number,
-    @Query('page', ParseIntPipe) page: number = 1,
-    @Query('limit', ParseIntPipe) limit: number = 10,
-  ) {
-    return this.postsService.getComments(id, page, limit);
-  }
-
-  @Delete('comments/:commentId')
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
-  deleteComment(
-    @Param('commentId', ParseIntPipe) commentId: number,
+    @UploadedFile() file: Express.Multer.File,
     @Req() req: any,
   ) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
-    return this.postsService.deleteComment(commentId, userId);
+    // const userId = req.user.id;
+    const userId = req.headers['x-user-id'] || req.body.user_id || 1;
+    return this.postsService.uploadVideo(id, Number(userId), file);
   }
 
-  @Post('comments/:commentId/like')
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
-  likeComment(
-    @Param('commentId', ParseIntPipe) commentId: number,
+  // Upload additional media (images/videos) for post
+  @Post(':id/upload-media')
+  @UseInterceptors(FilesInterceptor('media', 10, {
+    storage: mediaStorage,
+    fileFilter: mediaFileFilter,
+    limits: { fileSize: 50 * 1024 * 1024 } // 50MB per file
+  }))
+  // @UseGuards(JwtAuthGuard)
+  uploadAdditionalMedia(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFiles() files: Express.Multer.File[],
     @Req() req: any,
   ) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
-    return this.postsService.likeComment(commentId, userId);
+    // const userId = req.user.id;
+    const userId = req.headers['x-user-id'] || req.body.user_id || 1;
+    console.log('🔍 uploadAdditionalMedia controller:', { 
+      postId: id, 
+      headerUserId: req.headers['x-user-id'], 
+      bodyUserId: req.body.user_id,
+      finalUserId: userId 
+    });
+    return this.postsService.uploadAdditionalMedia(id, Number(userId), files);
   }
 
-  @Delete('comments/:commentId/like')
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
-  unlikeComment(
-    @Param('commentId', ParseIntPipe) commentId: number,
+  // Delete media from post
+  @Delete('media/:mediaId')
+  // @UseGuards(JwtAuthGuard)
+  deleteMedia(
+    @Param('mediaId', ParseIntPipe) mediaId: number,
     @Req() req: any,
   ) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
-    return this.postsService.unlikeComment(commentId, userId);
-  }
-
-  @Get('comments/:commentId/likes')
-  getCommentLikes(
-    @Param('commentId', ParseIntPipe) commentId: number,
-    @Query('page', ParseIntPipe) page: number = 1,
-    @Query('limit', ParseIntPipe) limit: number = 10,
-  ) {
-    return this.postsService.getCommentLikes(commentId, page, limit);
+    // const userId = req.user.id;
+    const userId = req.headers['x-user-id'] || req.body.user_id || 1;
+    return this.postsService.deleteMedia(mediaId, Number(userId));
   }
 }

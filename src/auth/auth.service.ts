@@ -10,16 +10,20 @@ export class AuthService {
         if (existingUser) {
             return {success:false, message: 'Email đã được sử dụng' };
         }
+        
+        // Hash password before saving
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
         const newUser = await this.PrismaService.users.create({
             data: { 
                 email : email, 
                 full_name : full_name,
                 phone  : phone,
-                password_hash : password,
+                password_hash : hashedPassword,
                 avatar_url : "",
                 },
         });
-        return {success:true, message: 'Đăng ký thành công,mật khẩu được gửi về email của bạn' };
+        return {success:true, message: 'Đăng ký thành công!' };
     }
 
     async login(email: string, password: string) {

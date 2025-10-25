@@ -23,6 +23,14 @@ export class ProfileController {
         return this.profileService.updatephone(Number(body.userId), body.phone);
     }
 
+    @Post('update-story')
+    async updateStory(@Body() body: { userId: string; story: string }) {
+        if (!body?.userId) {
+            throw new BadRequestException('userId is required');
+        }
+        return this.profileService.updatestory(Number(body.userId), body.story || '');
+    }
+
     @Post('update-avatar')
     @UseInterceptors(FileInterceptor('file', avatarMulterConfig))
 
@@ -119,6 +127,12 @@ export class ProfileController {
         return this.profileService.updatedescriptionshop(Number(body.shopid), body.description);
     }
 
-    
+    @Get('user-info')
+    async getUserInfo(@Query('userId') userId: string) {
+        if (!userId) {
+            throw new BadRequestException('userId is required');
+        }
+        return this.profileService.getUserInfo(Number(userId));
+    }
 
 }

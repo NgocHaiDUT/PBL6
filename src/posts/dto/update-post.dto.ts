@@ -3,6 +3,10 @@ import { IsString, IsOptional, IsArray, IsEnum, IsInt } from 'class-validator';
 export class UpdatePostDto {
   @IsOptional()
   @IsInt()
+  user_id?: number;
+
+  @IsOptional()
+  @IsInt()
   shop_id?: number;
 
   @IsOptional()

@@ -197,13 +197,59 @@ export class MessagesService {
 
   // Gửi tin nhắn
   async sendMessage(userId: number, createMessageDto: CreateMessageDto) {
-    const { conversation_id, content } = createMessageDto;
+    const { conversation_id, sender_id, receiver_id, content, postId, messageType } = createMessageDto;
+    
+    let finalConversationId = conversation_id;
+    
+    // If conversation_id not provided, find or create conversation using sender_id and receiver_id
+    if (!finalConversationId && sender_id && receiver_id) {
+      const conversations = await this.prisma.conversations.findMany({
+        where: {
+          type: 'private'
+        },
+        include: {
+          participants: true
+        }
+      });
+
+      let conversation = conversations.find(conv => {
+        const userIds = conv.participants.map(p => p.user_id).sort();
+        const targetIds = [sender_id, receiver_id].sort();
+        return userIds.length === 2 && 
+               userIds[0] === targetIds[0] && 
+               userIds[1] === targetIds[1];
+      });
+
+      if (!conversation) {
+        // Create new conversation
+        conversation = await this.prisma.conversations.create({
+          data: {
+            type: 'private',
+            participants: {
+              create: [
+                { user_id: sender_id },
+                { user_id: receiver_id }
+              ]
+            }
+          },
+          include: {
+            participants: true
+          }
+        });
+      }
+      
+      finalConversationId = conversation.id;
+    }
+
+    if (!finalConversationId) {
+      throw new BadRequestException('Either conversation_id or both sender_id and receiver_id must be provided');
+    }
 
     // Kiểm tra user có quyền gửi tin nhắn trong conversation này không
     const participant = await this.prisma.conversation_participants.findFirst({
       where: {
-        conversation_id,
-        user_id: userId
+        conversation_id: finalConversationId,
+        user_id: sender_id || userId
       }
     });
 
@@ -214,9 +260,11 @@ export class MessagesService {
     // Tạo tin nhắn
     const message = await this.prisma.messages.create({
       data: {
-        conversation_id,
-        sender_id: userId,
-        content
+        conversation_id: finalConversationId,
+        sender_id: sender_id || userId,
+        content,
+        post_id: postId, // ✅ Include postId
+        message_type: messageType // ✅ Include messageType
       },
       include: {
         sender: {
@@ -233,7 +281,7 @@ export class MessagesService {
     await this.prisma.message_reads.create({
       data: {
         message_id: message.id,
-        user_id: userId
+        user_id: sender_id || userId
       }
     });
 

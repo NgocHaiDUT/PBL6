@@ -11,25 +11,12 @@ export class AuthController {
     ) {}
 
     @Post('register')
-    async register(@Body() body: { email?: string; full_name?: string; phone?: string; }) {
-    if (!body || !body.email) {
-      throw new BadRequestException('email is required');
+    async register(@Body() body: { email?: string; full_name?: string; phone?: string; password?: string; }) {
+    if (!body || !body.email || !body.password) {
+      throw new BadRequestException('email and password are required');
     }
-        const password = Math.random().toString(36).slice(-8);
-        const hashedPassword = await bcrypt.hash(password, 10);
-        try {
-            await this.mailerService
-                        .sendMail({
-              to: `${body.email}`,
-                            subject: 'Đăng ký tài khoản',
-                                text: `Mật khẩu tạm thời của bạn là: ${password}`,  
-                                html: `Mật khẩu tạm thời của bạn là: ${password}`, 
-                            });
-                            } catch (error) {
-                            console.error('Error sending email:', error);
-                            return { success: false, message: 'Email không tồn tại' };
-                            }
-    return this.authService.register(body.email, body.full_name ?? '', body.phone ?? '', hashedPassword);
+    
+    return this.authService.register(body.email, body.full_name ?? '', body.phone ?? '', body.password);
     }
 
     @Post('login')
