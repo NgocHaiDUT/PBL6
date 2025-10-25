@@ -21,6 +21,7 @@
     "seed": "ts-node seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.908.0",
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/common": "^11.0.1",
@@ -37,6 +38,7 @@
     "class-validator": "^0.14.2",
     "form-data": "^4.0.4",
     "multer": "^2.0.2",
+    "multer-s3": "^3.0.1",
     "nodemailer": "^7.0.6",
     "passport": "^0.7.0",
     "passport-facebook": "^3.0.0",

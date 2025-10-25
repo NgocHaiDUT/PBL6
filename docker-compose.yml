@@ -26,8 +26,8 @@ services:
       - postgres
     networks:
       - postgres_network
-    volumes:
-      - ./uploads:/app/uploads
+    # volumes:
+    #   - ./uploads:/app/uploads  # Removed - using AWS S3 for file storage
 
       
 networks:
