@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { skin_type, moderation_status } from '@prisma/client';
+import { skin_type, moderation_status, Prisma } from '@prisma/client';
 @Injectable()
 export class ProductService {
     constructor(private prisma: PrismaService) {}
@@ -335,6 +335,539 @@ export class ProductService {
                 message: 'Lỗi khi thêm media',
                 error: error.message 
             };
+        }
+    }
+
+    // Customer Product APIs
+    async getAllProducts(query: any) {
+        try {
+            const { page = 1, limit = 12, category, brand, min_price, max_price, sort = 'newest' } = query;
+            const skip = (Number(page) - 1) * Number(limit);
+
+            const where: any = {
+                is_published: true,
+                moderation_status: 'approved'
+            };
+
+            if (category) {
+                where.product_categories = {
+                    some: {
+                        category_id: Number(category)
+                    }
+                };
+            }
+
+            if (brand) {
+                console.log('getAllProducts - Filtering by brand_id:', Number(brand));
+                where.brand_id = Number(brand);
+            }
+
+            // Price filter through variants
+            if (min_price || max_price) {
+                where.product_variants = {
+                    some: {
+                        price: {
+                            ...(min_price && { gte: Number(min_price) }),
+                            ...(max_price && { lte: Number(max_price) })
+                        }
+                    }
+                };
+            }
+
+            const orderBy: any = {};
+            switch (sort) {
+                case 'newest':
+                    orderBy.created_at = 'desc';
+                    break;
+                case 'oldest':
+                    orderBy.created_at = 'asc';
+                    break;
+                case 'price_low':
+                    orderBy.created_at = 'desc'; // Will need to sort by variant price later
+                    break;
+                case 'price_high':
+                    orderBy.created_at = 'desc'; // Will need to sort by variant price later
+                    break;
+                case 'rating':
+                    orderBy.avg_rating = 'desc';
+                    break;
+                default:
+                    orderBy.created_at = 'desc';
+            }
+
+            const [products, total] = await Promise.all([
+                this.prisma.products.findMany({
+                    where,
+                    skip,
+                    take: Number(limit),
+                    orderBy,
+                    include: {
+                        brand: true,
+                        product_categories: {
+                            include: {
+                                category: true
+                            }
+                        },
+                        shop: true,
+                        product_media: true,
+                        product_variants: true
+                    }
+                }),
+                this.prisma.products.count({ where })
+            ]);
+
+            console.log('getAllProducts - Found products:', products.length);
+            console.log('getAllProducts - Where clause:', JSON.stringify(where, null, 2));
+            console.log('getAllProducts - Products:', products.map(p => ({ id: p.id, name: p.name, brand_id: p.brand_id })));
+
+            return {
+                success: true,
+                products,
+                pagination: {
+                    page: Number(page),
+                    limit: Number(limit),
+                    total,
+                    totalPages: Math.ceil(total / Number(limit))
+                }
+            };
+        } catch (error) {
+            console.error('Error fetching products:', error);
+            return { success: false, message: 'Lỗi khi tải sản phẩm' };
+        }
+    }
+
+    async getProductById(id: number) {
+        try {
+            console.log('getProductById - ID received:', id, 'Type:', typeof id);
+            const productId = Number(id);
+            console.log('getProductById - Converted ID:', productId);
+            
+            const product = await this.prisma.products.findUnique({
+                where: { id: productId, is_published: true, moderation_status: 'approved' },
+                include: {
+                    brand: true,
+                    product_categories: {
+                        include: {
+                            category: true
+                        }
+                    },
+                    shop: true,
+                    product_media: true,
+                    product_variants: true,
+                    reviews: {
+                        include: {
+                            user: true
+                        },
+                        orderBy: { created_at: 'desc' }
+                    }
+                }
+            });
+
+            if (!product) {
+                return { success: false, message: 'Sản phẩm không tồn tại' };
+            }
+
+            return { success: true, product };
+        } catch (error) {
+            console.error('Error fetching product:', error);
+            return { success: false, message: 'Lỗi khi tải sản phẩm' };
+        }
+    }
+
+    async searchProducts(query: any) {
+        try {
+            const { q, page = 1, limit = 12, category, brand, minPrice, maxPrice, sort = 'newest' } = query;
+            const skip = (Number(page) - 1) * Number(limit);
+
+            const where: Prisma.productsWhereInput = {
+                is_published: true,
+                moderation_status: 'approved'
+            };
+
+            // Text search
+            if (q) {
+                where.OR = [
+                    { name: { contains: q, mode: Prisma.QueryMode.insensitive } },
+                    { description: { contains: q, mode: Prisma.QueryMode.insensitive } },
+                    { brand: { name: { contains: q, mode: Prisma.QueryMode.insensitive } } }
+                ];
+            }
+
+            // Category filter
+            if (category) {
+                where.product_categories = {
+                    some: {
+                        category_id: Number(category)
+                    }
+                };
+            }
+
+            // Brand filter
+            if (brand) {
+                console.log('getAllProducts - Filtering by brand_id:', Number(brand));
+                where.brand_id = Number(brand);
+            }
+
+            // Price filter through variants
+            if (minPrice || maxPrice) {
+                where.product_variants = {
+                    some: {
+                        price: {
+                            ...(minPrice && { gte: Number(minPrice) }),
+                            ...(maxPrice && { lte: Number(maxPrice) })
+                        }
+                    }
+                };
+            }
+
+            const orderBy: any = {};
+            switch (sort) {
+                case 'newest':
+                    orderBy.created_at = 'desc';
+                    break;
+                case 'oldest':
+                    orderBy.created_at = 'asc';
+                    break;
+                case 'price_low':
+                    orderBy.created_at = 'desc'; // Will need to sort by variant price later
+                    break;
+                case 'price_high':
+                    orderBy.created_at = 'desc'; // Will need to sort by variant price later
+                    break;
+                case 'rating':
+                    orderBy.avg_rating = 'desc';
+                    break;
+                default:
+                    orderBy.created_at = 'desc';
+            }
+
+            const [products, total] = await Promise.all([
+                this.prisma.products.findMany({
+                    where,
+                    skip,
+                    take: Number(limit),
+                    orderBy,
+                    include: {
+                        brand: true,
+                        product_categories: {
+                            include: {
+                                category: true
+                            }
+                        },
+                        shop: true,
+                        product_media: true,
+                        product_variants: true
+                    }
+                }),
+                this.prisma.products.count({ where })
+            ]);
+
+            return {
+                success: true,
+                products,
+                pagination: {
+                    page: Number(page),
+                    limit: Number(limit),
+                    total,
+                    totalPages: Math.ceil(total / Number(limit))
+                }
+            };
+        } catch (error) {
+            console.error('Error searching products:', error);
+            return { success: false, message: 'Lỗi khi tìm kiếm sản phẩm' };
+        }
+    }
+
+    async filterProducts(query: any) {
+        console.log('filterProducts - Query received:', query);
+        console.log('filterProducts - Brand parameter:', query.brand);
+        // Similar to getAllProducts but with more filter options
+        return this.getAllProducts(query);
+    }
+
+    // Wishlist APIs
+    async addToWishlist(productId: number, userId: number = 1) {
+        try {
+            // Check if product exists
+            const product = await this.prisma.products.findUnique({
+                where: { id: productId, is_published: true, moderation_status: 'approved' }
+            });
+
+            if (!product) {
+                return { success: false, message: 'Sản phẩm không tồn tại hoặc không được phép' };
+            }
+
+            // Check if already in wishlist
+            const existingWishlist = await this.prisma.wishlists.findUnique({
+                where: {
+                    user_id_product_id: {
+                        user_id: userId,
+                        product_id: productId
+                    }
+                }
+            });
+
+            if (existingWishlist) {
+                return { success: false, message: 'Sản phẩm đã có trong danh sách yêu thích' };
+            }
+
+            // Add to wishlist
+            await this.prisma.wishlists.create({
+                data: {
+                    user_id: userId,
+                    product_id: productId
+                }
+            });
+
+            return { success: true, message: 'Đã thêm vào danh sách yêu thích' };
+        } catch (error) {
+            console.error('Error adding to wishlist:', error);
+            return { success: false, message: 'Lỗi khi thêm vào danh sách yêu thích' };
+        }
+    }
+
+    async removeFromWishlist(productId: number, userId: number = 1) {
+        try {
+            // Check if item exists in wishlist
+            const wishlistItem = await this.prisma.wishlists.findUnique({
+                where: {
+                    user_id_product_id: {
+                        user_id: userId,
+                        product_id: productId
+                    }
+                }
+            });
+
+            if (!wishlistItem) {
+                return { success: false, message: 'Sản phẩm không có trong danh sách yêu thích' };
+            }
+
+            // Remove from wishlist
+            await this.prisma.wishlists.delete({
+                where: {
+                    user_id_product_id: {
+                        user_id: userId,
+                        product_id: productId
+                    }
+                }
+            });
+
+            return { success: true, message: 'Đã xóa khỏi danh sách yêu thích' };
+        } catch (error) {
+            console.error('Error removing from wishlist:', error);
+            return { success: false, message: 'Lỗi khi xóa khỏi danh sách yêu thích' };
+        }
+    }
+
+    async getWishlist(userId: number = 1) {
+        try {
+            const wishlist = await this.prisma.wishlists.findMany({
+                where: { user_id: userId },
+                include: {
+                    product: {
+                        include: {
+                            brand: true,
+                            product_categories: {
+                                include: {
+                                    category: true
+                                }
+                            },
+                            shop: true,
+                            product_media: true,
+                            product_variants: true,
+                            reviews: {
+                                include: {
+                                    user: true
+                                }
+                            }
+                        }
+                    }
+                },
+                orderBy: { created_at: 'desc' }
+            });
+
+            // Transform data to match frontend expectations
+            const wishlistItems = wishlist.map(item => ({
+                id: item.product.id,
+                name: item.product.name,
+                slug: item.product.slug,
+                description: item.product.description,
+                avg_rating: Number(item.product.avg_rating) || 0,
+                review_count: item.product.review_count,
+                brand: item.product.brand,
+                shop: item.product.shop,
+                categories: item.product.product_categories.map(pc => pc.category),
+                media: item.product.product_media,
+                variants: item.product.product_variants,
+                reviews: item.product.reviews,
+                added_at: item.created_at
+            }));
+
+            return { success: true, wishlist: wishlistItems };
+        } catch (error) {
+            console.error('Error fetching wishlist:', error);
+            return { success: false, message: 'Lỗi khi tải danh sách yêu thích' };
+        }
+    }
+
+    // Cart APIs - Requires authentication
+    async addToCart(productId: number, variantId?: number, quantity: number = 1, userId?: number) {
+        try {
+            if (!userId) {
+                return { success: false, message: 'Vui lòng đăng nhập để thêm vào giỏ hàng' };
+            }
+
+            // Get product details
+            const product = await this.prisma.products.findUnique({
+                where: { id: productId },
+                include: {
+                    product_variants: true,
+                    product_media: true
+                }
+            });
+
+            if (!product) {
+                return { success: false, message: 'Sản phẩm không tồn tại' };
+            }
+
+            // Get variant details
+            const variant = variantId ? 
+                product.product_variants.find(v => v.id === variantId) :
+                product.product_variants[0];
+
+            if (!variant) {
+                return { success: false, message: 'Biến thể sản phẩm không tồn tại' };
+            }
+
+            // Find or create cart for user
+            let cart = await this.prisma.carts.findUnique({
+                where: { user_id: userId }
+            });
+
+            if (!cart) {
+                cart = await this.prisma.carts.create({
+                    data: { user_id: userId }
+                });
+            }
+
+            // Check if item already exists in cart
+            const existingItem = await this.prisma.cart_items.findFirst({
+                where: {
+                    cart_id: cart.id,
+                    product_id: productId,
+                    variant_id: variant.id
+                }
+            });
+
+            if (existingItem) {
+                // Update quantity
+                await this.prisma.cart_items.update({
+                    where: { id: existingItem.id },
+                    data: { quantity: existingItem.quantity + quantity }
+                });
+            } else {
+                // Create new cart item
+                await this.prisma.cart_items.create({
+                    data: {
+                        cart_id: cart.id,
+                        product_id: productId,
+                        variant_id: variant.id,
+                        quantity: quantity,
+                        price_snapshot: variant.price
+                    }
+                });
+            }
+
+            return { success: true, message: 'Đã thêm vào giỏ hàng' };
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            return { success: false, message: 'Lỗi khi thêm vào giỏ hàng' };
+        }
+    }
+
+    async getCart(userId?: number) {
+        try {
+            if (!userId) {
+                return { success: false, message: 'Vui lòng đăng nhập để xem giỏ hàng' };
+            }
+
+            const cart = await this.prisma.carts.findUnique({
+                where: { user_id: userId },
+                include: {
+                    cart_items: {
+                        include: {
+                            product: {
+                                include: {
+                                    product_media: true,
+                                    shop: true,
+                                    brand: true
+                                }
+                            },
+                            variant: true
+                        }
+                    }
+                }
+            });
+
+            if (!cart) {
+                return { success: true, cart: [] };
+            }
+
+            // Transform cart items to match frontend expectations
+            const cartItems = cart.cart_items.map(item => ({
+                id: item.id,
+                product_id: item.product_id,
+                variant_id: item.variant_id,
+                name: item.product.name,
+                variant_name: item.variant?.name || '',
+                price: Number(item.price_snapshot),
+                quantity: item.quantity,
+                image_url: item.product.product_media[0]?.url || '/placeholder-product.jpg',
+                stock: item.variant?.stock || 0,
+                shop_name: item.product.shop?.name || 'Unknown Shop',
+                brand_name: item.product.brand?.name || 'Unknown Brand',
+                shop_id: item.product.shop_id,
+                brand_id: item.product.brand_id
+            }));
+
+            return { success: true, cart: cartItems };
+        } catch (error) {
+            console.error('Error fetching cart:', error);
+            return { success: false, message: 'Lỗi khi tải giỏ hàng' };
+        }
+    }
+
+    async updateCartItem(itemId: number, quantity: number) {
+        try {
+            if (quantity <= 0) {
+                // Remove item if quantity is 0 or negative
+                await this.prisma.cart_items.delete({
+                    where: { id: itemId }
+                });
+                return { success: true, message: 'Đã xóa khỏi giỏ hàng' };
+            } else {
+                // Update quantity
+                await this.prisma.cart_items.update({
+                    where: { id: itemId },
+                    data: { quantity: quantity }
+                });
+                return { success: true, message: 'Đã cập nhật giỏ hàng' };
+            }
+        } catch (error) {
+            console.error('Error updating cart item:', error);
+            return { success: false, message: 'Lỗi khi cập nhật giỏ hàng' };
+        }
+    }
+
+    async removeFromCart(itemId: number) {
+        try {
+            await this.prisma.cart_items.delete({
+                where: { id: itemId }
+            });
+            return { success: true, message: 'Đã xóa khỏi giỏ hàng' };
+        } catch (error) {
+            console.error('Error removing from cart:', error);
+            return { success: false, message: 'Lỗi khi xóa khỏi giỏ hàng' };
         }
     }
     

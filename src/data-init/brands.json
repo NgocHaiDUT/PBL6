@@ -19,7 +19,6 @@
   { "id": 18, "name": "Kylie Cosmetics", "slug": "kylie-cosmetics", "logo_url": "/uploads/brands/kylie-cosmetics.png", "created_at": "2025-01-01T00:00:00Z", "products": [] },
   { "id": 19, "name": "Glossier", "slug": "glossier", "logo_url": "/uploads/brands/glossier.png", "created_at": "2025-01-01T00:00:00Z", "products": [] },
   { "id": 20, "name": "Pat McGrath Labs", "slug": "pat-mcgrath-labs", "logo_url": "/uploads/brands/pat-mcgrath-labs.png", "created_at": "2025-01-01T00:00:00Z", "products": [] },
-
   { "id": 21, "name": "Bobbi Brown", "slug": "bobbi-brown", "logo_url": "/uploads/brands/bobbi-brown.png", "created_at": "2025-01-01T00:00:00Z", "products": [] },
   { "id": 22, "name": "Kiehl's", "slug": "kiehls", "logo_url": "/uploads/brands/kiehls.png", "created_at": "2025-01-01T00:00:00Z", "products": [] },
   { "id": 23, "name": "The Body Shop", "slug": "the-body-shop", "logo_url": "/uploads/brands/the-body-shop.png", "created_at": "2025-01-01T00:00:00Z", "products": [] },

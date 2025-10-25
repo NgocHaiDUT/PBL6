@@ -63,6 +63,7 @@ import { DataInitModule } from './data-init/data-init.module';
     NotificationsModule,
     ChatModule,
     ProductModule,
+    DataInitModule,
     HttpModule.register({
       timeout: 30000,
       maxContentLength: 50 * 1024 * 1024, // 50MB

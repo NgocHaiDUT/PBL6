@@ -19,6 +19,8 @@ export class DataInitService implements OnModuleInit {
             await this.seedRoles();
             await this.seedPermissions();
             await this.seedRolePermissions();
+            await this.seedShops();
+            await this.seedProducts();
             this.logger.log('Dữ liệu khởi tạo thành công')
         }
         catch(error)
@@ -209,5 +211,130 @@ export class DataInitService implements OnModuleInit {
     }
 
     this.logger.log(`Đã tạo ${rolePermissionsData.length} liên kết role-permission thành công`);
+    }
+
+    private async seedShops() {
+        const existingShops = await this.prisma.shops.count();
+        if (existingShops > 0) {
+            this.logger.log('Shop đã tồn tại, không khởi tạo mới');
+            return;
+        }
+
+        // Tạo user mẫu làm owner của shop
+        const owner = await this.prisma.users.create({
+            data: {
+                email: 'owner@shop.com',
+                password_hash: '$2b$10$example', // Mật khẩu mẫu
+                full_name: 'Shop Owner',
+                phone: '0123456789',
+                avatar_url: '/uploads/avatars/default.jpg',
+                is_active: true,
+                created_at: new Date(),
+            },
+        });
+
+        // Tạo shop mẫu
+        const shop = await this.prisma.shops.create({
+            data: {
+                owner_id: owner.id,
+                name: 'Beauty Store',
+                slug: 'beauty-store',
+                logo_url: '/uploads/shops/beauty-store-logo.jpg',
+                phone: '0123456789',
+                email: 'info@beautystore.com',
+                cover_url: '/uploads/shops/beauty-store-cover.jpg',
+                description: 'Cửa hàng mỹ phẩm cao cấp với đa dạng sản phẩm chăm sóc da',
+                is_verified: true,
+                created_at: new Date(),
+            },
+        });
+
+        this.logger.log(`Đã tạo shop: ${shop.name} với owner: ${owner.full_name} (${owner.email})`);
+    }
+
+    private async seedProducts() {
+        const existingProducts = await this.prisma.products.count();
+        if (existingProducts > 0) {
+            this.logger.log('Sản phẩm đã tồn tại, không khởi tạo mới');
+            return;
+        }
+
+        const productsFilePath = path.join(process.cwd(), 'src', 'data-init', 'products.json');
+        const productsDataRaw = fs.readFileSync(productsFilePath, 'utf8');
+        const productsData = JSON.parse(productsDataRaw);
+
+        if (!Array.isArray(productsData)) {
+            this.logger.error('Dữ liệu products không phải là array');
+            return;
+        }
+
+        for (const productData of productsData) {
+            try {
+                // Tạo sản phẩm chính
+                const product = await this.prisma.products.create({
+                    data: {
+                        name: productData.name,
+                        slug: productData.slug,
+                        description: productData.description,
+                        is_published: productData.is_published,
+                        moderation_status: productData.moderation_status as any,
+                        avg_rating: productData.avg_rating,
+                        review_count: productData.total_reviews,
+                        brand_id: productData.brand_id,
+                        shop_id: productData.shop_id,
+                        created_at: new Date(),
+                    },
+                });
+
+                // Tạo danh mục sản phẩm
+                if (productData.category_id) {
+                    await this.prisma.product_categories.create({
+                        data: {
+                            product_id: product.id,
+                            category_id: productData.category_id,
+                        },
+                    });
+                }
+
+                // Tạo variants
+                if (productData.variants && Array.isArray(productData.variants)) {
+                    for (const variantData of productData.variants) {
+                        await this.prisma.product_variants.create({
+                            data: {
+                                product_id: product.id,
+                                name: variantData.name,
+                                price: variantData.price,
+                                compare_at_price: variantData.compare_price,
+                                sku: variantData.sku,
+                                stock: variantData.stock_quantity,
+                                is_active: true,
+                                created_at: new Date(),
+                            },
+                        });
+                    }
+                }
+
+                // Tạo media
+                if (productData.media && Array.isArray(productData.media)) {
+                    for (const mediaData of productData.media) {
+                        await this.prisma.product_media.create({
+                            data: {
+                                product_id: product.id,
+                                url: mediaData.url,
+                                type: mediaData.type,
+                                sort_order: mediaData.is_primary ? 0 : 1,
+                                created_at: new Date(),
+                            },
+                        });
+                    }
+                }
+
+                this.logger.log(`Đã tạo sản phẩm: ${product.name}`);
+            } catch (error) {
+                this.logger.error(`Lỗi khi tạo sản phẩm ${productData.name}:`, error);
+            }
+        }
+
+        this.logger.log(`Đã tạo ${productsData.length} sản phẩm thành công`);
     }
 }
