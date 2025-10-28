@@ -19,6 +19,7 @@ import { ChatModule } from './chat/chat.module';
 import { HttpModule } from '@nestjs/axios';
 import { ProductModule } from './product/product.module';
 import { DataInitModule } from './data-init/data-init.module';
+import { OrderModule } from './order/order.module';
 @Module({
   imports: [
     AuthModule,
@@ -63,6 +64,7 @@ import { DataInitModule } from './data-init/data-init.module';
     NotificationsModule,
     ChatModule,
     ProductModule,
+    OrderModule,
     DataInitModule,
     HttpModule.register({
       timeout: 30000,
