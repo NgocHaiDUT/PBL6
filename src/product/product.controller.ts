@@ -14,6 +14,13 @@ export class ProductController {
         return this.productservice.getallbrand();
     }
 
+    @Get('all-categories')
+    async getallcategories()
+    {
+        console.log('Controller - getallcategories called');
+        return this.productservice.getallcategories();
+    }
+
     @Post('add-brand')
     @UseInterceptors(FileInterceptor('file', s3BrandConfig))
     async addbrand(

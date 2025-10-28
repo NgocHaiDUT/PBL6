@@ -10,6 +10,13 @@ export class ProductService {
         return { success: true,brands: brands };
     }
 
+    async getallcategories(){
+        const categories = await this.prisma.categories.findMany({
+            orderBy: { name: 'asc' }
+        });
+        return { success: true, categories: categories };
+    }
+
     async addbrand(name: string, slug : string,logo_url: string){
         var ishasbrandname = await this.prisma.brands.findUnique({
             where : { name : name }
