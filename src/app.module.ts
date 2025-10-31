@@ -20,6 +20,7 @@ import { HttpModule } from '@nestjs/axios';
 import { ProductModule } from './product/product.module';
 import { DataInitModule } from './data-init/data-init.module';
 import { OrderModule } from './order/order.module';
+import { AddressModule } from './address/address.module';
 @Module({
   imports: [
     AuthModule,
@@ -66,6 +67,7 @@ import { OrderModule } from './order/order.module';
     ProductModule,
     OrderModule,
     DataInitModule,
+    AddressModule,
     HttpModule.register({
       timeout: 30000,
       maxContentLength: 50 * 1024 * 1024, // 50MB
