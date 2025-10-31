@@ -125,21 +125,19 @@ model auth_identities {
 }
 
 model addresses {
-  id          Int      @id @default(autoincrement())
-  user_id     Int
-  label       String?
-  recipient   String?
-  phone       String?
-  line1       String?
-  line2       String?
-  city        String?
-  state       String?
-  postal_code String?
-  country     String?
-  is_default  Boolean  @default(false)
-  created_at  DateTime @default(now())
-  user        users    @relation(fields: [user_id], references: [id])
-  orders      orders[]
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  label      String?
+  recipient  String
+  phone      String
+  province   String
+  district   String
+  ward       String
+  street     String
+  is_default Boolean  @default(false)
+  created_at DateTime @default(now())
+  user       users    @relation(fields: [user_id], references: [id])
+  orders     orders[]
 }
 
 model role {
@@ -180,23 +178,39 @@ model userpermission {
 // SELLER / SHOP
 ///////////////////////////////////////////////////////
 model shops {
-  id          Int           @id @default(autoincrement())
-  owner_id    Int           @unique
+  id          Int              @id @default(autoincrement())
+  owner_id    Int              @unique
   name        String
-  slug        String        @unique
+  slug        String           @unique
   logo_url    String?
   phone       String?
   email       String?
   cover_url   String?
   description String?
-  is_verified Boolean       @default(false)
-  created_at  DateTime      @default(now())
-  updated_at  DateTime      @default(now())
-  owner       users         @relation(fields: [owner_id], references: [id])
+  is_verified Boolean          @default(false)
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @default(now())
+  owner       users            @relation(fields: [owner_id], references: [id])
   shop_staffs shop_staffs[]
   products    products[]
   orders      orders[]
   posts       posts[]
+  addresses   shop_addresses[]
+}
+
+model shop_addresses {
+  id         Int      @id @default(autoincrement())
+  shop_id    Int
+  name       String
+  phone      String
+  email      String?
+  province   String
+  district   String
+  ward       String
+  street     String
+  is_default Boolean  @default(false)
+  shop       shops    @relation(fields: [shop_id], references: [id])
+  orders     orders[]
 }
 
 model shop_staffs {
@@ -338,12 +352,14 @@ model orders {
   shipping_fee        Decimal         @default(0)
   total_amount        Decimal         @default(0)
   shipping_address_id Int?
+  pickup_address_id   Int?
   note                String?
   created_at          DateTime        @default(now())
   updated_at          DateTime        @default(now())
   user                users           @relation(fields: [user_id], references: [id])
   shop                shops           @relation(fields: [shop_id], references: [id])
   shipping_address    addresses?      @relation(fields: [shipping_address_id], references: [id])
+  pickup_address      shop_addresses? @relation(fields: [pickup_address_id], references: [id])
   order_items         order_items[]
   payments            payments[]
   shipments           shipments[]
