@@ -70,6 +70,12 @@ enum skin_type {
   sensitive
 }
 
+enum message_type {
+  TEXT
+  SHARE_POST
+  SHARE_PRODUCT
+}
+
 ///////////////////////////////////////////////////////
 // USERS & AUTH
 ///////////////////////////////////////////////////////
@@ -662,11 +668,13 @@ model conversation_participants {
 }
 
 model messages {
-  id              Int             @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   conversation_id Int
   sender_id       Int
+  type            message_type  @default(TEXT)
   content         String?
-  created_at      DateTime        @default(now())
+  payload         Json?
+  created_at      DateTime      @default(now())
   conversation    conversations   @relation(fields: [conversation_id], references: [id])
   sender          users           @relation(fields: [sender_id], references: [id])
   message_reads   message_reads[]

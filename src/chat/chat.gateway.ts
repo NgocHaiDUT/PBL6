@@ -11,6 +11,8 @@ import { Server, Socket } from 'socket.io';
 import { Logger, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+import { SendMessageDto } from './dto/send-message.dto';
+
 @Injectable()
 @WebSocketGateway({
   cors: {
@@ -49,28 +51,29 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
-    @MessageBody() data: { senderId: number; receiverId: number; content: string },
+    @MessageBody() data: SendMessageDto,
     @ConnectedSocket() client: Socket,
   ) {
     try {
       this.logger.log(`Message from ${data.senderId} to ${data.receiverId}: ${data.content}`);
 
-      // 1. Find existing conversation between two users
-      const conversations = await this.prisma.conversations.findMany({
+      // 1. Find existing conversation between two users more efficiently
+      let conversation = await this.prisma.conversations.findFirst({
         where: {
-          type: 'private'
+          type: 'private',
+          AND: [
+            { participants: { some: { user_id: data.senderId } } },
+            { participants: { some: { user_id: data.receiverId } } },
+          ],
+          participants: {
+            every: {
+              user_id: { in: [data.senderId, data.receiverId] }
+            }
+          }
         },
         include: {
           participants: true
         }
-      });
-
-      let conversation = conversations.find(conv => {
-        const userIds = conv.participants.map(p => p.user_id).sort();
-        const targetIds = [data.senderId, data.receiverId].sort();
-        return userIds.length === 2 && 
-               userIds[0] === targetIds[0] && 
-               userIds[1] === targetIds[1];
       });
 
       if (!conversation) {
@@ -97,6 +100,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           conversation_id: conversation.id,
           sender_id: data.senderId,
           content: data.content,
+          type: data.type,
+          payload: data.payload,
         },
         include: {
           sender: {
@@ -115,6 +120,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         senderId: message.sender_id,
         receiverId: data.receiverId,
         content: message.content,
+        type: message.type,
+        payload: message.payload,
         createdAt: message.created_at.toISOString(),
         sender: {
           Id: message.sender.id,
@@ -170,10 +177,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
-      // 2. Find conversation between users
-      const conversations = await this.prisma.conversations.findMany({
+      // 2. Find conversation between users more efficiently
+      const conversation = await this.prisma.conversations.findFirst({
         where: {
-          type: 'private'
+          type: 'private',
+          AND: [
+            { participants: { some: { user_id: data.openerId } } },
+            { participants: { some: { user_id: data.targetId } } },
+          ],
+          participants: {
+            every: {
+              user_id: { in: [data.openerId, data.targetId] }
+            }
+          }
         },
         include: {
           participants: true,
@@ -190,14 +206,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             }
           }
         }
-      });
-
-      const conversation = conversations.find(conv => {
-        const userIds = conv.participants.map(p => p.user_id).sort();
-        const targetIds = [data.openerId, data.targetId].sort();
-        return userIds.length === 2 && 
-               userIds[0] === targetIds[0] && 
-               userIds[1] === targetIds[1];
       });
 
       // 3. Format messages
