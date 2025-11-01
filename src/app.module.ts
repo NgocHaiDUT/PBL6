@@ -13,6 +13,7 @@ import { MakeupModule } from './makeup/makeup.module';
 import { HttpModule } from '@nestjs/axios';
 import { ProductModule } from './product/product.module';
 import { DataInitModule } from './data-init/data-init.module';
+import { ShopModule } from './shop/shop.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { DataInitModule } from './data-init/data-init.module';
     MakeupModule,
     ProductModule,
     DataInitModule,
+    ShopModule,
   ],
   controllers: [AppController],
   providers: [AppService],

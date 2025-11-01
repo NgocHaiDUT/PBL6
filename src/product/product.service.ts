@@ -10,7 +10,23 @@ export class ProductService {
         return { success: true,brands: brands };
     }
 
-    async addbrand(name: string, slug : string,logo_url: string){
+    async addbrand(userid:number,name: string, slug : string,logo_url: string){
+        var brandpermission = await this.prisma.permission.findFirst({
+            where : {name : "manage_brands"},
+            select : {id : true}
+        })
+        if(!brandpermission)
+        {
+            return  {message : "Lỗi hệ thống, không tìm thấy quyền manage_brands"}
+        }
+        var hasbrandpermission = await this.prisma.userpermission.findFirst({
+            where : {user_id:userid , permission_id : brandpermission.id},
+            select : {user_id : true}
+        })
+        if(!hasbrandpermission){
+            return {message : "Bạn không có quyền về thương hiệu"}
+        }
+
         var ishasbrandname = await this.prisma.brands.findUnique({
             where : { name : name }
         })
@@ -33,7 +49,23 @@ export class ProductService {
         return { success: true,message: 'Thêm thương hiệu thành công' };
     }
 
-    async editbrandname(id: number,name: string){
+    async editbrandname(userid:number,id: number,name: string){
+        var brandpermission = await this.prisma.permission.findFirst({
+            where : {name : "manage_brands"},
+            select : {id : true}
+        })
+        if(!brandpermission)
+        {
+            return  {message : "Lỗi hệ thống, không tìm thấy quyền manage_brands"}
+        }
+        var hasbrandpermission = await this.prisma.userpermission.findFirst({
+            where : {user_id:userid , permission_id : brandpermission.id},
+            select : {user_id : true}
+        })
+        if(!hasbrandpermission){
+            return {message : "Bạn không có quyền về thương hiệu"}
+        }
+
         var ishasbrand = await this.prisma.brands.findUnique({
             where : { id : id }
         })
@@ -55,7 +87,23 @@ export class ProductService {
         return { success: true,message: 'Cập nhật thương hiệu thành công' };
     }
 
-    async editbrandslug(id: number, slug:string){
+    async editbrandslug(userid:number,id: number, slug:string){
+        var brandpermission = await this.prisma.permission.findFirst({
+            where : {name : "manage_brands"},
+            select : {id : true}
+        })
+        if(!brandpermission)
+        {
+            return  {message : "Lỗi hệ thống, không tìm thấy quyền manage_brands"}
+        }
+        var hasbrandpermission = await this.prisma.userpermission.findFirst({
+            where : {user_id:userid , permission_id : brandpermission.id},
+            select : {user_id : true}
+        })
+        if(!hasbrandpermission){
+            return {message : "Bạn không có quyền về thương hiệu"}
+        }
+
         var ishasbrand = await this.prisma.brands.findUnique({
             where : {id : id}
         })
@@ -73,7 +121,23 @@ export class ProductService {
         return {success: true, message: 'Cập nhật Slug thương hiệu thành công'};
     }
 
-    async editbrandslogo(id:number, logo_url:string){
+    async editbrandslogo(userid:number,id:number, logo_url:string){
+        var brandpermission = await this.prisma.permission.findFirst({
+            where : {name : "manage_brands"},
+            select : {id : true}
+        })
+        if(!brandpermission)
+        {
+            return  {message : "Lỗi hệ thống, không tìm thấy quyền manage_brands"}
+        }
+        var hasbrandpermission = await this.prisma.userpermission.findFirst({
+            where : {user_id:userid , permission_id : brandpermission.id},
+            select : {user_id : true}
+        })
+        if(!hasbrandpermission){
+            return {message : "Bạn không có quyền về thương hiệu"}
+        }
+
         var ishasbrand = await this.prisma.brands.findUnique({
             where : {id : id}
         })
@@ -86,7 +150,23 @@ export class ProductService {
         return {success:true,message : 'Cập nhật logo thương hiệu thành công'};
     }
 
-    async addcategory(name: string, slug : string,parent_id?: number){
+    async addcategory(userid:number,name: string, slug : string,parent_id?: number){
+        var categorypermission = await this.prisma.permission.findFirst({
+            where : {name : "manage_categorys"},
+            select : {id : true}
+        })
+        if(!categorypermission)
+        {
+            return  {message : "Lỗi hệ thống, không tìm thấy quyền manage_categorys"}
+        }
+        var hascategorypermission = await this.prisma.userpermission.findFirst({
+            where : {user_id:userid , permission_id : categorypermission.id},
+            select : {user_id : true}
+        })
+        if(!hascategorypermission){
+            return {message : "Bạn không có quyền về danh mục"}
+        }
+
         var ishascategoryname = await this.prisma.categories.findFirst({
             where : { name : name }
         })
@@ -109,8 +189,24 @@ export class ProductService {
         return { success: true,message: 'Thêm danh mục thành công' };
     }
      
-    async editnamecategory(id : number, name:string)
+    async editnamecategory(userid:number,id : number, name:string)
     {
+        var categorypermission = await this.prisma.permission.findFirst({
+            where : {name : "manage_categorys"},
+            select : {id : true}
+        })
+        if(!categorypermission)
+        {
+            return  {message : "Lỗi hệ thống, không tìm thấy quyền manage_categorys"}
+        }
+        var hascategorypermission = await this.prisma.userpermission.findFirst({
+            where : {user_id:userid , permission_id : categorypermission.id},
+            select : {user_id : true}
+        })
+        if(!hascategorypermission){
+            return {message : "Bạn không có quyền về danh mục"}
+        }
+
         var ishascategory = await this.prisma.categories.findFirst({
             where : {id : id}
         })
@@ -131,7 +227,23 @@ export class ProductService {
 
     }
 
-    async editslugcategory(id : number , slug : string){
+    async editslugcategory(userid:number,id : number , slug : string){
+        var categorypermission = await this.prisma.permission.findFirst({
+            where : {name : "manage_categorys"},
+            select : {id : true}
+        })
+        if(!categorypermission)
+        {
+            return  {message : "Lỗi hệ thống, không tìm thấy quyền manage_categorys"}
+        }
+        var hascategorypermission = await this.prisma.userpermission.findFirst({
+            where : {user_id:userid , permission_id : categorypermission.id},
+            select : {user_id : true}
+        })
+        if(!hascategorypermission){
+            return {message : "Bạn không có quyền về danh mục"}
+        }
+        
         var ishascategory = await this.prisma.categories.findFirst({
             where : {id : id}
         })
@@ -152,6 +264,7 @@ export class ProductService {
     }
 
     async addproducts(
+        user_id: number,
         shop_id: number, 
         name: string, 
         slug: string, 
@@ -163,11 +276,41 @@ export class ProductService {
         category_ids?: number[]
     ) {
         try {
+            // Kiểm tra permission create_product
+            const permission = await this.prisma.userpermission.findFirst({
+                where: {
+                    user_id: user_id,
+                    permission: {
+                        name: 'create_product'
+                    }
+                },
+                include: {
+                    permission: true
+                }
+            });
+
+            if (!permission) {
+                return { success: false, message: 'Bạn không có quyền tạo sản phẩm' };
+            }
+
             const shop = await this.prisma.shops.findUnique({
                 where: { id: shop_id }
             });
             if (!shop) {
                 return { success: false, message: 'Shop không tồn tại' };
+            }
+
+            // Kiểm tra user có quyền tạo sản phẩm cho shop này không
+            const isOwner = shop.owner_id === user_id;
+            const isStaff = await this.prisma.shop_staffs.findFirst({
+                where: {
+                    shop_id: shop_id,
+                    user_id: user_id
+                }
+            });
+
+            if (!isOwner && !isStaff) {
+                return { success: false, message: 'Bạn không có quyền tạo sản phẩm cho shop này' };
             }
 
             const existingProduct = await this.prisma.products.findUnique({
@@ -202,7 +345,7 @@ export class ProductService {
                         brand_id: brand_id,
                         name: name,
                         slug: slug,
-                        description: description,   
+                        description: description,
                         how_to_use: how_to_use,
                         skin_type_compat: skin_type_compat,
                         is_published: is_published,
@@ -334,6 +477,185 @@ export class ProductService {
                 success: false, 
                 message: 'Lỗi khi thêm media',
                 error: error.message 
+            };
+        }
+    }
+
+    async getShopProducts(
+        shop_id: number,
+        page: number = 1,
+        limit: number = 20,
+        filters?: {
+            search?: string;
+            category_id?: number;
+            brand_id?: number;
+            is_published?: boolean;
+            skin_type?: skin_type;
+            min_price?: number;
+            max_price?: number;
+        },
+        sort?: {
+            field: 'created_at' | 'updated_at' | 'name' | 'avg_rating' | 'review_count';
+            order: 'asc' | 'desc';
+        }
+    ) {
+        try {
+            // Validate shop exists
+            const shop = await this.prisma.shops.findUnique({
+                where: { id: shop_id }
+            });
+            if (!shop) {
+                return { success: false, message: 'Shop không tồn tại' };
+            }
+
+            // Build where clause
+            const whereClause: any = {
+                shop_id: shop_id,
+            };
+
+            // Apply filters
+            if (filters) {
+                if (filters.search) {
+                    whereClause.OR = [
+                        { name: { contains: filters.search, mode: 'insensitive' } },
+                        { description: { contains: filters.search, mode: 'insensitive' } }
+                    ];
+                }
+
+                if (filters.brand_id) {
+                    whereClause.brand_id = filters.brand_id;
+                }
+
+                if (filters.is_published !== undefined) {
+                    whereClause.is_published = filters.is_published;
+                }
+
+                if (filters.skin_type) {
+                    whereClause.skin_type_compat = filters.skin_type;
+                }
+
+                if (filters.category_id) {
+                    whereClause.product_categories = {
+                        some: {
+                            category_id: filters.category_id
+                        }
+                    };
+                }
+            }
+
+            // Build orderBy
+            const orderBy: any = sort 
+                ? { [sort.field]: sort.order }
+                : { created_at: 'desc' }; // Default sort
+
+            // Calculate pagination
+            const skip = (page - 1) * limit;
+
+            // Get total count for pagination metadata
+            const totalProducts = await this.prisma.products.count({
+                where: whereClause
+            });
+
+            // Fetch products with relations
+            const products = await this.prisma.products.findMany({
+                where: whereClause,
+                include: {
+                    brand: {
+                        select: {
+                            id: true,
+                            name: true,
+                            slug: true,
+                            logo_url: true
+                        }
+                    },
+                    product_categories: {
+                        include: {
+                            category: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    slug: true
+                                }
+                            }
+                        }
+                    },
+                    product_media: {
+                        orderBy: {
+                            sort_order: 'asc'
+                        },
+                        take: 5 // Limit media per product
+                    },
+                    product_variants: {
+                        where: {
+                            is_active: true
+                        },
+                        orderBy: {
+                            price: 'asc'
+                        },
+                        select: {
+                            id: true,
+                            sku: true,
+                            name: true,
+                            price: true,
+                            compare_at_price: true,
+                            stock: true,
+                            shade_hex: true,
+                            size_label: true
+                        }
+                    }
+                },
+                orderBy: orderBy,
+                skip: skip,
+                take: limit
+            });
+
+            // Apply price filter if needed (filter on variants)
+            let filteredProducts = products;
+            if (filters?.min_price !== undefined || filters?.max_price !== undefined) {
+                filteredProducts = products.filter(product => {
+                    const variants = product.product_variants;
+                    if (variants.length === 0) return false;
+                    
+                    const prices = variants.map(v => Number(v.price));
+                    const minProductPrice = Math.min(...prices);
+                    const maxProductPrice = Math.max(...prices);
+
+                    if (filters.min_price !== undefined && maxProductPrice < filters.min_price) {
+                        return false;
+                    }
+                    if (filters.max_price !== undefined && minProductPrice > filters.max_price) {
+                        return false;
+                    }
+                    return true;
+                });
+            }
+
+            // Calculate pagination metadata
+            const totalPages = Math.ceil(totalProducts / limit);
+            const hasNextPage = page < totalPages;
+            const hasPrevPage = page > 1;
+
+            return {
+                success: true,
+                data: {
+                    products: filteredProducts,
+                    pagination: {
+                        total: totalProducts,
+                        page: page,
+                        limit: limit,
+                        totalPages: totalPages,
+                        hasNextPage: hasNextPage,
+                        hasPrevPage: hasPrevPage
+                    }
+                }
+            };
+
+        } catch (error) {
+            console.error('Error fetching shop products:', error);
+            return {
+                success: false,
+                message: 'Lỗi khi lấy danh sách sản phẩm',
+                error: error.message
             };
         }
     }
