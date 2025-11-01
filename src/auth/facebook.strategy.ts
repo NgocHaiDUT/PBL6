@@ -47,19 +47,44 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
     // 2) Link or create user
     let user = await this.prisma.users.findUnique({ where: { email } });
     if (!user) {
+      // Get default role and its permissions
+      const defaultRole = await this.prisma.role.findUnique({
+        where: { name: 'user' },
+        include: {
+          rolePermissions: {
+            select: {
+              permission_id: true
+            }
+          }
+        }
+      });
+
       user = await this.prisma.users.create({
         data: {
           email,
           full_name: fullName ?? undefined,
           avatar_url: avatarUrl ?? undefined,
+          role_id: defaultRole?.id,
         },
       });
+
+      // Assign default permissions to new user
+      if (defaultRole?.rolePermissions && defaultRole.rolePermissions.length > 0) {
+        const userPermissionsData = defaultRole.rolePermissions.map(rp => ({
+          user_id: user!.id,
+          permission_id: rp.permission_id
+        }));
+
+        await this.prisma.userpermission.createMany({
+          data: userPermissionsData
+        });
+      }
     }
 
     // 3) Create identity
     identity = await this.prisma.auth_identities.create({
       data: {
-        user_id: user.id,
+        user_id: user!.id,
         provider,
         provider_user_id: providerUserId,
         access_token: accessToken,

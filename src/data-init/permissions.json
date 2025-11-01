@@ -15,6 +15,8 @@
   { "name": "view_shop_dashboard" },
   { "name": "manage_shop_staff" },
   { "name": "edit_profile_shop"},
+  { "name": "chat_with_customer"},
+  { "name": "try_on_tester"},
 
   { "name": "view_shop_orders" },
   { "name": "update_order_status" },
@@ -27,5 +29,7 @@
   { "name": "moderate_posts" },
   { "name": "moderate_products" },
   { "name": "view_system_logs" },
-  { "name": "manage_coupons" }
+  { "name": "manage_coupons" },
+  { "name": "manage_brands" },
+  { "name": "manage_categorys" }
 ]

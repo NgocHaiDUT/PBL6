@@ -19,10 +19,6 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Note: Static file serving removed since we're using AWS S3 for file storage
-  // If you need to serve local files during development, uncomment below:
-  // app.useStaticAssets(join(__dirname, '..', 'uploads'), { prefix: '/uploads/' });
-
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

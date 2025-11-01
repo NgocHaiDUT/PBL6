@@ -4,6 +4,7 @@ import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express
 import { UseInterceptors } from '@nestjs/common';
 // Import S3 config instead of local file config
 import { s3AvatarConfig, s3LogoShopConfig, s3BannerShopConfig, s3CreateShopConfig } from './config/s3-multer.config';
+import { createShopMulterConfig } from './config/avatar-multer.config';
 @Controller('profile')
 export class ProfileController {
     constructor(private readonly profileService: ProfileService) {}
@@ -46,7 +47,7 @@ export class ProfileController {
         FileFieldsInterceptor([
             { name: 'logo', maxCount: 1 },
             { name: 'banner', maxCount: 1 }
-        ], s3CreateShopConfig)
+        ], createShopMulterConfig)
     )
     async createshop(
         @Body() body: { 
@@ -96,7 +97,7 @@ export class ProfileController {
     @Post('update-logo-shop')
     @UseInterceptors(FileInterceptor('file', s3LogoShopConfig))
     async updatelogoshop(
-        @Body() body: { shopid: string},
+        @Body() body: { shopid: string,userid: string},
         @UploadedFile() file: any,
     ) {
         if (!body?.shopid) {
@@ -107,13 +108,13 @@ export class ProfileController {
         }
         // S3 trả về full URL trong file.location
         const logourl = file.location;
-        return this.profileService.updatelogoshop(Number(body.shopid), logourl);
+        return this.profileService.updatelogoshop(Number(body.userid),Number(body.shopid), logourl);
     }
 
     @Post('update-banner-shop')
     @UseInterceptors(FileInterceptor('file', s3BannerShopConfig))
     async updatebannershop(
-        @Body() body: { shopid: string},
+        @Body() body: { shopid: string,userid : string},
         @UploadedFile() file: any,
     ) {
         if (!body?.shopid) {
@@ -124,24 +125,28 @@ export class ProfileController {
         }
         // S3 trả về full URL trong file.location
         const bannerurl = file.location;
-        return this.profileService.updatebannershop(Number(body.shopid), bannerurl);
+        return this.profileService.updatebannershop(Number(body.userid), Number(body.shopid), bannerurl);
     }
 
     @Post('update-phone-shop')
-    async updateshopphone(@Body() body: { shopid: string, phone: string}) {
-        return this.profileService.updatephoneshop(Number(body.shopid), body.phone);
+    async updateshopphone(@Body() body: { shopid: string, phone: string,userid: string}) {
+        return this.profileService.updatephoneshop(Number(body.userid),Number(body.shopid), body.phone);
     }
 
     @Post('update-email-shop')
-    async updateshopemail(@Body() body: { shopid: string, email: string}) {
-        return this.profileService.updateemailshop(Number(body.shopid), body.email);
+    async updateshopemail(@Body() body: { shopid: string, email: string,userid: string}) {
+        return this.profileService.updateemailshop(Number(body.userid),Number(body.shopid), body.email);
     }
 
     @Post('update-description-shop')
-    async updateshopdescription(@Body() body: { shopid: string, description: string}) {
-        return this.profileService.updatedescriptionshop(Number(body.shopid), body.description);
+    async updateshopdescription(@Body() body: { shopid: string, description: string,userid: string}) {
+        return this.profileService.updatedescriptionshop(Number(body.userid),Number(body.shopid), body.description);
     }
 
-    
+    @Post('permission')
+    async getpermission(@Body() body: {userid : string}){
+        return this.profileService.getPermissionbyuserid(Number(body.userid));
+    }
+        
 
 }

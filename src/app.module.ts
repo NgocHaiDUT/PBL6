@@ -19,6 +19,8 @@ import { ChatModule } from './chat/chat.module';
 import { HttpModule } from '@nestjs/axios';
 import { ProductModule } from './product/product.module';
 import { DataInitModule } from './data-init/data-init.module';
+import { ShopModule } from './shop/shop.module';
+
 import { OrderModule } from './order/order.module';
 import { AddressModule } from './address/address.module';
 import { ShopAddressModule } from './shop-address/shop-address.module';
@@ -74,6 +76,10 @@ import { ShopAddressModule } from './shop-address/shop-address.module';
       timeout: 30000,
       maxContentLength: 50 * 1024 * 1024, // 50MB
     }),
+    MakeupModule,
+    ProductModule,
+    DataInitModule,
+    ShopModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
