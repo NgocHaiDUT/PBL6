@@ -32,7 +32,8 @@ export class AuthService {
                 phone  : phone,
                 password_hash : password,
                 avatar_url : "",
-                role_id : roleuserid.id
+                role_id : roleuserid.id,
+                firstlogin : true
                 },
         });
 
@@ -59,7 +60,15 @@ export class AuthService {
             return { success: false, message: 'Mật khẩu không đúng' };
         }
         else {
-            return { success: true, message: 'Đăng nhập thành công', user  };
+            // Kiểm tra nếu là lần đăng nhập đầu tiên
+            const requiresPasswordChange = user.firstlogin === true;
+            
+            return { 
+                success: true, 
+                message: requiresPasswordChange ? 'Vui lòng đổi mật khẩu để tiếp tục' : 'Đăng nhập thành công', 
+                user,
+                requiresPasswordChange
+            };
         }
     }
 
@@ -97,8 +106,54 @@ export class AuthService {
         return { success: true, message: 'Đổi mật khẩu thành công' };
     }
 
-    
+    async getUserById(id: number) {
+        return await this.PrismaService.users.findUnique({ where: { id } });
+    }
 
+    async changePasswordFirstTime(userId: number, newPassword: string) {
+        const user = await this.PrismaService.users.findUnique({ where: { id: userId } });
+        if (!user) {
+            return { success: false, message: 'Người dùng không tồn tại' };
+        }
+        
+        if (!user.firstlogin) {
+            return { success: false, message: 'Bạn đã đổi mật khẩu rồi' };
+        }
 
+        // Validation mật khẩu mới
+        if (newPassword.length < 6) {
+            return { success: false, message: 'Mật khẩu phải có ít nhất 6 ký tự' };
+        }
+
+        // Kiểm tra mật khẩu mới có khác mật khẩu cũ không
+        if (user.password_hash && await bcrypt.compare(newPassword, user.password_hash)) {
+            return { success: false, message: 'Mật khẩu mới phải khác mật khẩu cũ' };
+        }
+
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+        
+        await this.PrismaService.users.update({
+            where: { id: userId },
+            data: { 
+                password_hash: hashedNewPassword,
+                firstlogin: false,
+                updated_at: new Date()
+            },
+        });
+
+        // Ghi audit log
+        await this.PrismaService.audit_logs.create({
+            data: {
+                actor_id: userId,
+                action: 'FIRST_TIME_PASSWORD_CHANGE',
+                entity_type: 'users',
+                entity_id: userId,
+                details: 'User changed password for the first time',
+                created_at: new Date()
+            }
+        });
+
+        return { success: true, message: 'Đổi mật khẩu thành công' };
+    }
 
 }

@@ -1,4 +1,4 @@
-import {  Controller, Get, Req, UseGuards,Post,Body, BadRequestException, Res  } from '@nestjs/common';
+import {  Controller, Get, Req, UseGuards,Post,Body, BadRequestException, Res, Headers } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { MailerService } from '@nestjs-modules/mailer';
@@ -75,6 +75,14 @@ export class AuthController {
         throw new BadRequestException('email, currentPassword, and newPassword are required');
     }
     return this.authService.changepassword(body.userid, body.currentPassword, body.newPassword);
+    }
+
+    @Post('change-password-first-time')
+    async changePasswordFirstTime(@Body() body: { userId?: number; newPassword?: string }) {
+        if (!body || !body.userId || !body.newPassword) {
+            throw new BadRequestException('userId and newPassword are required');
+        }
+        return this.authService.changePasswordFirstTime(body.userId, body.newPassword);
     }
 
 

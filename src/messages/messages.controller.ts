@@ -37,11 +37,11 @@ export class MessagesController {
   @Get('conversations')
   // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
   getUserConversations(
-    @Query() queryDto: QueryConversationsDto,
+    @Query() queryDto: QueryConversationsDto & { userId?: string },
     @Req() req: any,
   ) {
     // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
+    const userId = parseInt(queryDto.userId || '1') || 1; // Convert to number or fallback to 1
     return this.messagesService.getUserConversations(userId, queryDto);
   }
 
@@ -62,10 +62,11 @@ export class MessagesController {
   // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
   findOrCreateConversation(
     @Param('otherUserId', ParseIntPipe) otherUserId: number,
+    @Body() body: { userId?: number },
     @Req() req: any,
   ) {
     // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
+    const userId = parseInt(String(body.userId || 1)) || 1; // Convert to number or fallback to 1
     return this.messagesService.findOrCreateConversation(userId, otherUserId);
   }
 
@@ -73,11 +74,11 @@ export class MessagesController {
   @Post()
   // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
   sendMessage(
-    @Body() createMessageDto: CreateMessageDto,
+    @Body() createMessageDto: CreateMessageDto & { userId?: number },
     @Req() req: any,
   ) {
     // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
+    const userId = parseInt(String(createMessageDto.userId || 1)) || 1; // Convert to number or fallback to 1
     return this.messagesService.sendMessage(userId, createMessageDto);
   }
 
@@ -111,10 +112,11 @@ export class MessagesController {
   // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
   markAllMessagesAsRead(
     @Param('conversationId', ParseIntPipe) conversationId: number,
+    @Body() body: { userId?: number },
     @Req() req: any,
   ) {
     // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
+    const userId = parseInt(String(body.userId || 1)) || 1; // Convert to number or fallback to 1
     return this.messagesService.markAllMessagesAsRead(conversationId, userId);
   }
 

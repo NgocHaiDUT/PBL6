@@ -42,38 +42,6 @@ export class ProfileController {
         return this.profileService.updateavatar(Number(body.userId), avatarUrl);
     }
 
-    @Post('add-address')
-    async addAddress(@Body() body: { userid: string,label : string, receiver_name : string, phone : string, line1 : string, line2 : string, city : string,state : string,postal_code : string,country: string, is_default : boolean}) {
-        if (!body?.userid) {
-            throw new BadRequestException('userid is required');
-        }
-        return this.profileService.addaddress(Number(body.userid),body.label, body.receiver_name, body.phone, body.line1, body.line2, body.city, body.state, body.postal_code, body.country, body.is_default);
-    }
-
-    @Post('update-address')
-    async updateAddress(@Body() body: { addressid: string,label : string, receiver_name : string, phone : string, line1 : string, line2 : string, city : string,state : string,postal_code : string,country: string, is_default : boolean}) {
-        if (!body?.addressid) {
-            throw new BadRequestException('addressid is required');
-        }
-        return this.profileService.updateaddress(Number(body.addressid),body.label, body.receiver_name, body.phone, body.line1, body.line2, body.city, body.state, body.postal_code, body.country, body.is_default);
-    }
-
-    @Get('all-address')
-    async getAllAddress(@Query('userid') userid: string) {
-        if (!userid) {
-            throw new BadRequestException('userid is required');
-        }
-        return this.profileService.getaddresses(Number(userid));
-    }
-
-    @Post('delete-address')
-    async deleteAddress(@Body() body: { addressid: string}) {
-        if (!body?.addressid) {
-            throw new BadRequestException('addressid is required');
-        }
-        return this.profileService.deleteaddress(Number(body.addressid));
-    }
-
     @Post('create-shop')
     @UseInterceptors(
         FileFieldsInterceptor([

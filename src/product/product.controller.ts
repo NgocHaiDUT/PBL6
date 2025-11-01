@@ -1,6 +1,6 @@
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
-import { Controller,Body,Post , Get, UploadedFile ,Query, UseInterceptors, BadRequestException, Param, ParseIntPipe} from '@nestjs/common';
+import { Controller,Body,Post , Get, UploadedFile ,Query, UseInterceptors, BadRequestException, Param, ParseIntPipe, Put,Delete} from '@nestjs/common';
 // Import S3 config instead of local file config
 import { s3BrandConfig } from './config/s3-product.config';
 @Controller('product')
@@ -10,7 +10,15 @@ export class ProductController {
     @Get('all-brands')
     async getallbrands()
     {
+        console.log('Controller - getallbrands called');
         return this.productservice.getallbrand();
+    }
+
+    @Get('all-categories')
+    async getallcategories()
+    {
+        console.log('Controller - getallcategories called');
+        return this.productservice.getallcategories();
     }
 
     @Post('add-brand')
@@ -205,5 +213,66 @@ export class ProductController {
             Object.keys(filters).length > 0 ? filters : undefined,
             sort
         );
+    }
+
+    // Customer Product APIs
+    @Get('products')
+    async getAllProducts(@Query() query: any) {
+        return this.productservice.getAllProducts(query);
+    }
+
+    @Get('products/search')
+    async searchProducts(@Query() query: any) {
+        return this.productservice.searchProducts(query);
+    }
+
+    @Get('products/filter')
+    async filterProducts(@Query() query: any) {
+        return this.productservice.filterProducts(query);
+    }
+
+    @Get('products/:id')
+    async getProductById(@Param('id') id: string) {
+        return this.productservice.getProductById(Number(id));
+    }
+
+    // Wishlist APIs
+    @Post('wishlist/add')
+    async addToWishlist(@Body() body: { productId: number, userId?: number }) {
+        const userId = body.userId || 1; // Mock user ID
+        return this.productservice.addToWishlist(body.productId, userId);
+    }
+
+    @Delete('wishlist/remove/:productId')
+    async removeFromWishlist(@Param('productId') productId: string, @Body() body: { userId?: number }) {
+        const userId = body.userId || 1; // Mock user ID
+        return this.productservice.removeFromWishlist(Number(productId), userId);
+    }
+
+    @Get('wishlist')
+    async getWishlist(@Query('userId') userId?: string) {
+        const userIdNum = userId ? Number(userId) : 1; // Mock user ID
+        return this.productservice.getWishlist(userIdNum);
+    }
+
+    // Cart APIs
+    @Post('cart/add')
+    async addToCart(@Body() body: { productId: number, variantId?: number, quantity: number, userId?: number }) {
+        return this.productservice.addToCart(body.productId, body.variantId, body.quantity, body.userId);
+    }
+
+    @Get('cart')
+    async getCart(@Query('userId') userId?: string) {
+        return this.productservice.getCart(userId ? Number(userId) : undefined);
+    }
+
+    @Put('cart/items/:itemId')
+    async updateCartItem(@Param('itemId') itemId: string, @Body() body: { quantity: number }) {
+        return this.productservice.updateCartItem(Number(itemId), body.quantity);
+    }
+
+    @Delete('cart/items/:itemId')
+    async removeFromCart(@Param('itemId') itemId: string) {
+        return this.productservice.removeFromCart(Number(itemId));
     }
 }
