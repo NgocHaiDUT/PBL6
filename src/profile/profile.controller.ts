@@ -1,9 +1,10 @@
-import { Controller ,Post,Body,Get,UploadedFile, UploadedFiles, BadRequestException, Query} from '@nestjs/common';
+import { Controller, Post, Body, Get, UploadedFile, BadRequestException, Query, UseGuards, Req } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { ProfileService } from './profile.service';
-import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UseInterceptors } from '@nestjs/common';
-// Import S3 config instead of local file config
-import { s3AvatarConfig, s3LogoShopConfig, s3BannerShopConfig, s3CreateShopConfig } from './config/s3-multer.config';
+import { getMulterOptions } from '../config/storage.config';
+
 @Controller('profile')
 export class ProfileController {
     constructor(private readonly profileService: ProfileService) {}
@@ -25,7 +26,7 @@ export class ProfileController {
     }
 
     @Post('update-avatar')
-    @UseInterceptors(FileInterceptor('file', s3AvatarConfig))
+    @UseInterceptors(FileInterceptor('file', getMulterOptions('avatars')))
     async updateAvatar(
         @Body() body: { userId: string},
         @UploadedFile() file: any,
@@ -36,8 +37,7 @@ export class ProfileController {
         if (!file) {
             throw new BadRequestException('file is required');
         }
-        // S3 trả về full URL trong file.location
-        const avatarUrl = file.location;
+        const avatarUrl = file.location || `/uploads/avatars/${file.filename}`;
         return this.profileService.updateavatar(Number(body.userId), avatarUrl);
     }
 
@@ -46,7 +46,10 @@ export class ProfileController {
         FileFieldsInterceptor([
             { name: 'logo', maxCount: 1 },
             { name: 'banner', maxCount: 1 }
-        ], s3CreateShopConfig)
+        ], {
+            storage: getMulterOptions('shops').storage,
+            fileFilter: getMulterOptions('shops').fileFilter,
+        })
     )
     async createshop(
         @Body() body: { 
@@ -67,13 +70,11 @@ export class ProfileController {
         let bannerUrl = '';
 
         if (files?.logo?.[0]) {
-            // S3 trả về full URL trong file.location
-            logoUrl = (files.logo[0] as any).location;
+            logoUrl = (files.logo[0] as any).location || `/uploads/shops/${(files.logo[0] as any).filename}`;
         }
 
         if (files?.banner?.[0]) {
-            // S3 trả về full URL trong file.location
-            bannerUrl = (files.banner[0] as any).location;
+            bannerUrl = (files.banner[0] as any).location || `/uploads/shops/${(files.banner[0] as any).filename}`;
         }
 
         return this.profileService.createshop(
@@ -94,7 +95,7 @@ export class ProfileController {
     }
 
     @Post('update-logo-shop')
-    @UseInterceptors(FileInterceptor('file', s3LogoShopConfig))
+    @UseInterceptors(FileInterceptor('file', getMulterOptions('shops')))
     async updatelogoshop(
         @Body() body: { shopid: string},
         @UploadedFile() file: any,
@@ -105,13 +106,12 @@ export class ProfileController {
         if (!file) {
             throw new BadRequestException('file is required');
         }
-        // S3 trả về full URL trong file.location
-        const logourl = file.location;
+        const logourl = file.location || `/uploads/shops/${file.filename}`;
         return this.profileService.updatelogoshop(Number(body.shopid), logourl);
     }
 
     @Post('update-banner-shop')
-    @UseInterceptors(FileInterceptor('file', s3BannerShopConfig))
+    @UseInterceptors(FileInterceptor('file', getMulterOptions('shops')))
     async updatebannershop(
         @Body() body: { shopid: string},
         @UploadedFile() file: any,
@@ -122,10 +122,10 @@ export class ProfileController {
         if (!file) {
             throw new BadRequestException('file is required');
         }
-        // S3 trả về full URL trong file.location
-        const bannerurl = file.location;
+        const bannerurl = file.location || `/uploads/shops/${file.filename}`;
         return this.profileService.updatebannershop(Number(body.shopid), bannerurl);
     }
+}
 
     @Post('update-phone-shop')
     async updateshopphone(@Body() body: { shopid: string, phone: string}) {

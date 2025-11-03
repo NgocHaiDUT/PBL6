@@ -20,14 +20,7 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 
 import { QueryPostsDto } from './dto/query-posts.dto';
-import { 
-  coverImageStorage, 
-  videoStorage, 
-  mediaStorage,
-  imageFileFilter,
-  videoFileFilter,
-  mediaFileFilter 
-} from './config/multer.config';
+import { getMulterOptions } from '../config/storage.config';
 
 @Controller('posts')
 export class PostsController {
@@ -71,21 +64,13 @@ export class PostsController {
     return this.postsService.deletePost(id, userId);
   }
 
-
-
-
-
   // Upload cover image for post
   @Post(':id/upload-cover')
-  @UseInterceptors(FileInterceptor('cover', {
-    storage: coverImageStorage,
-    fileFilter: imageFileFilter,
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-  }))
+  @UseInterceptors(FileInterceptor('cover', getMulterOptions('postimages')))
   // @UseGuards(JwtAuthGuard)
   uploadCoverImage(
     @Param('id', ParseIntPipe) id: number,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
     @Req() req: any,
   ) {
     // const userId = req.user.id;
@@ -95,15 +80,11 @@ export class PostsController {
 
   // Upload video for post
   @Post(':id/upload-video')
-  @UseInterceptors(FileInterceptor('video', {
-    storage: videoStorage,
-    fileFilter: videoFileFilter,
-    limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit for videos
-  }))
+  @UseInterceptors(FileInterceptor('video', getMulterOptions('videos')))
   // @UseGuards(JwtAuthGuard)
   uploadVideo(
     @Param('id', ParseIntPipe) id: number,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
     @Req() req: any,
   ) {
     // const userId = req.user.id;
@@ -113,15 +94,11 @@ export class PostsController {
 
   // Upload additional media (images/videos) for post
   @Post(':id/upload-media')
-  @UseInterceptors(FilesInterceptor('media', 10, {
-    storage: mediaStorage,
-    fileFilter: mediaFileFilter,
-    limits: { fileSize: 50 * 1024 * 1024 } // 50MB per file
-  }))
+  @UseInterceptors(FilesInterceptor('media', 10, getMulterOptions('postimages')))
   // @UseGuards(JwtAuthGuard)
   uploadAdditionalMedia(
     @Param('id', ParseIntPipe) id: number,
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles() files: any[],
     @Req() req: any,
   ) {
     // const userId = req.user.id;
