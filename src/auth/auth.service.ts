@@ -16,7 +16,14 @@ export class AuthService {
             return {success:false, message: 'Email đã được sử dụng' };
         }
         const roleuserid = await this.PrismaService.role.findUnique ({
-            where : {name : "user"}
+            where : {name : "user"},
+            include: {
+                rolePermissions: {
+                    select: {
+                        permission_id: true
+                    }
+                }
+            }
         });
 
         if (!roleuserid) {
@@ -34,9 +41,21 @@ export class AuthService {
                 firstlogin : true
                 },
         });
+
+        if (roleuserid.rolePermissions && roleuserid.rolePermissions.length > 0) {
+            const userPermissionsData = roleuserid.rolePermissions.map(rp => ({
+                user_id: newUser.id,
+                permission_id: rp.permission_id
+            }));
+
+            await this.PrismaService.userpermission.createMany({
+                data: userPermissionsData
+            });
+        }
+
         return {success:true, message: 'Đăng ký thành công,mật khẩu được gửi về email của bạn' };
     }
-
+     async login(email: string,password : string){
         const user = await this.PrismaService.users.findUnique({
             where: { email },
             include: {

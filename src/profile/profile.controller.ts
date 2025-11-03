@@ -1,4 +1,6 @@
-import { Controller, Post, Body, Get, UploadedFile, BadRequestException, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Body, Get, UploadedFile, BadRequestException, Query, UseGuards, Req, UploadedFiles } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+
 import { AuthGuard } from '@nestjs/passport';
 import { ProfileService } from './profile.service';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -97,7 +99,7 @@ export class ProfileController {
     @Post('update-logo-shop')
     @UseInterceptors(FileInterceptor('file', getMulterOptions('shops')))
     async updatelogoshop(
-        @Body() body: { shopid: string},
+        @Body() body: { shopid: string,userid: string},
         @UploadedFile() file: any,
     ) {
         if (!body?.shopid) {
@@ -107,13 +109,13 @@ export class ProfileController {
             throw new BadRequestException('file is required');
         }
         const logourl = file.location || `/uploads/shops/${file.filename}`;
-        return this.profileService.updatelogoshop(Number(body.shopid), logourl);
+        return this.profileService.updatelogoshop(Number(body.userid), Number(body.shopid), logourl);
     }
 
     @Post('update-banner-shop')
     @UseInterceptors(FileInterceptor('file', getMulterOptions('shops')))
     async updatebannershop(
-        @Body() body: { shopid: string},
+        @Body() body: { shopid: string,userid : string},
         @UploadedFile() file: any,
     ) {
         if (!body?.shopid) {
@@ -123,25 +125,28 @@ export class ProfileController {
             throw new BadRequestException('file is required');
         }
         const bannerurl = file.location || `/uploads/shops/${file.filename}`;
-        return this.profileService.updatebannershop(Number(body.shopid), bannerurl);
+        return this.profileService.updatebannershop(Number(body.userid),Number(body.shopid), bannerurl);
     }
-}
 
     @Post('update-phone-shop')
-    async updateshopphone(@Body() body: { shopid: string, phone: string}) {
-        return this.profileService.updatephoneshop(Number(body.shopid), body.phone);
+    async updateshopphone(@Body() body: { shopid: string, phone: string,userid: string}) {
+        return this.profileService.updatephoneshop(Number(body.userid),Number(body.shopid), body.phone);
     }
 
     @Post('update-email-shop')
-    async updateshopemail(@Body() body: { shopid: string, email: string}) {
-        return this.profileService.updateemailshop(Number(body.shopid), body.email);
+    async updateshopemail(@Body() body: { shopid: string, email: string,userid: string}) {
+        return this.profileService.updateemailshop(Number(body.userid),Number(body.shopid), body.email);
     }
 
     @Post('update-description-shop')
-    async updateshopdescription(@Body() body: { shopid: string, description: string}) {
-        return this.profileService.updatedescriptionshop(Number(body.shopid), body.description);
+    async updateshopdescription(@Body() body: { shopid: string, description: string,userid: string}) {
+        return this.profileService.updatedescriptionshop(Number(body.userid),Number(body.shopid), body.description);
     }
 
-    
+    @Post('permission')
+    async getpermission(@Body() body: {userid : string}){
+        return this.profileService.getPermissionbyuserid(Number(body.userid));
+    }
+        
 
 }
