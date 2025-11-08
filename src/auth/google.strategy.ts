@@ -10,10 +10,21 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     super({
       clientID: process.env.GOOGLE_CLIENT_WEB_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_WEB_SECRET!,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/auth/google/callback',
+      callbackURL:
+        process.env.GOOGLE_CALLBACK_URL ||
+        'http://localhost:3000/auth/google/callback',
       scope: ['email', 'profile'],
       passReqToCallback: false,
     });
+  }
+
+  // 👇 Thêm hàm này để chèn prompt=select_account
+  authorizationParams(): Record<string, string> {
+    return {
+      prompt: 'select_account',
+      access_type: 'offline', // tùy chọn: để có refresh token
+      include_granted_scopes: 'true', // tùy chọn: reuse permission
+    };
   }
 
   async validate(accessToken: string, refreshToken: string, profile: any) {
@@ -24,7 +35,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     const fullName = (profile.displayName as string) ?? null;
     const avatarUrl = (profile.photos?.[0]?.value as string) ?? null;
 
-    // 1) Check existing identity by provider/id
     let identity = await this.prisma.auth_identities.findUnique({
       where: {
         provider_provider_user_id: {
@@ -36,7 +46,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     });
 
     if (identity) {
-      // Update tokens opportunistically
       await this.prisma.auth_identities.update({
         where: { id: identity.id },
         data: { access_token: accessToken, refresh_token: refreshToken },
@@ -44,22 +53,17 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       return identity.user;
     }
 
-    // 2) If not found, try to link to existing user by email
     let user = await this.prisma.users.findUnique({ where: { email } });
     if (!user) {
-      // Get default role and its permissions
       const defaultRole = await this.prisma.role.findUnique({
         where: { name: 'user' },
         include: {
           rolePermissions: {
-            select: {
-              permission_id: true
-            }
-          }
-        }
+            select: { permission_id: true },
+          },
+        },
       });
 
-      // Create user if not exists
       user = await this.prisma.users.create({
         data: {
           email,
@@ -69,20 +73,16 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         },
       });
 
-      // Assign default permissions to new user
-      if (defaultRole?.rolePermissions && defaultRole.rolePermissions.length > 0) {
-        const userPermissionsData = defaultRole.rolePermissions.map(rp => ({
-          user_id: user!.id,
-          permission_id: rp.permission_id
-        }));
-
+      if (defaultRole?.rolePermissions?.length) {
         await this.prisma.userpermission.createMany({
-          data: userPermissionsData
+          data: defaultRole.rolePermissions.map((rp) => ({
+            user_id: user!.id,
+            permission_id: rp.permission_id,
+          })),
         });
       }
     }
 
-    // 3) Create identity for this provider
     identity = await this.prisma.auth_identities.create({
       data: {
         user_id: user!.id,

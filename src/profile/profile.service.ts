@@ -259,5 +259,9 @@ export class ProfileService {
         return { message: 'Cập nhật mô tả cửa hàng thành công' };
     }
 
-    
+    async getProfile(userId: number) {
+        return this.prisma.users.findUnique({
+            where: { id: userId },
+        });
+    }
 }

@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
+
 @Injectable()
 export class AuthService {
-    constructor(private readonly PrismaService: PrismaService) {}
+    constructor(
+        private readonly PrismaService: PrismaService,
+        private jwtService: JwtService
+    ) {}
     async register(email: string, full_name: string,phone: string,password : string) {
         
         const existingUser = await this.PrismaService.users.findUnique({ where: { email } });
@@ -50,9 +55,17 @@ export class AuthService {
 
         return {success:true, message: 'Đăng ký thành công,mật khẩu được gửi về email của bạn' };
     }
-
-    async login(email: string, password: string) {
-        const user = await this.PrismaService.users.findUnique({ where: { email } });
+     async login(email: string,password : string){
+        const user = await this.PrismaService.users.findUnique({
+            where: { email },
+            include: {
+                role: {
+                    select: {
+                        name: true,
+                    },
+                },
+            },
+        });
         if (!user) {
             return { success: false, message: 'Email không tồn tại' };
         }
@@ -60,14 +73,16 @@ export class AuthService {
             return { success: false, message: 'Mật khẩu không đúng' };
         }
         else {
-            // Kiểm tra nếu là lần đăng nhập đầu tiên
             const requiresPasswordChange = user.firstlogin === true;
-            
+            const payload = { sub: user.id, email: user.email };
+            const accessToken = await this.jwtService.signAsync(payload);
+
             return { 
                 success: true, 
                 message: requiresPasswordChange ? 'Vui lòng đổi mật khẩu để tiếp tục' : 'Đăng nhập thành công', 
                 user,
-                requiresPasswordChange
+                requiresPasswordChange,
+                access_token: accessToken,
             };
         }
     }

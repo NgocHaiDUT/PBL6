@@ -1,10 +1,5 @@
 import { IsString, IsInt, IsOptional, IsIn, IsObject } from 'class-validator';
-
-enum MessageType {
-  TEXT = 'TEXT',
-  SHARE_POST = 'SHARE_POST',
-  SHARE_PRODUCT = 'SHARE_PRODUCT',
-}
+import { message_type } from '@prisma/client';
 
 export class SendMessageDto {
   @IsInt()
@@ -18,8 +13,8 @@ export class SendMessageDto {
   content?: string;
 
   @IsOptional()
-  @IsIn(Object.values(MessageType))
-  type?: MessageType;
+  @IsIn(Object.values(message_type))
+  type?: message_type;
 
   @IsOptional()
   @IsObject()

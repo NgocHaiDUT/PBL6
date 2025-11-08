@@ -21,12 +21,13 @@
     "seed": "ts-node seed.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.908.0",
-    "@nestjs-modules/mailer": "^2.0.2",
+    "@aws-sdk/client-s3": "^3.921.0",
+    "@nestjs-modules/mailer": "^2.0.1",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/jwt": "^11.0.1",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/platform-socket.io": "^11.1.6",
@@ -58,6 +59,7 @@
     "@types/form-data": "^2.2.1",
     "@types/jest": "^30.0.0",
     "@types/multer": "^2.0.0",
+    "@types/multer-s3": "^3.0.3",
     "@types/node": "^22.10.7",
     "@types/passport-facebook": "^3.0.3",
     "@types/passport-google-oauth20": "^2.0.16",

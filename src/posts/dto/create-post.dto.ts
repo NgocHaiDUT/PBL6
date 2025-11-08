@@ -28,10 +28,7 @@ export class CreatePostDto {
   @IsEnum(['public', 'private', 'friends'])
   visibility?: string = 'public';
 
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  media_urls?: string[]; // Các media bổ sung (sẽ lưu vào post_media)
+
 
   @IsOptional()
   @IsArray()
