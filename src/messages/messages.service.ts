@@ -195,9 +195,22 @@ export class MessagesService {
     return conversation;
   }
 
+  // Lấy chi tiết tin nhắn
+  async getMessageById(messageId: number) {
+    const message = await this.prisma.messages.findUnique({
+      where: { id: messageId },
+    });
+
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    return message;
+  }
+
   // Gửi tin nhắn
   async sendMessage(userId: number, createMessageDto: CreateMessageDto) {
-    const { conversation_id, content } = createMessageDto;
+    const { conversation_id, content, type, payload } = createMessageDto;
 
     // Kiểm tra user có quyền gửi tin nhắn trong conversation này không
     const participant = await this.prisma.conversation_participants.findFirst({
@@ -216,7 +229,9 @@ export class MessagesService {
       data: {
         conversation_id,
         sender_id: userId,
-        content
+        content,
+        type: type || 'TEXT',
+        payload
       },
       include: {
         sender: {

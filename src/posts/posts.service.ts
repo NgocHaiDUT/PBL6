@@ -49,27 +49,55 @@ export class PostsService {
     };
   }
 
-  async createPost(userId: number, createPostDto: CreatePostDto) {
-    const { media_urls, product_ids, tags, ...postData } = createPostDto;
+  async createPost(userId: number, createPostDto: CreatePostDto, files: any[]) {
+    const { product_ids, tags, ...postData } = createPostDto;
 
-    // Tạo post
+    // Allow empty content_md only when there is at least one media file
+    const rawMd = (postData as any)?.content_md as string | undefined;
+    const trimmedMd = typeof rawMd === 'string' ? rawMd.trim() : '';
+    const hasMedia = Array.isArray(files) && files.length > 0;
+    if (!trimmedMd && !hasMedia) {
+      throw new Error('content_md is required when no media is provided');
+    }
+
+    // Remove undefined fields to avoid Prisma receiving undefined
+    const sanitizedBase = Object.fromEntries(
+      Object.entries({
+        ...postData,
+        // enforce defaults and normalized md
+        post_type: (postData as any)?.post_type ?? 'post',
+        visibility: (postData as any)?.visibility ?? 'public',
+        content_md: trimmedMd,
+      }).filter(([, v]) => v !== undefined)
+    );
+
+    // 1. Create the post record
     const post = await this.prisma.posts.create({
       data: {
-        ...postData,
+        // TS: đảm bảo luôn có content_md theo schema
+        content_md: trimmedMd,
+        ...sanitizedBase,
         user_id: userId,
         moderation_status: 'pending',
       },
     });
 
-    // Thêm media nếu có
-    if (media_urls && media_urls.length > 0) {
-      await this.prisma.post_media.createMany({
-        data: media_urls.map((url, index) => ({
+    // 2. Process and create media records from uploaded files
+    if (files && files.length > 0) {
+      const mediaData = files.map((file, index) => {
+        const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
+        const directory = mediaType === 'video' ? 'videos' : 'postimages';
+        const mediaUrl = file.location || `/uploads/${directory}/${file.filename}`;
+        return {
           post_id: post.id,
-          media_url: url,
-          media_type: url.includes('.mp4') || url.includes('.mov') ? 'video' : 'image',
+          media_url: mediaUrl,
+          media_type: mediaType,
           sort_order: index,
-        })),
+        };
+      });
+
+      await this.prisma.post_media.createMany({
+        data: mediaData,
       });
     }
 

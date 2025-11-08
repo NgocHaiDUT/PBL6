@@ -18,20 +18,27 @@ import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
-
 import { QueryPostsDto } from './dto/query-posts.dto';
 import { getMulterOptions } from '../config/storage.config';
+import { AuthGuard } from '@nestjs/passport';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Post()
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
-  create(@Body() createPostDto: CreatePostDto, @Req() req: any) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
-    return this.postsService.createPost(userId, createPostDto);
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions('create_post')
+  @UseInterceptors(FilesInterceptor('media', 10, getMulterOptions('postimages', 'media')))
+  create(
+    @Body() createPostDto: CreatePostDto,
+    @Req() req: any,
+    @UploadedFiles() files: any[],
+  ) {
+    const userId = req.user.userId;
+    return this.postsService.createPost(userId, createPostDto, files);
   }
 
   @Get()
@@ -45,76 +52,72 @@ export class PostsController {
   }
 
   @Patch(':id')
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions('edit_post')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updatePostDto: UpdatePostDto,
     @Req() req: any,
   ) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
+    const userId = req.user.userId;
     return this.postsService.updatePost(id, userId, updatePostDto);
   }
 
   @Delete(':id')
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions('delete_post')
   remove(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
+    const userId = req.user.userId;
     return this.postsService.deletePost(id, userId);
   }
 
-  // Upload cover image for post
   @Post(':id/upload-cover')
-  @UseInterceptors(FileInterceptor('cover', getMulterOptions('postimages')))
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions('edit_post')
+  @UseInterceptors(FileInterceptor('cover', getMulterOptions('postimages', 'image')))
   uploadCoverImage(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile() file: any,
     @Req() req: any,
   ) {
-    // const userId = req.user.id;
-    const userId = 1; // Mock user ID
+    const userId = req.user.userId;
     return this.postsService.uploadCoverImage(id, userId, file);
   }
 
-  // Upload video for post
   @Post(':id/upload-video')
-  @UseInterceptors(FileInterceptor('video', getMulterOptions('videos')))
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions('edit_post')
+  @UseInterceptors(FileInterceptor('video', getMulterOptions('videos', 'video')))
   uploadVideo(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile() file: any,
     @Req() req: any,
   ) {
-    // const userId = req.user.id;
-    const userId = 1; // Mock user ID
+    const userId = req.user.userId;
     return this.postsService.uploadVideo(id, userId, file);
   }
 
-  // Upload additional media (images/videos) for post
   @Post(':id/upload-media')
-  @UseInterceptors(FilesInterceptor('media', 10, getMulterOptions('postimages')))
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions('edit_post')
+  @UseInterceptors(FilesInterceptor('media', 10, getMulterOptions('postimages', 'media')))
   uploadAdditionalMedia(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFiles() files: any[],
     @Req() req: any,
   ) {
-    // const userId = req.user.id;
-    const userId = 1; // Mock user ID
+    const userId = req.user.userId;
     return this.postsService.uploadAdditionalMedia(id, userId, files);
   }
 
-  // Delete media from post
   @Delete('media/:mediaId')
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions('edit_post')
   deleteMedia(
     @Param('mediaId', ParseIntPipe) mediaId: number,
     @Req() req: any,
   ) {
-    // const userId = req.user.id;
-    const userId = 1; // Mock user ID
+    const userId = req.user.userId;
     return this.postsService.deleteMedia(mediaId, userId);
   }
 }

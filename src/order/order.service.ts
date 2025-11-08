@@ -129,7 +129,7 @@ export class OrderService {
                         data: {
                             order_id: order.id,
                             status: 'pending',
-                            address_snapshot: `${address.line1}, ${address.city}, ${address.state}`
+                            address_snapshot: `${address.street}, ${address.ward}, ${address.district}, ${address.province}`
                         }
                     });
 

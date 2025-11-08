@@ -57,16 +57,61 @@ const getStorage = (directory: string) => {
 };
 
 // Unified Multer Options
-export const getMulterOptions = (directory: string) => ({
-  storage: getStorage(directory),
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/) || file.originalname.match(/\.(heic|heif)$/i)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'), false);
-    }
+const allowedMimeTypes = {
+  image: /image\/(jpg|jpeg|png|gif|webp)|application\/octet-stream/, // heic/heif can be octet-stream
+  video: /video\/(mp4|mov|avi|quicktime|x-matroska)/,
+};
+
+const fileValidators = {
+  image: {
+    filter: (req, file, cb) => {
+      const isImage = allowedMimeTypes.image.test(file.mimetype) || file.originalname.match(/\.(heic|heif)$/i);
+      if (isImage) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed! (.jpg, .jpeg, .png, .gif, .webp, .heic, .heif)'), false);
+      }
+    },
+    limit: 10 * 1024 * 1024, // 10MB
   },
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
+  video: {
+    filter: (req, file, cb) => {
+      if (allowedMimeTypes.video.test(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only video files are allowed! (.mp4, .mov, .avi, .mkv)'), false);
+      }
+    },
+    limit: 50 * 1024 * 1024, // 50MB
   },
-});
+  media: {
+    filter: (req, file, cb) => {
+      const isImage = allowedMimeTypes.image.test(file.mimetype) || file.originalname.match(/\.(heic|heif)$/i);
+      const isVideo = allowedMimeTypes.video.test(file.mimetype);
+      if (isImage || isVideo) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image or video files are allowed!'), false);
+      }
+    },
+    limit: 50 * 1024 * 1024, // Use the larger limit for mixed media
+  }
+};
+
+export const getMulterOptions = (
+  directory: string,
+  type: 'image' | 'video' | 'media' = 'image'
+) => {
+  const validator = fileValidators[type];
+  if (!validator) {
+    throw new Error(`Invalid type specified for getMulterOptions: ${type}`);
+  }
+  return {
+    storage: getStorage(directory),
+    fileFilter: validator.filter,
+    limits: {
+      fileSize: validator.limit,
+    },
+  };
+};
+

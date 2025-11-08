@@ -72,6 +72,8 @@ enum skin_type {
 
 enum message_type {
   TEXT
+  IMAGE
+  VIDEO
   SHARE_POST
   SHARE_PRODUCT
 }

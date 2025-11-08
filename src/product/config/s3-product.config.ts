@@ -1,29 +1,64 @@
 import { S3Client } from '@aws-sdk/client-s3';
 import multerS3 from 'multer-s3';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 
-// Cấu hình S3 client
-const s3 = new S3Client({
-  region: process.env.AWS_REGION || 'ap-southeast-7',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
+const storageDriver = process.env.STORAGE_DRIVER || 'local';
+
+// S3 client setup (only if using S3)
+let s3;
+if (storageDriver === 's3') {
+  s3 = new S3Client({
+    region: process.env.AWS_REGION || 'ap-southeast-1',
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+    },
+  });
+}
+
+// Helper for local storage
+const createUploadDir = (dir: string) => {
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+};
+
+const getProductStorage = (directory: 'brands' | 'products') => {
+  if (storageDriver === 's3') {
+    return multerS3({
+      s3: s3,
+      bucket: process.env.AWS_S3_BUCKET_NAME!,
+      metadata: function (req, file, cb) {
+        cb(null, { fieldName: file.fieldname });
+      },
+      key: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const extension = file.originalname.split('.').pop();
+        cb(null, `${directory}/${uniqueSuffix}.${extension}`);
+      }
+    });
+  } else {
+    // local storage
+    const localDirectory = `uploads/${directory}`;
+    createUploadDir(localDirectory);
+    return diskStorage({
+      destination: (req, file, cb) => {
+        cb(null, localDirectory);
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const extension = extname(file.originalname);
+        cb(null, `${uniqueSuffix}${extension}`);
+      },
+    });
+  }
+};
 
 // Cấu hình cho brand logo upload
 export const s3BrandConfig = {
-  storage: multerS3({
-    s3: s3,
-    bucket: process.env.AWS_S3_BUCKET_NAME!,
-    metadata: function (req, file, cb) {
-      cb(null, { fieldName: file.fieldname });
-    },
-    key: function (req, file, cb) {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const extension = file.originalname.split('.').pop();
-      cb(null, `brands/${uniqueSuffix}.${extension}`);
-    }
-  }),
+  storage: getProductStorage('brands'),
   fileFilter: (req, file, cb) => {
     if (file.mimetype.match(/\/(jpg|jpeg|png|gif|heic|heif|webp)$/)) {
       cb(null, true);
@@ -39,18 +74,7 @@ export const s3BrandConfig = {
 
 // Cấu hình cho product media upload
 export const s3ProductMediaConfig = {
-  storage: multerS3({
-    s3: s3,
-    bucket: process.env.AWS_S3_BUCKET_NAME!,
-    metadata: function (req, file, cb) {
-      cb(null, { fieldName: file.fieldname });
-    },
-    key: function (req, file, cb) {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const extension = file.originalname.split('.').pop();
-      cb(null, `products/${uniqueSuffix}.${extension}`);
-    }
-  }),
+  storage: getProductStorage('products'),
   fileFilter: (req, file, cb) => {
     if (file.mimetype.match(/\/(jpg|jpeg|png|gif|heic|heif|webp)$/)) {
       cb(null, true);

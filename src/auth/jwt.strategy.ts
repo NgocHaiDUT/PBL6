@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(private prisma: PrismaService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -13,8 +14,32 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    // The payload is the decoded JWT. We can trust it because the signature has been verified.
+    const user = await this.prisma.users.findUnique({
+      where: { id: Number(payload.sub) },
+      include: {
+        role: true,
+        userPermissions: {
+          include: {
+            permission: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
+    const permissions = user.userPermissions.map(
+      (up) => up.permission.name,
+    );
+
     // The object returned here will be attached to the request object as `req.user`.
-    return { userId: payload.sub, email: payload.email };
+    return {
+      userId: user.id,
+      email: user.email,
+      role: user.role?.name,
+      permissions: permissions,
+    };
   }
 }
