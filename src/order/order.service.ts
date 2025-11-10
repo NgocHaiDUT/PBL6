@@ -1,9 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { GhnService } from '../ghn/ghn.service';
+import { CreateOrderDto, CalculateFeeDto, CreateOrderItemDto, UpdateOrderDto } from '../ghn/dto/ghn-order.dto';
 
 @Injectable()
 export class OrderService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private ghnService: GhnService,
+    ) {}
 
     async createOrderFromCart(userId: number, shippingAddressId: number, note?: string, paymentMethod?: string) {
         try {
@@ -29,16 +34,16 @@ export class OrderService {
                 return { success: false, message: 'Giỏ hàng trống' };
             }
 
-            // Validate shipping address
-            const address = await this.prisma.addresses.findFirst({
+            // Validate shipping address and get GHN IDs
+            const shippingAddress = await this.prisma.addresses.findFirst({
                 where: {
                     id: shippingAddressId,
                     user_id: userId
                 }
             });
 
-            if (!address) {
-                return { success: false, message: 'Địa chỉ giao hàng không hợp lệ' };
+            if (!shippingAddress || !shippingAddress.ghn_province_id || !shippingAddress.ghn_district_id || !shippingAddress.ghn_ward_code) {
+                return { success: false, message: 'Địa chỉ giao hàng không hợp lệ hoặc thiếu thông tin GHN' };
             }
 
             // Group cart items by shop_id
@@ -58,8 +63,29 @@ export class OrderService {
                 const orderData = await this.prisma.$transaction(async (tx) => {
                     let subtotal = 0;
                     let orderItems: any[] = [];
+                    let totalWeight = 0;
+                    let maxLen = 0, maxWid = 0, sumHei = 0; // For GHN package dimensions
 
-                    // Calculate totals and prepare order items
+                    // Get shop details and default pickup address
+                    const shop = await tx.shops.findUnique({
+                        where: { id: Number(shopId) },
+                        include: {
+                            addresses: {
+                                where: { is_default: true },
+                                take: 1
+                            }
+                        }
+                    });
+
+                    if (!shop || !shop.addresses[0] || !shop.ghn_shop_id || !shop.addresses[0].ghn_district_id || !shop.addresses[0].ghn_ward_code) {
+                        throw new BadRequestException(`Shop ${shop?.name || shopId} không có địa chỉ lấy hàng mặc định hoặc chưa đăng ký GHN.`);
+                    }
+                    const pickupAddress = shop.addresses[0];
+
+                    // Calculate totals, aggregate dimensions/weight, and prepare order items
+                    const ghnItems: CreateOrderItemDto[] = [];
+                    const productNames: string[] = [];
+
                     for (const cartItem of items) {
                         const variant = cartItem.variant || cartItem.product.product_variants[0];
                         const quantity = cartItem.quantity;
@@ -67,6 +93,13 @@ export class OrderService {
                         const lineTotal = unitPrice * quantity;
                         
                         subtotal += lineTotal;
+                        productNames.push(`${cartItem.product.name} (${variant?.name || 'N/A'}) x${quantity}`);
+
+                        // Aggregate dimensions and weight for GHN
+                        if (variant?.weight) totalWeight += variant.weight * quantity;
+                        if (variant?.length) maxLen = Math.max(maxLen, variant.length);
+                        if (variant?.width) maxWid = Math.max(maxWid, variant.width);
+                        if (variant?.height) sumHei += variant.height * quantity; // Sum heights for simplicity, GHN might have specific logic
 
                         orderItems.push({
                             product_id: cartItem.product_id,
@@ -77,10 +110,51 @@ export class OrderService {
                             quantity: quantity,
                             line_total: lineTotal
                         });
+
+                        ghnItems.push({
+                            name: cartItem.product.name,
+                            code: variant?.sku || cartItem.product_id.toString(),
+                            quantity: quantity,
+                            price: Math.round(unitPrice),
+                            length: variant?.length || 1, // Default to 1 if not set
+                            width: variant?.width || 1,
+                            height: variant?.height || 1,
+                            weight: variant?.weight || 1,
+                        });
                     }
 
-                    // Calculate shipping fee (free if > 500k VND)
-                    const shippingFee = subtotal >= 500000 ? 0 : 30000;
+                    // Default dimensions if not available from products
+                    if (maxLen === 0) maxLen = 10;
+                    if (maxWid === 0) maxWid = 10;
+                    if (sumHei === 0) sumHei = 5;
+                    if (totalWeight === 0) totalWeight = 100; // Default to 100g
+
+                    // Calculate shipping fee using GHN API
+                    let shippingFee = 0;
+                    let expectedDeliveryTime: Date | undefined;
+                    try {
+                        const ghnFeeData: CalculateFeeDto = {
+                            from_district_id: pickupAddress.ghn_district_id!,
+                            from_ward_code: pickupAddress.ghn_ward_code!,
+                            to_district_id: shippingAddress.ghn_district_id!,
+                            to_ward_code: shippingAddress.ghn_ward_code!,
+                            service_id: 53320, // Default service ID for now, can be dynamic
+                            height: sumHei,
+                            length: maxLen,
+                            width: maxWid,
+                            weight: totalWeight,
+                            insurance_value: Math.round(subtotal),
+                            cod_amount: paymentMethod === 'cod' ? Math.round(subtotal) : 0,
+                            items: ghnItems,
+                        };
+                        const feeResponse = await this.ghnService.previewShippingOrder(ghnFeeData);
+                        shippingFee = feeResponse.total_fee;
+                        expectedDeliveryTime = feeResponse.expected_delivery_time ? new Date(feeResponse.expected_delivery_time) : undefined;
+                    } catch (ghnError) {
+                        console.error('Error calculating GHN shipping fee:', ghnError);
+                        // Fallback to a default shipping fee or throw error
+                        shippingFee = 30000; // Default fee if GHN fails
+                    }
                     
                     // Calculate tax (10% VAT)
                     const tax = subtotal * 0.1;
@@ -94,13 +168,16 @@ export class OrderService {
                             user_id: userId,
                             shop_id: Number(shopId),
                             shipping_address_id: shippingAddressId,
+                            pickup_address_id: pickupAddress.id,
                             status: 'pending' as any,
                             payment_status: 'unpaid' as any,
                             subtotal_amount: subtotal,
                             discount_amount: 0,
                             shipping_fee: shippingFee,
                             total_amount: totalAmount,
-                            note: note
+                            note: note,
+                            ghn_expected_delivery_time: expectedDeliveryTime,
+                            shipping_payer: paymentMethod === 'cod' ? 'BUYER' : 'SELLER', // Example logic
                         }
                     });
 
@@ -125,13 +202,71 @@ export class OrderService {
                     });
 
                     // Create shipment record
-                    await tx.shipments.create({
+                    const shipment = await tx.shipments.create({
                         data: {
                             order_id: order.id,
                             status: 'pending',
-                            address_snapshot: `${address.street}, ${address.ward}, ${address.district}, ${address.province}`
+                            address_snapshot: `${shippingAddress.street}, ${shippingAddress.ward}, ${shippingAddress.district}, ${shippingAddress.province}`
                         }
                     });
+
+                    // Create GHN shipping order
+                    let ghnOrderCode: string | undefined;
+                    try {
+                        const ghnCreateOrderData: CreateOrderDto = {
+                            payment_type_id: paymentMethod === 'cod' ? 2 : 1, // 1: Seller, 2: Buyer
+                            note: note || '',
+                            required_note: 'KHONGCHOXEMHANG', // Default, can be dynamic
+                            
+                            from_name: shop.name,
+                            from_phone: shop.phone || pickupAddress.phone,
+                            from_address: pickupAddress.street,
+                            from_ward_name: pickupAddress.ward,
+                            from_district_name: pickupAddress.district,
+                            from_province_name: pickupAddress.province,
+
+                            to_name: shippingAddress.recipient,
+                            to_phone: shippingAddress.phone,
+                            to_address: shippingAddress.street,
+                            to_ward_name: shippingAddress.ward,
+                            to_district_name: shippingAddress.district,
+                            to_province_name: shippingAddress.province,
+
+                            cod_amount: paymentMethod === 'cod' ? Math.round(totalAmount) : 0,
+                            content: productNames.join(', ').substring(0, 2000), // Max 2000 chars
+                            length: maxLen,
+                            width: maxWid,
+                            height: sumHei,
+                            weight: totalWeight,
+                            insurance_value: Math.round(subtotal),
+                            service_type_id: 2, // Hàng nhẹ, can be dynamic
+                            items: ghnItems,
+                        };
+                        const ghnOrderResponse = await this.ghnService.createShippingOrder(ghnCreateOrderData, shop.ghn_shop_id);
+                        ghnOrderCode = ghnOrderResponse.order_code;
+
+                        // Update order with GHN order code
+                        await tx.orders.update({
+                            where: { id: order.id },
+                            data: { ghn_order_code: ghnOrderCode }
+                        });
+                        // Create initial shipment log
+                        await tx.shipment_logs.create({
+                            data: {
+                                shipment_id: shipment.id,
+                                status: 'GHN_CREATED',
+                                location_description: 'Đơn hàng GHN đã được tạo',
+                            }
+                        });
+
+                    } catch (ghnError) {
+                        console.error('Error creating GHN shipping order:', ghnError);
+                        // Handle GHN order creation failure, e.g., mark order as problematic
+                        await tx.orders.update({
+                            where: { id: order.id },
+                            data: { status: 'processing', note: (order.note || '') + ' (Lỗi tạo đơn GHN)' }
+                        });
+                    }
 
                     return order;
                 });
@@ -400,6 +535,150 @@ export class OrderService {
         } catch (error) {
             console.error('Error refunding order:', error);
             return { success: false, message: 'Lỗi khi hoàn tiền đơn hàng' };
+        }
+    }
+
+    async trackGhnOrder(orderId: number, userId?: number) {
+        try {
+            const order = await this.prisma.orders.findFirst({
+                where: { id: orderId, ...(userId && { user_id: userId }) },
+                include: { shipments: true }
+            });
+
+            if (!order || !order.ghn_order_code) {
+                return { success: false, message: 'Không tìm thấy đơn hàng GHN' };
+            }
+
+            const ghnDetail = await this.ghnService.getShippingOrderDetail(order.ghn_order_code);
+
+            if (ghnDetail && order.shipments.length > 0) {
+                const shipmentId = order.shipments[0].id;
+                // Save new logs
+                for (const log of ghnDetail.log) {
+                    await this.prisma.shipment_logs.upsert({
+                        where: {
+                            shipment_id_status_updated_at: {
+                                shipment_id: shipmentId,
+                                status: log.status,
+                                updated_at: new Date(log.updated_date),
+                            },
+                        },
+                        update: {}, // No update needed if it exists
+                        create: {
+                            shipment_id: shipmentId,
+                            status: log.status,
+                            location_description: log.reason || log.description || '',
+                            updated_at: new Date(log.updated_date),
+                        },
+                    });
+                }
+                // Update overall shipment status
+                await this.prisma.shipments.update({
+                    where: { id: shipmentId },
+                    data: { status: ghnDetail.status.toLowerCase() }
+                });
+            }
+
+            return { success: true, data: ghnDetail };
+        } catch (error) {
+            console.error('Error tracking GHN order:', error);
+            return { success: false, message: 'Lỗi khi theo dõi đơn hàng GHN' };
+        }
+    }
+
+    async cancelGhnOrder(orderId: number, userId: number) {
+        try {
+            const order = await this.prisma.orders.findFirst({
+                where: { id: orderId, user_id: userId },
+                include: { shop: true }
+            });
+
+            if (!order || !order.ghn_order_code || !order.shop?.ghn_shop_id) {
+                return { success: false, message: 'Không tìm thấy đơn hàng GHN hoặc thông tin shop' };
+            }
+
+            const result = await this.ghnService.cancelShippingOrder([order.ghn_order_code], order.shop.ghn_shop_id);
+
+            if (result && result[0]?.result) {
+                await this.prisma.orders.update({
+                    where: { id: orderId },
+                    data: { status: 'cancelled' }
+                });
+                return { success: true, message: 'Đã hủy đơn hàng GHN thành công' };
+            }
+            return { success: false, message: 'Hủy đơn hàng GHN thất bại' };
+        } catch (error) {
+            console.error('Error cancelling GHN order:', error);
+            return { success: false, message: 'Lỗi khi hủy đơn hàng GHN' };
+        }
+    }
+
+    async updateGhnOrder(orderId: number, userId: number, updateData: Partial<UpdateOrderDto>) {
+        try {
+            const order = await this.prisma.orders.findFirst({
+                where: { id: orderId, user_id: userId },
+                include: { shop: true }
+            });
+
+            if (!order || !order.ghn_order_code || !order.shop?.ghn_shop_id) {
+                return { success: false, message: 'Không tìm thấy đơn hàng GHN hoặc thông tin shop' };
+            }
+
+            // GHN API expects specific fields for update, map updateData to GHN format
+            const ghnUpdatePayload: Partial<UpdateOrderDto> = {
+                note: updateData.note,
+                required_note: updateData.required_note,
+                to_name: updateData.to_name,
+                to_phone: updateData.to_phone,
+                to_address: updateData.to_address,
+                to_ward_name: updateData.to_ward_name,
+                to_district_name: updateData.to_district_name,
+                cod_amount: updateData.cod_amount,
+                content: updateData.content,
+                length: updateData.length,
+                width: updateData.width,
+                height: updateData.height,
+                weight: updateData.weight,
+                insurance_value: updateData.insurance_value,
+                items: updateData.items,
+            };
+
+            const result = await this.ghnService.updateShippingOrder(order.ghn_order_code, ghnUpdatePayload, order.shop.ghn_shop_id);
+
+            if (result) {
+                return { success: true, message: 'Cập nhật đơn hàng GHN thành công' };
+            }
+            return { success: false, message: 'Cập nhật đơn hàng GHN thất bại' };
+        } catch (error) {
+            console.error('Error updating GHN order:', error);
+            return { success: false, message: 'Lỗi khi cập nhật đơn hàng GHN' };
+        }
+    }
+
+    async returnGhnOrder(orderId: number, userId: number) {
+        try {
+            const order = await this.prisma.orders.findFirst({
+                where: { id: orderId, user_id: userId },
+                include: { shop: true }
+            });
+
+            if (!order || !order.ghn_order_code || !order.shop?.ghn_shop_id) {
+                return { success: false, message: 'Không tìm thấy đơn hàng GHN hoặc thông tin shop' };
+            }
+
+            const result = await this.ghnService.returnShippingOrder([order.ghn_order_code], order.shop.ghn_shop_id);
+
+            if (result && result[0]?.result) {
+                await this.prisma.orders.update({
+                    where: { id: orderId },
+                    data: { status: 'refunded' } // Or a specific 'returned' status
+                });
+                return { success: true, message: 'Yêu cầu trả hàng GHN thành công' };
+            }
+            return { success: false, message: 'Yêu cầu trả hàng GHN thất bại' };
+        } catch (error) {
+            console.error('Error returning GHN order:', error);
+            return { success: false, message: 'Lỗi khi yêu cầu trả hàng GHN' };
         }
     }
 }

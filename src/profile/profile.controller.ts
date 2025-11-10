@@ -70,8 +70,7 @@ export class ProfileController {
     }
 
     @Post('create-shop')
-    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-    @RequirePermissions('create_shop')
+    @UseGuards(AuthGuard('jwt'))
     @UseInterceptors(
         FileFieldsInterceptor([
             { name: 'logo', maxCount: 1 },
@@ -108,7 +107,7 @@ export class ProfileController {
             bannerUrl = (files.banner[0] as any).location || `/uploads/shops/${(files.banner[0] as any).filename}`;
         }
 
-        return this.profileService.createshop(
+        return this.profileService.createshop_temp(
             userId, 
             body.shop_name, 
             body.slug, 
@@ -126,8 +125,7 @@ export class ProfileController {
     }
 
     @Post('update-logo-shop')
-    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-    @RequirePermissions('edit_profile_shop')
+    @UseGuards(AuthGuard('jwt'))
     @UseInterceptors(FileInterceptor('file', getMulterOptions('shops')))
     async updatelogoshop(
         @Body('shopid', ParseIntPipe) shopid: number,
@@ -143,8 +141,7 @@ export class ProfileController {
     }
 
     @Post('update-banner-shop')
-    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-    @RequirePermissions('edit_profile_shop')
+    @UseGuards(AuthGuard('jwt'))
     @UseInterceptors(FileInterceptor('file', getMulterOptions('shops')))
     async updatebannershop(
         @Body('shopid', ParseIntPipe) shopid: number,
@@ -160,30 +157,23 @@ export class ProfileController {
     }
 
     @Post('update-phone-shop')
-    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-    @RequirePermissions('edit_profile_shop')
+    @UseGuards(AuthGuard('jwt'))
     async updateshopphone(@Body() body: { shopid: number, phone: string}, @Req() req: any) {
         const userId = req.user.userId;
         return this.profileService.updatephoneshop(userId, body.shopid, body.phone);
     }
 
     @Post('update-email-shop')
-    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-    @RequirePermissions('edit_profile_shop')
+    @UseGuards(AuthGuard('jwt'))
     async updateshopemail(@Body() body: { shopid: number, email: string}, @Req() req: any) {
         const userId = req.user.userId;
         return this.profileService.updateemailshop(userId, body.shopid, body.email);
     }
 
     @Post('update-description-shop')
-    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-    @RequirePermissions('edit_profile_shop')
+    @UseGuards(AuthGuard('jwt'))
     async updateshopdescription(@Body() body: { shopid: number, description: string}, @Req() req: any) {
         const userId = req.user.userId;
         return this.profileService.updatedescriptionshop(userId, body.shopid, body.description);
     }
-
-    
-        
-
 }

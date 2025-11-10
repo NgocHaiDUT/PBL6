@@ -96,3 +96,83 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+# Kế hoạch Tích hợp Giao Hàng Nhanh (GHN)
+
+## 1. Mục tiêu
+
+Tích hợp dịch vụ giao hàng của GHN vào nền tảng để cho phép các cửa hàng đăng ký, tạo và quản lý đơn hàng vận chuyển qua GHN.
+
+## 2. Thay đổi Schema Prisma (`prisma/schema.prisma`)
+
+Để hỗ trợ tích hợp GHN, các thay đổi sau cần được thực hiện đối với schema của cơ sở dữ liệu:
+
+1.  **Model `shops`**:
+    *   Thêm trường `ghn_shop_id` (kiểu `Int`, `unique`, `nullable`) để lưu trữ ID cửa hàng do GHN cung cấp sau khi đăng ký thành công.
+
+2.  **Model `orders`**:
+    *   Thêm `ghn_order_code` (kiểu `String`, `unique`, `nullable`) để lưu mã vận đơn của GHN.
+    *   Thêm `ghn_expected_delivery_time` (kiểu `DateTime`, `nullable`) để lưu ngày giao hàng dự kiến.
+    *   Thêm `ghn_required_note` (kiểu `String`, `nullable`) để lưu các yêu cầu bắt buộc khi giao hàng (ví dụ: `KHONGCHOXEMHANG`).
+    *   Thêm `shipping_payer` (kiểu `String`, `nullable`, ví dụ: `SELLER` hoặc `BUYER`) để xác định bên thanh toán phí vận chuyển.
+
+3.  **Model `product_variants`**:
+    *   Thêm các trường sau để tính toán phí vận chuyển. Các trường này nên `nullable` để không ảnh hưởng đến các sản phẩm hiện có.
+        *   `weight` (kiểu `Int`, đơn vị `gram`)
+        *   `length` (kiểu `Int`, đơn vị `cm`)
+        *   `width` (kiểu `Int`, đơn vị `cm`)
+        *   `height` (kiểu `Int`, đơn vị `cm`)
+
+4.  **Model `addresses` (Địa chỉ người dùng)**:
+    *   Thêm các trường để lưu mã định danh địa chỉ của GHN, giúp việc tạo đơn hàng chính xác và nhanh chóng.
+        *   `ghn_province_id` (kiểu `Int`, `nullable`)
+        *   `ghn_district_id` (kiểu `Int`, `nullable`)
+        *   `ghn_ward_code` (kiểu `String`, `nullable`)
+
+5.  **Model `shop_addresses` (Địa chỉ cửa hàng)**:
+    *   Tương tự như `addresses`, thêm các trường mã định danh của GHN.
+        *   `ghn_province_id` (kiểu `Int`, `nullable`)
+        *   `ghn_district_id` (kiểu `Int`, `nullable`)
+        *   `ghn_ward_code` (kiểu `String`, `nullable`)
+
+6.  **Model `shipment_logs` (Mới)**:
+    *   Tạo model mới để lưu trữ lịch sử chi tiết của quá trình vận chuyển.
+        *   `id` (Int, primary key)
+        *   `shipment_id` (Int, foreign key liên kết tới model `shipments`)
+        *   `status` (String): Trạng thái từ GHN (ví dụ: `delivering`, `picked`, `return`).
+        *   `location_description` (String, nullable): Mô tả vị trí hoặc tên kho hàng.
+        *   `updated_at` (DateTime): Thời gian tại thời điểm log được ghi nhận.
+        *   Tạo quan hệ một-nhiều từ `shipments` đến `shipment_logs`.
+
+## 3. Kế hoạch triển khai Backend
+
+1.  **Tạo Module GHN (`ghn.module.ts`)**:
+    *   Tạo một `GhnService` để quản lý tất cả các tương tác với API của GHN.
+    *   Sử dụng `HttpModule` của NestJS để gửi request.
+    *   Quản lý GHN Token và API endpoint trong file `.env`.
+
+2.  **Quản lý Địa chỉ**:
+    *   Xây dựng các API endpoint để lấy danh sách Tỉnh/Thành, Quận/Huyện, Phường/Xã từ GHN và cung cấp cho frontend.
+    *   Cập nhật logic tạo/cập nhật địa chỉ (`addresses` và `shop_addresses`) để lưu lại các mã `id` và `code` tương ứng của GHN.
+
+3.  **Đăng ký Cửa hàng với GHN**:
+    *   Trong `shop.service`, sau khi một cửa hàng được tạo, thêm chức năng đăng ký cửa hàng đó với GHN bằng cách sử dụng địa chỉ mặc định của cửa hàng.
+    *   Lưu `ghn_shop_id` trả về vào database.
+
+4.  **Tạo Đơn hàng Vận chuyển**:
+    *   Trong `order.service`, khi một đơn hàng được xác nhận:
+        *   Sử dụng `GhnService` để tính toán phí vận chuyển dự kiến.
+        *   Tập hợp thông tin cần thiết (địa chỉ người gửi/nhận, thông tin gói hàng, tiền CoD).
+        *   Gọi API của GHN để tạo đơn hàng vận chuyển.
+        *   Lưu `ghn_order_code` và các thông tin liên quan vào đơn hàng trong database.
+
+5.  **Theo dõi và Cập nhật Trạng thái Đön hàng**:
+    *   Xây dựng một endpoint để truy vấn trạng thái đơn hàng từ GHN bằng `ghn_order_code`.
+    *   Khi nhận được dữ liệu, ngoài việc cập nhật trạng thái chung trong model `shipments`, hệ thống sẽ lưu toàn bộ lịch sử vận chuyển (`log` từ GHN) vào model `shipment_logs`.
+    *   (Tùy chọn nâng cao) Thiết lập Webhook để GHN có thể tự động cập nhật trạng thái và lịch sử đơn hàng.
+
+## 4. Các thay đổi cần thiết ở Frontend (Gợi ý)
+
+*   Cập nhật form nhập địa chỉ để người dùng có thể chọn Tỉnh/Thành, Quận/Huyện, Phường/Xã từ danh sách lấy từ API, thay vì nhập tay.
+*   Hiển thị các tùy chọn vận chuyển và mức phí tương ứng từ GHN ở trang thanh toán.
+*   Hiển thị thông tin theo dõi đơn hàng và trạng thái vận chuyển cho người dùng, bao gồm cả lịch sử các điểm đã đi qua.

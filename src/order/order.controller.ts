@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query, BadRequestException, Patch } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto, QueryOrdersDto } from './dto/create-order.dto';
 
@@ -95,6 +95,48 @@ export class OrderController {
         @Param('id') id: string
     ) {
         return this.orderService.adminRefundOrder(Number(id));
+    }
+
+    // GHN Order Management Endpoints
+    @Get(':id/ghn/track')
+    async trackGhnOrder(
+        @Param('id') id: string,
+        @Query('userId') userId?: string
+    ) {
+        return this.orderService.trackGhnOrder(Number(id), userId ? Number(userId) : undefined);
+    }
+
+    @Post(':id/ghn/cancel')
+    async cancelGhnOrder(
+        @Param('id') id: string,
+        @Body() body: { userId?: number }
+    ) {
+        if (!body.userId) {
+            return { success: false, message: 'Vui lòng đăng nhập' };
+        }
+        return this.orderService.cancelGhnOrder(Number(id), body.userId);
+    }
+
+    @Patch(':id/ghn/update')
+    async updateGhnOrder(
+        @Param('id') id: string,
+        @Body() body: { userId?: number, updateData: any }
+    ) {
+        if (!body.userId) {
+            return { success: false, message: 'Vui lòng đăng nhập' };
+        }
+        return this.orderService.updateGhnOrder(Number(id), body.userId, body.updateData);
+    }
+
+    @Post(':id/ghn/return')
+    async returnGhnOrder(
+        @Param('id') id: string,
+        @Body() body: { userId?: number }
+    ) {
+        if (!body.userId) {
+            return { success: false, message: 'Vui lòng đăng nhập' };
+        }
+        return this.orderService.returnGhnOrder(Number(id), body.userId);
     }
 }
 

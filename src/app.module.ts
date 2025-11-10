@@ -24,6 +24,7 @@ import { ShopModule } from './shop/shop.module';
 import { OrderModule } from './order/order.module';
 import { AddressModule } from './address/address.module';
 import { ShopAddressModule } from './shop-address/shop-address.module';
+import { GhnModule } from './ghn/ghn.module';
 @Module({
   imports: [
     AuthModule,
@@ -72,6 +73,7 @@ import { ShopAddressModule } from './shop-address/shop-address.module';
     DataInitModule,
     AddressModule,
     ShopAddressModule,
+    GhnModule,
     HttpModule.register({
       timeout: 30000,
       maxContentLength: 50 * 1024 * 1024, // 50MB

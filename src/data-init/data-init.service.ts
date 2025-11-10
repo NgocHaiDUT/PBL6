@@ -1,19 +1,16 @@
-import { Injectable ,Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable ,Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { S3UploadService } from './s3-upload.service';
 import * as fs from 'fs';
 import * as path from 'path';
 @Injectable()
-export class DataInitService implements OnModuleInit {
+export class DataInitService {
     private readonly logger = new Logger(DataInitService.name);
     constructor(
         private prisma: PrismaService,
         private s3UploadService: S3UploadService
     ) {}
-    async onModuleInit()
-    {
-        await this.seedData();
-    }
+
 
     async seedData()
     {

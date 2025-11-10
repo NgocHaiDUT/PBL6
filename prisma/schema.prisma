@@ -133,19 +133,22 @@ model auth_identities {
 }
 
 model addresses {
-  id         Int      @id @default(autoincrement())
-  user_id    Int
-  label      String?
-  recipient  String
-  phone      String
-  province   String
-  district   String
-  ward       String
-  street     String
-  is_default Boolean  @default(false)
-  created_at DateTime @default(now())
-  user       users    @relation(fields: [user_id], references: [id])
-  orders     orders[]
+  id              Int      @id @default(autoincrement())
+  user_id         Int
+  label           String?
+  recipient       String
+  phone           String
+  province        String
+  district        String
+  ward            String
+  street          String
+  is_default      Boolean  @default(false)
+  created_at      DateTime @default(now())
+  user            users    @relation(fields: [user_id], references: [id])
+  orders          orders[]
+  ghn_province_id Int?
+  ghn_district_id Int?
+  ghn_ward_code   String?
 }
 
 model role {
@@ -204,21 +207,26 @@ model shops {
   orders      orders[]
   posts       posts[]
   addresses   shop_addresses[]
+  ghn_shop_id Int?             @unique
 }
 
 model shop_addresses {
-  id         Int      @id @default(autoincrement())
-  shop_id    Int
-  name       String
-  phone      String
-  email      String?
-  province   String
-  district   String
-  ward       String
-  street     String
-  is_default Boolean  @default(false)
-  shop       shops    @relation(fields: [shop_id], references: [id])
-  orders     orders[]
+  id              Int      @id @default(autoincrement())
+  shop_id         Int
+  name            String
+  phone           String
+  email           String?
+  province        String
+  district        String
+  ward            String
+  street          String
+  is_default      Boolean  @default(false)
+  created_at      DateTime @default(now())
+  shop            shops    @relation(fields: [shop_id], references: [id])
+  orders          orders[]
+  ghn_province_id Int?
+  ghn_district_id Int?
+  ghn_ward_code   String?
 }
 
 model shop_staffs {
@@ -320,6 +328,10 @@ model product_variants {
   cart_items       cart_items[]
   order_items      order_items[]
   tryon_items      tryon_items[]
+  weight           Int?
+  length           Int?
+  width            Int?
+  height           Int?
 }
 
 ///////////////////////////////////////////////////////
@@ -350,28 +362,32 @@ model cart_items {
 }
 
 model orders {
-  id                  Int             @id @default(autoincrement())
-  user_id             Int
-  shop_id             Int
-  status              order_status    @default(pending)
-  payment_status      payment_status  @default(unpaid)
-  subtotal_amount     Decimal         @default(0)
-  discount_amount     Decimal         @default(0)
-  shipping_fee        Decimal         @default(0)
-  total_amount        Decimal         @default(0)
-  shipping_address_id Int?
-  pickup_address_id   Int?
-  note                String?
-  created_at          DateTime        @default(now())
-  updated_at          DateTime        @default(now())
-  user                users           @relation(fields: [user_id], references: [id])
-  shop                shops           @relation(fields: [shop_id], references: [id])
-  shipping_address    addresses?      @relation(fields: [shipping_address_id], references: [id])
-  pickup_address      shop_addresses? @relation(fields: [pickup_address_id], references: [id])
-  order_items         order_items[]
-  payments            payments[]
-  shipments           shipments[]
-  order_coupons       order_coupons[]
+  id                         Int             @id @default(autoincrement())
+  user_id                    Int
+  shop_id                    Int
+  status                     order_status    @default(pending)
+  payment_status             payment_status  @default(unpaid)
+  subtotal_amount            Decimal         @default(0)
+  discount_amount            Decimal         @default(0)
+  shipping_fee               Decimal         @default(0)
+  total_amount               Decimal         @default(0)
+  shipping_address_id        Int?
+  pickup_address_id          Int?
+  note                       String?
+  created_at                 DateTime        @default(now())
+  updated_at                 DateTime        @default(now())
+  user                       users           @relation(fields: [user_id], references: [id])
+  shop                       shops           @relation(fields: [shop_id], references: [id])
+  shipping_address           addresses?      @relation(fields: [shipping_address_id], references: [id])
+  pickup_address             shop_addresses? @relation(fields: [pickup_address_id], references: [id])
+  order_items                order_items[]
+  payments                   payments[]
+  shipments                  shipments[]
+  order_coupons              order_coupons[]
+  ghn_order_code             String?         @unique
+  ghn_expected_delivery_time DateTime?
+  ghn_required_note          String?
+  shipping_payer             String?
 }
 
 model order_items {
@@ -412,6 +428,17 @@ model shipments {
   address_snapshot String?
   created_at       DateTime        @default(now())
   order            orders          @relation(fields: [order_id], references: [id])
+  shipment_logs    shipment_logs[]
+}
+
+model shipment_logs {
+  id                 Int      @id @default(autoincrement())
+  shipment_id        Int
+  status             String
+  location_description String?
+  updated_at         DateTime @default(now())
+  shipment           shipments @relation(fields: [shipment_id], references: [id])
+  @@unique([shipment_id, status, updated_at])
 }
 
 ///////////////////////////////////////////////////////

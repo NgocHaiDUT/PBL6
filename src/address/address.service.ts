@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class AddressService {
     constructor(private prisma: PrismaService) {}
 
-    async addaddress(userid: number,label : string | undefined, receiver_name : string, phone : string, province: string, district: string, ward: string, street: string, is_default : boolean | undefined) {
+    async addaddress(userid: number,label : string | undefined, receiver_name : string, phone : string, province: string, district: string, ward: string, street: string, is_default : boolean | undefined, ghn_province_id?: number, ghn_district_id?: number, ghn_ward_code?: string) {
         await this.prisma.addresses.create({
             data : {
                 user_id : userid,
@@ -16,13 +16,16 @@ export class AddressService {
                 district: district,
                 ward: ward,
                 street: street,
-                is_default : is_default || false
+                is_default : is_default || false,
+                ghn_province_id: ghn_province_id,
+                ghn_district_id: ghn_district_id,
+                ghn_ward_code: ghn_ward_code,
             }
         })
         return { message: 'Thêm địa chỉ nhận hàng thành công' };
     }
 
-    async updateaddress(addressid: number,label : string | undefined, receiver_name : string | undefined, phone : string | undefined, province: string | undefined, district: string | undefined, ward: string | undefined, street: string | undefined, is_default : boolean | undefined) {
+    async updateaddress(addressid: number,label : string | undefined, receiver_name : string | undefined, phone : string | undefined, province: string | undefined, district: string | undefined, ward: string | undefined, street: string | undefined, is_default : boolean | undefined, ghn_province_id?: number, ghn_district_id?: number, ghn_ward_code?: string) {
         const dataToUpdate: any = {};
         if (label !== undefined) dataToUpdate.label = label;
         if (receiver_name !== undefined) dataToUpdate.recipient = receiver_name;
@@ -32,6 +35,9 @@ export class AddressService {
         if (ward !== undefined) dataToUpdate.ward = ward;
         if (street !== undefined) dataToUpdate.street = street;
         if (is_default !== undefined) dataToUpdate.is_default = is_default;
+        if (ghn_province_id !== undefined) dataToUpdate.ghn_province_id = ghn_province_id;
+        if (ghn_district_id !== undefined) dataToUpdate.ghn_district_id = ghn_district_id;
+        if (ghn_ward_code !== undefined) dataToUpdate.ghn_ward_code = ghn_ward_code;
 
         await this.prisma.addresses.update({
             where : { id : addressid },

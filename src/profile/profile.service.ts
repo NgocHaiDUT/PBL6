@@ -28,23 +28,74 @@ export class ProfileService {
         return { message: 'Cập nhật số điện thoại thành công' };
     }
 
-    async createshop(userid: number, shop_name: string, slug: string, description: string, avatar_url: string, banner_url: string, phone: string, email: string) {
-        const createShopPermission = await this.prisma.permission.findUnique({
-            where: { name: 'create_shop' },
-            select: { id: true },
-        });
-        if (!createShopPermission) {
-            return { message: 'Lỗi hệ thống: Không tìm thấy quyền create_shop' };
-        }
+    // async createshop(userid: number, shop_name: string, slug: string, description: string, avatar_url: string, banner_url: string, phone: string, email: string) {
+    //     const createShopPermission = await this.prisma.permission.findUnique({
+    //         where: { name: 'create_shop' },
+    //         select: { id: true },
+    //     });
+    //     if (!createShopPermission) {
+    //         return { message: 'Lỗi hệ thống: Không tìm thấy quyền create_shop' };
+    //     }
 
-        const hasCreateShopPermission = await this.prisma.userpermission.findFirst({
-            where: { user_id: userid, permission_id: createShopPermission.id },
-            select: { user_id: true },
-        });
-        if (!hasCreateShopPermission) {
-            return { message: 'Bạn không có quyền tạo cửa hàng' };
-        }
+    //     const hasCreateShopPermission = await this.prisma.userpermission.findFirst({
+    //         where: { user_id: userid, permission_id: createShopPermission.id },
+    //         select: { user_id: true },
+    //     });
+    //     if (!hasCreateShopPermission) {
+    //         return { message: 'Bạn không có quyền tạo cửa hàng' };
+    //     }
 
+    //     const existingShop = await this.prisma.shops.findFirst({ where: { owner_id: userid } });
+    //     if (existingShop) {
+    //         return { message: 'Người dùng đã có cửa hàng' };
+    //     }
+
+    //     const sellerRole = await this.prisma.role.findUnique({
+    //         where: { name: 'seller' },
+    //         include: {
+    //             rolePermissions: { select: { permission_id: true } },
+    //         },
+    //     });
+    //     if (!sellerRole) {
+    //         return { message: 'Lỗi hệ thống: Không tìm thấy role seller' };
+    //     }
+
+    //     await this.prisma.$transaction(async (tx) => {
+    //         await tx.shops.create({
+    //             data: {
+    //                 owner_id: userid,
+    //                 name: shop_name,
+    //                 slug: slug,
+    //                 description: description,
+    //                 logo_url: avatar_url,
+    //                 phone: phone,
+    //                 email: email,
+    //                 cover_url: banner_url,
+    //                 is_verified: false,
+    //             },
+    //         });
+
+    //         await tx.users.update({ where: { id: userid }, data: { role_id: sellerRole.id } });
+
+    //         if (sellerRole.rolePermissions?.length) {
+    //             await tx.userpermission.createMany({
+    //                 data: sellerRole.rolePermissions.map((rp) => ({
+    //                     user_id: userid,
+    //                     permission_id: rp.permission_id,
+    //                 })),
+    //                 skipDuplicates: true,
+    //             });
+    //         }
+
+    //         await tx.userpermission.deleteMany({
+    //             where: { user_id: userid, permission_id: createShopPermission.id },
+    //         });
+    //     });
+
+    //     return { message: 'Tạo cửa hàng thành công' };
+    // }
+
+    async createshop_temp(userid: number, shop_name: string, slug: string, description: string, avatar_url: string, banner_url: string, phone: string, email: string) {
         const existingShop = await this.prisma.shops.findFirst({ where: { owner_id: userid } });
         if (existingShop) {
             return { message: 'Người dùng đã có cửa hàng' };
@@ -59,6 +110,11 @@ export class ProfileService {
         if (!sellerRole) {
             return { message: 'Lỗi hệ thống: Không tìm thấy role seller' };
         }
+
+        const createShopPermission = await this.prisma.permission.findUnique({
+            where: { name: 'create_shop' },
+            select: { id: true },
+        });
 
         await this.prisma.$transaction(async (tx) => {
             await tx.shops.create({
@@ -87,9 +143,11 @@ export class ProfileService {
                 });
             }
 
-            await tx.userpermission.deleteMany({
-                where: { user_id: userid, permission_id: createShopPermission.id },
-            });
+            if (createShopPermission) {
+                await tx.userpermission.deleteMany({
+                    where: { user_id: userid, permission_id: createShopPermission.id },
+                });
+            }
         });
 
         return { message: 'Tạo cửa hàng thành công' };

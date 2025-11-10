@@ -1,266 +1,161 @@
-# Messages API Documentation
+# Messages Module
 
 ## Overview
-API cho hệ thống tin nhắn (messaging system), bao gồm các chức năng:
-- Tạo và quản lý cuộc hội thoại (conversations)
-- Gửi và nhận tin nhắn
-- Đánh dấu tin nhắn đã đọc
-- Tìm kiếm cuộc hội thoại
 
-## Database Schema
-Hệ thống sử dụng 4 bảng chính:
-- `conversations`: Lưu thông tin cuộc hội thoại
-- `conversation_participants`: Lưu thành viên trong cuộc hội thoại
-- `messages`: Lưu tin nhắn
-- `message_reads`: Lưu trạng thái đã đọc tin nhắn
+This module provides the foundational REST API for the application's messaging system. It is responsible for creating and managing conversations, persisting messages, and handling read statuses.
 
-## Endpoints
-
-### 1. Tạo cuộc hội thoại mới
-```
-POST /messages/conversations
-```
-
-**Request Body:**
-```json
-{
-  "participant_ids": [2, 3], // Danh sách ID user tham gia
-  "type": "private" // "private" hoặc "group"
-}
-```
-
-**Response:**
-```json
-{
-  "id": 1,
-  "type": "private",
-  "created_at": "2024-01-01T00:00:00Z",
-  "participants": [
-    {
-      "user_id": 1,
-      "role": "admin",
-      "joined_at": "2024-01-01T00:00:00Z",
-      "user": {
-        "id": 1,
-        "full_name": "John Doe",
-        "avatar_url": "https://example.com/avatar1.jpg"
-      }
-    }
-  ]
-}
-```
-
-### 2. Lấy danh sách cuộc hội thoại
-```
-GET /messages/conversations?page=1&limit=10
-```
-
-**Response:**
-```json
-{
-  "data": [
-    {
-      "id": 1,
-      "type": "private",
-      "created_at": "2024-01-01T00:00:00Z",
-      "participants": [...],
-      "last_message": {
-        "id": 10,
-        "content": "Hello there!",
-        "created_at": "2024-01-01T10:00:00Z",
-        "sender": {
-          "id": 2,
-          "full_name": "Jane Smith",
-          "avatar_url": "https://example.com/avatar2.jpg"
-        }
-      },
-      "unread_count": 3
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 5,
-    "pages": 1
-  }
-}
-```
-
-### 3. Lấy chi tiết cuộc hội thoại
-```
-GET /messages/conversations/:id
-```
-
-### 4. Tìm hoặc tạo cuộc hội thoại với user khác
-```
-POST /messages/conversations/find-or-create/:otherUserId
-```
-
-### 5. Gửi tin nhắn
-```
-POST /messages
-```
-
-**Request Body:**
-```json
-{
-  "conversation_id": 1,
-  "content": "Hello, how are you?"
-}
-```
-
-**Response:**
-```json
-{
-  "id": 10,
-  "conversation_id": 1,
-  "sender_id": 1,
-  "content": "Hello, how are you?",
-  "created_at": "2024-01-01T10:00:00Z",
-  "sender": {
-    "id": 1,
-    "full_name": "John Doe",
-    "avatar_url": "https://example.com/avatar1.jpg"
-  }
-}
-```
-
-### 6. Lấy tin nhắn trong cuộc hội thoại
-```
-GET /messages/conversations/:conversationId/messages?page=1&limit=20
-```
-
-**Response:**
-```json
-{
-  "data": [
-    {
-      "id": 10,
-      "conversation_id": 1,
-      "sender_id": 1,
-      "content": "Hello, how are you?",
-      "created_at": "2024-01-01T10:00:00Z",
-      "sender": {
-        "id": 1,
-        "full_name": "John Doe",
-        "avatar_url": "https://example.com/avatar1.jpg"
-      },
-      "message_reads": [
-        {
-          "user_id": 1,
-          "read_at": "2024-01-01T10:00:00Z",
-          "user": {
-            "id": 1,
-            "full_name": "John Doe",
-            "avatar_url": "https://example.com/avatar1.jpg"
-          }
-        }
-      ]
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 50,
-    "pages": 3
-  }
-}
-```
-
-### 7. Đánh dấu tin nhắn là đã đọc
-```
-PATCH /messages/:messageId/read
-```
-
-### 8. Đánh dấu tất cả tin nhắn trong conversation là đã đọc
-```
-PATCH /messages/conversations/:conversationId/read-all
-```
-
-**Response:**
-```json
-{
-  "message": "All messages marked as read",
-  "marked_count": 5
-}
-```
-
-### 9. Đếm số tin nhắn chưa đọc
-```
-GET /messages/conversations/:conversationId/unread-count
-```
-
-**Response:**
-```json
-3
-```
-
-### 10. Xóa tin nhắn
-```
-DELETE /messages/:messageId
-```
+**Note:** While this module provides the core data management via a REST API, the real-time communication (sending and receiving messages instantly) is handled by the `ChatModule` using WebSockets. This module is primarily used for fetching initial data, like conversation lists and message history.
 
 ## Features
 
-### 1. **Private Conversations**
-- Tự động kiểm tra và trả về cuộc hội thoại đã tồn tại giữa 2 người
-- Mỗi cặp user chỉ có 1 cuộc hội thoại private
+-   **Conversation Management**: Create private (1-on-1) or group conversations.
+-   **Find or Create**: A convenient endpoint to start a 1-on-1 chat without checking if a conversation already exists.
+-   **Message History**: Retrieve paginated message history for any conversation.
+-   **Read Status**: Endpoints to mark messages as read and get unread counts.
+-   **Data Persistence**: Saves all conversations and messages to the database.
 
-### 2. **Group Conversations**
-- Hỗ trợ cuộc hội thoại nhóm với nhiều thành viên
-- Phân quyền admin/member cho các thành viên
+## API Endpoints
 
-### 3. **Message Read Status**
-- Theo dõi trạng thái đã đọc của từng tin nhắn
-- Đếm số tin nhắn chưa đọc trong mỗi cuộc hội thoại
-- Tự động đánh dấu đã đọc cho người gửi
+---
 
-### 4. **Real-time Ready**
-- Cấu trúc API sẵn sàng tích hợp WebSocket
-- Dữ liệu response phù hợp cho real-time updates
+### 1. Get User's Conversations
 
-### 5. **Pagination**
-- Phân trang cho danh sách cuộc hội thoại
-- Phân trang cho tin nhắn (mặc định 20 tin nhắn/trang)
+-   **Endpoint:** `GET /messages/conversations`
+-   **Description:** Retrieves a paginated list of all conversations the current user is a part of.
+-   **Auth:** Required (JWT).
+-   **Query Parameters:**
+    -   `userId` (number, optional): The ID of the user. In production, this is taken from the JWT.
+    -   `page` (number, optional): Page number for pagination (default: 1).
+    -   `limit` (number, optional): Items per page (default: 10).
+-   **Response (200):**
+    ```json
+    {
+      "data": [
+        {
+          "id": 1,
+          "type": "private",
+          "created_at": "2025-11-10T10:00:00.000Z",
+          "participants": [
+            { "user_id": 1, "user": { "id": 1, "full_name": "You", "avatar_url": "..." } },
+            { "user_id": 2, "user": { "id": 2, "full_name": "Jane Doe", "avatar_url": "..." } }
+          ],
+          "unread_count": 2,
+          "last_message": {
+            "id": 123,
+            "content": "See you then!",
+            "created_at": "2025-11-10T12:30:00.000Z",
+            "sender": { "id": 2, "full_name": "Jane Doe", "avatar_url": "..." }
+          }
+        }
+      ],
+      "pagination": { "page": 1, "limit": 10, "total": 1, "pages": 1 }
+    }
+    ```
 
-## Security & Permissions
+---
 
-1. **User Authentication**: Hiện tại đang mock user ID = 1. Khi có authentication system, uncomment các `@UseGuards(JwtAuthGuard)` decorators.
+### 2. Find or Create a Private Conversation
 
-2. **Message Permissions**:
-   - Chỉ thành viên cuộc hội thoại mới có thể xem tin nhắn
-   - Chỉ người gửi mới có thể xóa tin nhắn của mình
-   - Tự động thêm người tạo conversation vào danh sách participants
+-   **Endpoint:** `POST /messages/conversations/find-or-create/:otherUserId`
+-   **Description:** The primary way to start a 1-on-1 chat. It finds an existing private conversation with the other user or creates a new one if none exists.
+-   **Auth:** Required (JWT).
+-   **Params:**
+    -   `otherUserId` (number): The ID of the user you want to chat with.
+-   **Request Body (Optional):**
+    -   `userId` can be passed for testing.
+    ```json
+    {
+      "userId": 1
+    }
+    ```
+-   **Response (200 or 201):** The full conversation object.
+    ```json
+    {
+      "id": 1,
+      "type": "private",
+      "created_at": "2025-11-10T10:00:00.000Z",
+      "participants": [
+        { "user_id": 1, "user": { "id": 1, "full_name": "You", "avatar_url": "..." } },
+        { "user_id": 2, "user": { "id": 2, "full_name": "Jane Doe", "avatar_url": "..." } }
+      ]
+    }
+    ```
 
-3. **Privacy**:
-   - Private conversations chỉ có 2 thành viên
-   - Group conversations có thể có nhiều thành viên
+---
 
-## Database Indexes (Recommended)
+### 3. Get Messages in a Conversation
 
-Để tối ưu performance, nên tạo các index sau:
+-   **Endpoint:** `GET /messages/conversations/:conversationId/messages`
+-   **Description:** Retrieves a paginated history of messages for a specific conversation.
+-   **Auth:** Required (JWT).
+-   **Params:**
+    -   `conversationId` (number): The ID of the conversation.
+-   **Query Parameters:**
+    -   `page` (number, optional): Page number (default: 1).
+    -   `limit` (number, optional): Items per page (default: 20).
+-   **Response (200):**
+    ```json
+    {
+      "data": [
+        {
+          "id": 122,
+          "conversation_id": 1,
+          "sender_id": 1,
+          "content": "Hello!",
+          "created_at": "2025-11-10T12:29:00.000Z",
+          "sender": { "id": 1, "full_name": "You", "avatar_url": "..." },
+          "message_reads": [{ "user_id": 1, "read_at": "..." }]
+        },
+        {
+          "id": 123,
+          "conversation_id": 1,
+          "sender_id": 2,
+          "content": "See you then!",
+          "created_at": "2025-11-10T12:30:00.000Z",
+          "sender": { "id": 2, "full_name": "Jane Doe", "avatar_url": "..." },
+          "message_reads": []
+        }
+      ],
+      "pagination": { "page": 1, "limit": 20, "total": 2, "pages": 1 }
+    }
+    ```
 
-```sql
--- Index cho conversation participants
-CREATE INDEX idx_conversation_participants_user_id ON conversation_participants(user_id);
-CREATE INDEX idx_conversation_participants_conversation_id ON conversation_participants(conversation_id);
+---
 
--- Index cho messages
-CREATE INDEX idx_messages_conversation_id ON messages(conversation_id);
-CREATE INDEX idx_messages_created_at ON messages(created_at);
+### 4. Mark All Messages as Read
 
--- Index cho message reads
-CREATE INDEX idx_message_reads_user_id ON message_reads(user_id);
-CREATE INDEX idx_message_reads_message_id ON message_reads(message_id);
-```
+-   **Endpoint:** `PATCH /messages/conversations/:conversationId/read-all`
+-   **Description:** Marks all unread messages in a conversation as read for the current user.
+-   **Auth:** Required (JWT).
+-   **Params:**
+    -   `conversationId` (number): The ID of the conversation.
+-   **Request Body (Optional):**
+    -   `userId` can be passed for testing.
+    ```json
+    {
+      "userId": 1
+    }
+    ```
+-   **Response (200):**
+    ```json
+    {
+      "message": "All messages marked as read",
+      "marked_count": 2
+    }
+    ```
 
-## Future Enhancements
+---
 
-1. **File Attachments**: Hỗ trợ gửi file, hình ảnh
-2. **Message Types**: Phân loại tin nhắn (text, image, file, system)
-3. **Message Reactions**: Emoji reactions
-4. **Message Threading**: Reply to specific messages
-5. **Push Notifications**: Thông báo tin nhắn mới
-6. **Message Search**: Tìm kiếm tin nhắn trong cuộc hội thoại
-7. **Online Status**: Trạng thái online/offline của users
-8. **Message Encryption**: Mã hóa tin nhắn
+### 5. Delete a Message
+
+-   **Endpoint:** `DELETE /messages/:messageId`
+-   **Description:** Deletes a message. Only the original sender can delete their own message.
+-   **Auth:** Required (JWT).
+-   **Params:**
+    -   `messageId` (number): The ID of the message to delete.
+-   **Response (200):**
+    ```json
+    {
+      "message": "Message deleted successfully"
+    }
+    ```

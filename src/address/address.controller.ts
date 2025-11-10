@@ -12,14 +12,14 @@ export class AddressController {
     @Post('add-address')
     async addAddress(@Body() createAddressDto: CreateAddressDto, @Req() req: any) {
         const userId = req.user.userId;
-        return this.addressService.addaddress(userId, createAddressDto.label, createAddressDto.receiver_name, createAddressDto.phone, createAddressDto.province, createAddressDto.district, createAddressDto.ward, createAddressDto.street, createAddressDto.is_default);
+        return this.addressService.addaddress(userId, createAddressDto.label, createAddressDto.receiver_name, createAddressDto.phone, createAddressDto.province, createAddressDto.district, createAddressDto.ward, createAddressDto.street, createAddressDto.is_default, createAddressDto.ghn_province_id, createAddressDto.ghn_district_id, createAddressDto.ghn_ward_code);
     }
 
     @Post('update-address')
     async updateAddress(@Body() updateAddressDto: UpdateAddressDto, @Req() req: any) {
         const userId = req.user.userId; // For ownership check in service if needed
         // We assume the service will handle checking if this address belongs to the user.
-        return this.addressService.updateaddress(updateAddressDto.addressid, updateAddressDto.label, updateAddressDto.receiver_name, updateAddressDto.phone, updateAddressDto.province, updateAddressDto.district, updateAddressDto.ward, updateAddressDto.street, updateAddressDto.is_default);
+        return this.addressService.updateaddress(updateAddressDto.addressid, updateAddressDto.label, updateAddressDto.receiver_name, updateAddressDto.phone, updateAddressDto.province, updateAddressDto.district, updateAddressDto.ward, updateAddressDto.street, updateAddressDto.is_default, updateAddressDto.ghn_province_id, updateAddressDto.ghn_district_id, updateAddressDto.ghn_ward_code);
     }
 
     @Get('all-address')
