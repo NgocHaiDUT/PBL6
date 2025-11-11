@@ -111,10 +111,10 @@ export class ProfileService {
             return { message: 'Lỗi hệ thống: Không tìm thấy role seller' };
         }
 
-        const createShopPermission = await this.prisma.permission.findUnique({
-            where: { name: 'create_shop' },
-            select: { id: true },
-        });
+        // const createShopPermission = await this.prisma.permission.findUnique({
+        //     where: { name: 'create_shop' },
+        //     select: { id: true },
+        // });
 
         await this.prisma.$transaction(async (tx) => {
             await tx.shops.create({
@@ -143,11 +143,11 @@ export class ProfileService {
                 });
             }
 
-            if (createShopPermission) {
-                await tx.userpermission.deleteMany({
-                    where: { user_id: userid, permission_id: createShopPermission.id },
-                });
-            }
+            // if (createShopPermission) {
+            //     await tx.userpermission.deleteMany({
+            //         where: { user_id: userid, permission_id: createShopPermission.id },
+            //     });
+            // }
         });
 
         return { message: 'Tạo cửa hàng thành công' };
@@ -193,22 +193,22 @@ export class ProfileService {
     }
 
     async updatelogoshop(userid:number ,shopid: number, logo_url: string) {
-        const editprofileshopPermission = await this.prisma.permission.findUnique ({
-            where : {name : 'edit_profile_shop'},
-            select : {id : true}
-        })
-        if(!editprofileshopPermission){
-            return { message : "Lỗi hệ thống , không tìm thấy quyền edit_profile_shop"};
-        }
+        // const editprofileshopPermission = await this.prisma.permission.findUnique ({
+        //     where : {name : 'edit_profile_shop'},
+        //     select : {id : true}
+        // })
+        // if(!editprofileshopPermission){
+        //     return { message : "Lỗi hệ thống , không tìm thấy quyền edit_profile_shop"};
+        // }
 
-        const haseditprofileshopPermission = await this.prisma.userpermission.findFirst ({
-            where : {user_id : userid, permission_id : editprofileshopPermission.id},
-            select : { user_id : true}
-        })
+        // const haseditprofileshopPermission = await this.prisma.userpermission.findFirst ({
+        //     where : {user_id : userid, permission_id : editprofileshopPermission.id},
+        //     select : { user_id : true}
+        // })
 
-        if(!haseditprofileshopPermission) {
-            return {message: "Bạn không có quyền chỉnh logo shop"}
-        }
+        // if(!haseditprofileshopPermission) {
+        //     return {message: "Bạn không có quyền chỉnh logo shop"}
+        // }
 
         await this.prisma.shops.update({
             where: { id: shopid },
@@ -218,22 +218,22 @@ export class ProfileService {
     }
 
     async updatebannershop(userid : number ,shopid: number, banner_url: string) {
-        const editprofileshopPermission = await this.prisma.permission.findUnique ({
-            where : {name : 'edit_profile_shop'},
-            select : {id : true}
-        })
-        if(!editprofileshopPermission){
-            return { message : "Lỗi hệ thống , không tìm thấy quyền edit_profile_shop"};
-        }
+        // const editprofileshopPermission = await this.prisma.permission.findUnique ({
+        //     where : {name : 'edit_profile_shop'},
+        //     select : {id : true}
+        // })
+        // if(!editprofileshopPermission){
+        //     return { message : "Lỗi hệ thống , không tìm thấy quyền edit_profile_shop"};
+        // }
 
-        const haseditprofileshopPermission = await this.prisma.userpermission.findFirst ({
-            where : {user_id : userid, permission_id : editprofileshopPermission.id},
-            select : { user_id : true}
-        })
+        // const haseditprofileshopPermission = await this.prisma.userpermission.findFirst ({
+        //     where : {user_id : userid, permission_id : editprofileshopPermission.id},
+        //     select : { user_id : true}
+        // })
 
-        if(!haseditprofileshopPermission) {
-            return {message: "Bạn không có quyền chỉnh banner shop"}
-        }
+        // if(!haseditprofileshopPermission) {
+        //     return {message: "Bạn không có quyền chỉnh banner shop"}
+        // }
 
         await this.prisma.shops.update({
             where: { id: shopid },
@@ -243,22 +243,22 @@ export class ProfileService {
     }
 
     async updatephoneshop(userid: number, shopid: number, phone: string) {
-        const editprofileshopPermission = await this.prisma.permission.findUnique ({
-            where : {name : 'edit_profile_shop'},
-            select : {id : true}
-        })
-        if(!editprofileshopPermission){
-            return { message : "Lỗi hệ thống , không tìm thấy quyền edit_profile_shop"};
-        }
+        // const editprofileshopPermission = await this.prisma.permission.findUnique ({
+        //     where : {name : 'edit_profile_shop'},
+        //     select : {id : true}
+        // })
+        // if(!editprofileshopPermission){
+        //     return { message : "Lỗi hệ thống , không tìm thấy quyền edit_profile_shop"};
+        // }
 
-        const haseditprofileshopPermission = await this.prisma.userpermission.findFirst ({
-            where : {user_id : userid, permission_id : editprofileshopPermission.id},
-            select : { user_id : true}
-        })
+        // const haseditprofileshopPermission = await this.prisma.userpermission.findFirst ({
+        //     where : {user_id : userid, permission_id : editprofileshopPermission.id},
+        //     select : { user_id : true}
+        // })
 
-        if(!haseditprofileshopPermission) {
-            return {message: "Bạn không có quyền chỉnh sdt shop"}
-        }
+        // if(!haseditprofileshopPermission) {
+        //     return {message: "Bạn không có quyền chỉnh sdt shop"}
+        // }
 
         await this.prisma.shops.update({
             where: { id: shopid },
@@ -268,22 +268,22 @@ export class ProfileService {
     }
 
     async updateemailshop(userid:number , shopid: number, email: string) {
-        const editprofileshopPermission = await this.prisma.permission.findUnique ({
-            where : {name : 'edit_profile_shop'},
-            select : {id : true}
-        })
-        if(!editprofileshopPermission){
-            return { message : "Lỗi hệ thống , không tìm thấy quyền edit_profile_shop"};
-        }
+        // const editprofileshopPermission = await this.prisma.permission.findUnique ({
+        //     where : {name : 'edit_profile_shop'},
+        //     select : {id : true}
+        // })
+        // if(!editprofileshopPermission){
+        //     return { message : "Lỗi hệ thống , không tìm thấy quyền edit_profile_shop"};
+        // }
 
-        const haseditprofileshopPermission = await this.prisma.userpermission.findFirst ({
-            where : {user_id : userid, permission_id : editprofileshopPermission.id},
-            select : { user_id : true}
-        })
+        // const haseditprofileshopPermission = await this.prisma.userpermission.findFirst ({
+        //     where : {user_id : userid, permission_id : editprofileshopPermission.id},
+        //     select : { user_id : true}
+        // })
 
-        if(!haseditprofileshopPermission) {
-            return {message: "Bạn không có quyền chỉnh email shop"}
-        }
+        // if(!haseditprofileshopPermission) {
+        //     return {message: "Bạn không có quyền chỉnh email shop"}
+        // }
 
         await this.prisma.shops.update({
             where: { id: shopid },
@@ -293,22 +293,22 @@ export class ProfileService {
     }
 
     async updatedescriptionshop(userid:number ,shopid: number, description: string) {
-        const editprofileshopPermission = await this.prisma.permission.findUnique ({
-            where : {name : 'edit_profile_shop'},
-            select : {id : true}
-        })
-        if(!editprofileshopPermission){
-            return { message : "Lỗi hệ thống , không tìm thấy quyền edit_profile_shop"};
-        }
+        // const editprofileshopPermission = await this.prisma.permission.findUnique ({
+        //     where : {name : 'edit_profile_shop'},
+        //     select : {id : true}
+        // })
+        // if(!editprofileshopPermission){
+        //     return { message : "Lỗi hệ thống , không tìm thấy quyền edit_profile_shop"};
+        // }
 
-        const haseditprofileshopPermission = await this.prisma.userpermission.findFirst ({
-            where : {user_id : userid, permission_id : editprofileshopPermission.id},
-            select : { user_id : true}
-        })
+        // const haseditprofileshopPermission = await this.prisma.userpermission.findFirst ({
+        //     where : {user_id : userid, permission_id : editprofileshopPermission.id},
+        //     select : { user_id : true}
+        // })
 
-        if(!haseditprofileshopPermission) {
-            return {message: "Bạn không có quyền chỉnh mô tả shop"}
-        }
+        // if(!haseditprofileshopPermission) {
+        //     return {message: "Bạn không có quyền chỉnh mô tả shop"}
+        // }
 
         await this.prisma.shops.update({
             where: { id: shopid },

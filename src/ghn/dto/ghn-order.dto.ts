@@ -27,6 +27,26 @@ export class CalculateFeeItemDto {
   @IsOptional()
   @Type(() => Number)
   price?: number;
+
+  @IsInt()
+  @IsOptional()
+  @Type(() => Number)
+  length?: number;
+
+  @IsInt()
+  @IsOptional()
+  @Type(() => Number)
+  width?: number;
+
+  @IsInt()
+  @IsOptional()
+  @Type(() => Number)
+  height?: number;
+
+  @IsInt()
+  @IsOptional()
+  @Type(() => Number)
+  weight?: number;
 }
 
 export class CalculateFeeDto {

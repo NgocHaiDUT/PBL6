@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GhnService } from '../ghn/ghn.service';
-import { CreateOrderDto, CalculateFeeDto, CreateOrderItemDto, UpdateOrderDto } from '../ghn/dto/ghn-order.dto';
+import { CreateOrderDto, CreateOrderItemDto, UpdateOrderDto } from '../ghn/dto/ghn-order.dto';
 
 @Injectable()
 export class OrderService {
@@ -63,9 +63,7 @@ export class OrderService {
                 const orderData = await this.prisma.$transaction(async (tx) => {
                     let subtotal = 0;
                     let orderItems: any[] = [];
-                    let totalWeight = 0;
-                    let maxLen = 0, maxWid = 0, sumHei = 0; // For GHN package dimensions
-
+                    
                     // Get shop details and default pickup address
                     const shop = await tx.shops.findUnique({
                         where: { id: Number(shopId) },
@@ -82,7 +80,7 @@ export class OrderService {
                     }
                     const pickupAddress = shop.addresses[0];
 
-                    // Calculate totals, aggregate dimensions/weight, and prepare order items
+                    // Calculate totals and prepare order items
                     const ghnItems: CreateOrderItemDto[] = [];
                     const productNames: string[] = [];
 
@@ -94,12 +92,6 @@ export class OrderService {
                         
                         subtotal += lineTotal;
                         productNames.push(`${cartItem.product.name} (${variant?.name || 'N/A'}) x${quantity}`);
-
-                        // Aggregate dimensions and weight for GHN
-                        if (variant?.weight) totalWeight += variant.weight * quantity;
-                        if (variant?.length) maxLen = Math.max(maxLen, variant.length);
-                        if (variant?.width) maxWid = Math.max(maxWid, variant.width);
-                        if (variant?.height) sumHei += variant.height * quantity; // Sum heights for simplicity, GHN might have specific logic
 
                         orderItems.push({
                             product_id: cartItem.product_id,
@@ -123,31 +115,33 @@ export class OrderService {
                         });
                     }
 
-                    // Default dimensions if not available from products
-                    if (maxLen === 0) maxLen = 10;
-                    if (maxWid === 0) maxWid = 10;
-                    if (sumHei === 0) sumHei = 5;
-                    if (totalWeight === 0) totalWeight = 100; // Default to 100g
-
                     // Calculate shipping fee using GHN API
                     let shippingFee = 0;
                     let expectedDeliveryTime: Date | undefined;
                     try {
-                        const ghnFeeData: CalculateFeeDto = {
-                            from_district_id: pickupAddress.ghn_district_id!,
-                            from_ward_code: pickupAddress.ghn_ward_code!,
-                            to_district_id: shippingAddress.ghn_district_id!,
-                            to_ward_code: shippingAddress.ghn_ward_code!,
-                            service_id: 53320, // Default service ID for now, can be dynamic
-                            height: sumHei,
-                            length: maxLen,
-                            width: maxWid,
-                            weight: totalWeight,
-                            insurance_value: Math.round(subtotal),
+                        // Prepare DTO for preview/fee calculation.
+                        // Note: service_type_id will be forced to 5 in ghn.service
+                        const ghnPreviewData: CreateOrderDto = {
+                            payment_type_id: paymentMethod === 'cod' ? 2 : 1,
+                            to_name: shippingAddress.recipient,
+                            to_phone: shippingAddress.phone,
+                            to_address: shippingAddress.street,
+                            to_ward_name: shippingAddress.ward,
+                            to_district_name: shippingAddress.district,
+                            to_province_name: shippingAddress.province,
+                            from_name: shop.name,
+                            from_phone: shop.phone || pickupAddress.phone,
+                            from_address: pickupAddress.street,
+                            from_ward_name: pickupAddress.ward,
+                            from_district_name: pickupAddress.district,
+                            from_province_name: pickupAddress.province,
                             cod_amount: paymentMethod === 'cod' ? Math.round(subtotal) : 0,
+                            insurance_value: Math.round(subtotal),
                             items: ghnItems,
+                            service_type_id: 5, // Explicitly set for clarity, will be enforced by ghn.service
+                            required_note: 'KHONGCHOXEMHANG',
                         };
-                        const feeResponse = await this.ghnService.previewShippingOrder(ghnFeeData);
+                        const feeResponse = await this.ghnService.previewShippingOrder(ghnPreviewData);
                         shippingFee = feeResponse.total_fee;
                         expectedDeliveryTime = feeResponse.expected_delivery_time ? new Date(feeResponse.expected_delivery_time) : undefined;
                     } catch (ghnError) {
@@ -234,13 +228,9 @@ export class OrderService {
 
                             cod_amount: paymentMethod === 'cod' ? Math.round(totalAmount) : 0,
                             content: productNames.join(', ').substring(0, 2000), // Max 2000 chars
-                            length: maxLen,
-                            width: maxWid,
-                            height: sumHei,
-                            weight: totalWeight,
                             insurance_value: Math.round(subtotal),
-                            service_type_id: 2, // Hàng nhẹ, can be dynamic
                             items: ghnItems,
+                            service_type_id: 5, // Explicitly set for clarity, will be enforced by ghn.service
                         };
                         const ghnOrderResponse = await this.ghnService.createShippingOrder(ghnCreateOrderData, shop.ghn_shop_id);
                         ghnOrderCode = ghnOrderResponse.order_code;

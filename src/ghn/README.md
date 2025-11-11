@@ -10,7 +10,7 @@ This module requires the following environment variables to be set in the projec
 
 ```
 GHN_API_TOKEN="your_ghn_api_token"
-GHN_API_URL="https://dev-online-gateway.ghn.vn/shiip/public-api/v2"
+GHN_API_URL="https://dev-online-gateway.ghn.vn/shiip/public-api"
 ```
 
 ## Important Note on `shopId`
@@ -98,22 +98,25 @@ These endpoints are used to fetch administrative location data required for addr
 ### Get Available Services
 
 -   **Endpoint:** `POST /ghn/services`
--   **Description:** Gets the available shipping service packages for a given route.
+-   **Description:** Lấy các gói dịch vụ vận chuyển có sẵn theo tuyến đường.
 -   **Request Body:**
     ```json
     {
-      "shop_id": 12345, // GHN Shop ID
-      "from_district": 1442,
-      "to_district": 1444
+      "from_district": 1447,
+      "to_district": 1442,
+      "shop_id": 885
     }
     ```
 -   **Response (200):**
     ```json
     [
         {
-            "service_id": 53320,
-            "short_name": "Nhanh",
-            "service_type_id": 2
+            "short_name":"Hàng nặng",
+            "service_type_id":5
+        },
+        {
+            "short_name":"Hàng nhẹ",
+            "service_type_id":2
         }
     ]
     ```
@@ -121,7 +124,7 @@ These endpoints are used to fetch administrative location data required for addr
 ### Calculate Shipping Fee
 
 -   **Endpoint:** `POST /ghn/calculate-fee`
--   **Description:** Calculates the shipping fee for a potential order.
+-   **Description:** Tính phí dịch vụ cho một đơn hàng. Note: This service now always uses the 'Heavy Goods' (`service_type_id: 5`) logic, requiring item-level dimensions.
 -   **Request Body (`CalculateFeeDto`):**
     ```json
     {
@@ -130,23 +133,27 @@ These endpoints are used to fetch administrative location data required for addr
       "to_district_id": 1444,
       "to_ward_code": "20301",
       "service_id": 53320,
-      "height": 10,
-      "length": 20,
-      "width": 15,
-      "weight": 500,
       "insurance_value": 250000,
-      "cod_amount": 250000
+      "cod_amount": 250000,
+      "items": [
+        {
+          "name": "Awesome Product",
+          "quantity": 1,
+          "price": 250000,
+          "length": 20,
+          "width": 15,
+          "height": 10,
+          "weight": 500
+        }
+      ]
     }
     ```
 -   **Response (200):**
     ```json
     {
-      "total": 25000,
-      "service_fee": 25000,
-      "insurance_fee": 0,
-      "pick_station_fee": 0,
-      "coupon_value": 0,
-      "r2s_fee": 0
+        "total": 36300,
+        "service_fee": 36300,
+        "insurance_fee": 0
     }
     ```
 
@@ -157,7 +164,7 @@ These endpoints are used to fetch administrative location data required for addr
 ### Create Shipping Order
 
 -   **Endpoint:** `POST /ghn/create-order`
--   **Description:** Creates a new shipping order on the GHN platform.
+-   **Description:** Creates a new shipping order on the GHN platform. Note: This service now always uses the 'Heavy Goods' (`service_type_id: 5`) logic.
 -   **Query Parameters:**
     -   `shopId` (number, required): The shop's `ghn_shop_id`.
 -   **Request Body (`CreateOrderDto`):**
@@ -180,16 +187,16 @@ These endpoints are used to fetch administrative location data required for addr
       "to_province_name": "TP.HCM",
       "cod_amount": 275000,
       "content": "My Awesome Product",
-      "weight": 500,
-      "length": 20,
-      "width": 15,
-      "height": 10,
-      "service_type_id": 2,
+      "insurance_value": 250000,
       "items": [
         {
           "name": "My Awesome Product",
           "quantity": 1,
-          "price": 250000
+          "price": 250000,
+          "length": 20,
+          "width": 15,
+          "height": 10,
+          "weight": 500
         }
       ]
     }
@@ -198,7 +205,7 @@ These endpoints are used to fetch administrative location data required for addr
     ```json
     {
       "order_code": "GXYZ123ABC",
-      "total_fee": "25000",
+      "total_fee": "36300",
       "expected_delivery_time": "2025-11-12T22:00:00Z"
     }
     ```

@@ -51,7 +51,7 @@ export class GhnController {
   }
 
   @Post('preview-order')
-  async previewShippingOrder(@Body() body: CalculateFeeDto) {
+  async previewShippingOrder(@Body() body: CreateOrderDto) {
     return this.ghnService.previewShippingOrder(body);
   }
 

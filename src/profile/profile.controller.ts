@@ -125,7 +125,8 @@ export class ProfileController {
     }
 
     @Post('update-logo-shop')
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+    @RequirePermissions('edit_profile_shop')
     @UseInterceptors(FileInterceptor('file', getMulterOptions('shops')))
     async updatelogoshop(
         @Body('shopid', ParseIntPipe) shopid: number,
@@ -141,7 +142,8 @@ export class ProfileController {
     }
 
     @Post('update-banner-shop')
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+    @RequirePermissions('edit_profile_shop')
     @UseInterceptors(FileInterceptor('file', getMulterOptions('shops')))
     async updatebannershop(
         @Body('shopid', ParseIntPipe) shopid: number,
@@ -157,21 +159,24 @@ export class ProfileController {
     }
 
     @Post('update-phone-shop')
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+    @RequirePermissions('edit_profile_shop')
     async updateshopphone(@Body() body: { shopid: number, phone: string}, @Req() req: any) {
         const userId = req.user.userId;
         return this.profileService.updatephoneshop(userId, body.shopid, body.phone);
     }
 
     @Post('update-email-shop')
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+    @RequirePermissions('edit_profile_shop')
     async updateshopemail(@Body() body: { shopid: number, email: string}, @Req() req: any) {
         const userId = req.user.userId;
         return this.profileService.updateemailshop(userId, body.shopid, body.email);
     }
 
     @Post('update-description-shop')
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+    @RequirePermissions('edit_profile_shop')
     async updateshopdescription(@Body() body: { shopid: number, description: string}, @Req() req: any) {
         const userId = req.user.userId;
         return this.profileService.updatedescriptionshop(userId, body.shopid, body.description);

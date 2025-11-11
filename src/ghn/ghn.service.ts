@@ -74,7 +74,7 @@ export class GhnService {
   }
 
   async registerShop(shopData: RegisterShopDto) {
-    return this.makeRequest('shop/register', 'post', shopData);
+    return this.makeRequest('v2/shop/register', 'post', shopData);
   }
 
   async getAvailableServices(data: GetServicesDto) {
@@ -82,14 +82,69 @@ export class GhnService {
   }
 
   async calculateShippingFee(data: CalculateFeeDto) {
+    // Enforce service_type_id to 5 (Heavy goods)
+    data.service_type_id = 5;
+
+    // Remove top-level dimensions as GHN will use item-level dimensions for service_type_id 5
+    delete data.length;
+    delete data.width;
+    delete data.height;
+    delete data.weight;
+
+    // Validate items for Heavy goods
+    if (!data.items || data.items.length === 0) {
+      throw new HttpException('Items are required for Heavy goods service_type_id 5', HttpStatus.BAD_REQUEST);
+    }
+    for (const item of data.items) {
+      if (!item.length || !item.width || !item.height || !item.weight) {
+        throw new HttpException('Each item must have length, width, height, and weight for Heavy goods service_type_id 5', HttpStatus.BAD_REQUEST);
+      }
+    }
     return this.makeRequest('v2/shipping-order/fee', 'post', data);
   }
 
-  async previewShippingOrder(data: CalculateFeeDto) {
+  async previewShippingOrder(data: CreateOrderDto) {
+    // Enforce service_type_id to 5 (Heavy goods)
+    data.service_type_id = 5;
+
+    // Remove top-level dimensions as GHN will use item-level dimensions for service_type_id 5
+    delete data.length;
+    delete data.width;
+    delete data.height;
+    delete data.weight;
+
+    // Validate items for Heavy goods
+    if (!data.items || data.items.length === 0) {
+      throw new HttpException('Items are required for Heavy goods service_type_id 5', HttpStatus.BAD_REQUEST);
+    }
+    for (const item of data.items) {
+      if (!item.length || !item.width || !item.height || !item.weight) {
+        throw new HttpException('Each item must have length, width, height, and weight for Heavy goods service_type_id 5', HttpStatus.BAD_REQUEST);
+      }
+    }
     return this.makeRequest('v2/shipping-order/preview', 'post', data);
   }
 
   async createShippingOrder(data: CreateOrderDto, shopId: number) {
+    // Enforce service_type_id to 5 (Heavy goods)
+    data.service_type_id = 5;
+
+    // Remove top-level dimensions as GHN will use item-level dimensions for service_type_id 5
+    delete data.length;
+    delete data.width;
+    delete data.height;
+    delete data.weight;
+
+    // Validate items for Heavy goods
+    if (!data.items || data.items.length === 0) {
+      throw new HttpException('Items are required for Heavy goods service_type_id 5', HttpStatus.BAD_REQUEST);
+    }
+    for (const item of data.items) {
+      if (!item.length || !item.width || !item.height || !item.weight) {
+        throw new HttpException('Each item must have length, width, height, and weight for Heavy goods service_type_id 5', HttpStatus.BAD_REQUEST);
+      }
+    }
+
     const headers = {
       'Content-Type': 'application/json',
       'Token': this.token,
