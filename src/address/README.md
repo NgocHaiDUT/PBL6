@@ -11,6 +11,7 @@ This module manages user shipping addresses. It allows authenticated users to cr
 - Retrieve all addresses for the currently logged-in user.
 - Delete a specific address.
 - Store GHN-specific location IDs (`ghn_province_id`, `ghn_district_id`, `ghn_ward_code`) for integration with the shipping provider.
+- **Data Integrity:** When an address is created or updated with GHN location IDs, the service automatically fetches the official names for the province, district, and ward from GHN. These official names are then saved to the database, ensuring all address data is standardized and consistent with the shipping provider.
 - **Public endpoints to fetch GHN provinces, districts, and wards.**
 
 ## Workflow

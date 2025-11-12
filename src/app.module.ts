@@ -25,6 +25,7 @@ import { OrderModule } from './order/order.module';
 import { AddressModule } from './address/address.module';
 import { ShopAddressModule } from './shop-address/shop-address.module';
 import { GhnModule } from './ghn/ghn.module';
+import { DeliveryModule } from './delivery/delivery.module';
 @Module({
   imports: [
     AuthModule,
@@ -82,6 +83,7 @@ import { GhnModule } from './ghn/ghn.module';
     ProductModule,
     DataInitModule,
     ShopModule,
+    DeliveryModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

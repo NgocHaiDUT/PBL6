@@ -9,6 +9,7 @@ This module manages the physical addresses associated with a shop, such as picku
 -   **Address Management**: Allows shop owners to add, update, list, and delete multiple addresses for their shop.
 -   **Default Address**: Supports designating one address as the default pickup location.
 -   **Automatic GHN Shop Registration**: This is a key feature of the module. When a **default** address is created with valid GHN location details, the module automatically calls the GHN API to register the shop. The `ghn_shop_id` received from GHN is then saved to the shop's main profile, enabling all future shipping functionalities for that shop.
+-   **Data Integrity**: When an address is created or updated with GHN location IDs, the service automatically fetches the official names for the province, district, and ward from GHN. These official names are then saved to the database, ensuring all address data is standardized and consistent with the shipping provider.
 
 ## Workflow
 

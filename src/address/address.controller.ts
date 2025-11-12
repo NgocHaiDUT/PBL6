@@ -4,10 +4,11 @@ import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { GetDistrictsDto, GetWardsDto } from '../ghn/dto/ghn.dto';
+import { DeliveryService } from 'src/delivery/delivery.service';
 
 @Controller('address')
 export class AddressController {
-    constructor(private readonly addressService: AddressService) {}
+    constructor(private readonly addressService: AddressService, private readonly deliveryService : DeliveryService) {}
 
     @Post('add-address')
     @UseGuards(AuthGuard('jwt'))
@@ -42,7 +43,7 @@ export class AddressController {
     // GHN Endpoints
     @Get('provinces')
     async getProvinces() {
-        return this.addressService.getProvinces();
+        return this.deliveryService.getProvinces();
     }
 
     @Get('districts')
@@ -50,7 +51,7 @@ export class AddressController {
         if (!query.province_id) {
             throw new BadRequestException('province_id is required');
         }
-        return this.addressService.getDistricts(query.province_id);
+        return this.deliveryService.getDistricts(query.province_id);
     }
 
     @Get('wards')
@@ -58,6 +59,6 @@ export class AddressController {
         if (!query.district_id) {
             throw new BadRequestException('district_id is required');
         }
-        return this.addressService.getWards(query.district_id);
+        return this.deliveryService.getWards(query.district_id);
     }
 }

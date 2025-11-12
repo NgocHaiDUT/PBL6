@@ -1,37 +1,52 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateShopAddressDto } from './dto/create-shop-address.dto';
 import { UpdateShopAddressDto } from './dto/update-shop-address.dto';
-import { GhnService } from '../ghn/ghn.service'; // Import GhnService
+import { DeliveryService } from '../delivery/delivery.service';
 
 @Injectable()
 export class ShopAddressService {
     constructor(
         private prisma: PrismaService,
-        private ghnService: GhnService, // Inject GhnService
+        private deliveryService: DeliveryService,
     ) {}
 
     async addShopAddress(createShopAddressDto: CreateShopAddressDto) {
+        let { province, district, ward, ghn_province_id, ghn_district_id, ghn_ward_code, ...restDto } = createShopAddressDto;
+
+        if (ghn_province_id && ghn_district_id && ghn_ward_code) {
+            try {
+                const provinces = await this.deliveryService.getProvinces();
+                const foundProvince = provinces.find(p => p.ProvinceID === ghn_province_id);
+                if (foundProvince) province = foundProvince.ProvinceName;
+
+                const districts = await this.deliveryService.getDistricts(ghn_province_id);
+                const foundDistrict = districts.find(d => d.DistrictID === ghn_district_id);
+                if (foundDistrict) district = foundDistrict.DistrictName;
+
+                const wards = await this.deliveryService.getWards(ghn_district_id);
+                const foundWard = wards.find(w => w.WardCode === ghn_ward_code);
+                if (foundWard) ward = foundWard.WardName;
+            } catch (error) {
+                throw new BadRequestException('Failed to validate shop address with GHN. Please check the provided location IDs.');
+            }
+        }
+
         const newShopAddress = await this.prisma.shop_addresses.create({
             data: {
-                shop_id: createShopAddressDto.shop_id,
-                name: createShopAddressDto.name,
-                phone: createShopAddressDto.phone,
-                email: createShopAddressDto.email,
-                province: createShopAddressDto.province,
-                district: createShopAddressDto.district,
-                ward: createShopAddressDto.ward,
-                street: createShopAddressDto.street,
-                is_default: createShopAddressDto.is_default,
-                ghn_province_id: createShopAddressDto.ghn_province_id,
-                ghn_district_id: createShopAddressDto.ghn_district_id,
-                ghn_ward_code: createShopAddressDto.ghn_ward_code,
+                ...restDto,
+                province,
+                district,
+                ward,
+                ghn_province_id,
+                ghn_district_id,
+                ghn_ward_code,
             },
         });
 
         if (newShopAddress.is_default && newShopAddress.ghn_district_id && newShopAddress.ghn_ward_code) {
             try {
-                const registeredShop = await this.ghnService.registerShop({
+                const registeredShop = await this.deliveryService.registerShop({
                     district_id: newShopAddress.ghn_district_id,
                     ward_code: newShopAddress.ghn_ward_code,
                     name: newShopAddress.name,
@@ -47,7 +62,6 @@ export class ShopAddressService {
                 }
             } catch (error) {
                 console.error('Error registering shop with GHN:', error);
-                // Optionally, handle this error more gracefully, e.g., log it, notify admin, etc.
             }
         }
         return newShopAddress;
@@ -56,10 +70,23 @@ export class ShopAddressService {
     async updateShopAddress(addressId: number, updateShopAddressDto: UpdateShopAddressDto) {
         const dataToUpdate: any = { ...updateShopAddressDto };
 
-        // If ghn_province_id is explicitly set to null or undefined, ensure it's handled
-        if (updateShopAddressDto.ghn_province_id === null) dataToUpdate.ghn_province_id = null;
-        if (updateShopAddressDto.ghn_district_id === null) dataToUpdate.ghn_district_id = null;
-        if (updateShopAddressDto.ghn_ward_code === null) dataToUpdate.ghn_ward_code = null;
+        if (dataToUpdate.ghn_province_id && dataToUpdate.ghn_district_id && dataToUpdate.ghn_ward_code) {
+            try {
+                const provinces = await this.deliveryService.getProvinces();
+                const foundProvince = provinces.find(p => p.ProvinceID === dataToUpdate.ghn_province_id);
+                if (foundProvince) dataToUpdate.province = foundProvince.ProvinceName;
+
+                const districts = await this.deliveryService.getDistricts(dataToUpdate.ghn_province_id);
+                const foundDistrict = districts.find(d => d.DistrictID === dataToUpdate.ghn_district_id);
+                if (foundDistrict) dataToUpdate.district = foundDistrict.DistrictName;
+
+                const wards = await this.deliveryService.getWards(dataToUpdate.ghn_district_id);
+                const foundWard = wards.find(w => w.WardCode === dataToUpdate.ghn_ward_code);
+                if (foundWard) dataToUpdate.ward = foundWard.WardName;
+            } catch (error) {
+                throw new BadRequestException('Failed to validate shop address with GHN. Please check the provided location IDs.');
+            }
+        }
 
         return this.prisma.shop_addresses.update({
             where: { id: addressId },

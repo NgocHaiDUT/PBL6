@@ -245,7 +245,7 @@ export class DataInitService implements OnModuleInit {
                 email: 'owner1@shop.com',
                 password_hash: '$2b$10$example',
                 full_name: 'BeautyShop Owner',
-                phone: '0123456781',
+                phone: '0345671392',
                 is_active: true,
             },
         });
@@ -265,7 +265,7 @@ export class DataInitService implements OnModuleInit {
             data: {
                 shop_id: shop1.id,
                 name: 'BeautyShop',
-                phone: '0123456781',
+                phone: '0345671392',
                 province: 'Đà Nẵng',
                 district: 'Liên Chiểu',
                 ward: 'Hoà Hiệp Nam',
@@ -285,7 +285,7 @@ export class DataInitService implements OnModuleInit {
                 email: 'owner2@shop.com',
                 password_hash: '$2b$10$example',
                 full_name: 'SkincareShop Owner',
-                phone: '0123456782',
+                phone: '0345671392',
                 is_active: true,
             },
         });
@@ -305,7 +305,7 @@ export class DataInitService implements OnModuleInit {
             data: {
                 shop_id: shop2.id,
                 name: 'SkincareShop',
-                phone: '0123456782',
+                phone: '0345671392',
                 province: 'Đà Nẵng',
                 district: 'Hải Châu',
                 ward: 'Hải Châu 1',

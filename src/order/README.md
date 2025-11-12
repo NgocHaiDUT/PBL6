@@ -8,34 +8,37 @@ This module is the core of the e-commerce functionality, handling the entire che
 
 The checkout process is the most critical workflow in this module.
 
-1.  **Initiate Checkout**: The user provides their chosen shipping address and payment method and calls `POST /order/create`.
-2.  **Group Cart by Shop**: The backend service retrieves the user's cart and groups all items by their respective `shop_id`.
+1.  **Initiate Checkout**: The user provides a list of items to purchase, their chosen shipping address, and payment method, then calls `POST /order/create`.
+2.  **Group Items by Shop**: The backend service receives the list of items and groups them by their respective `shop_id`.
 3.  **Process Each Shop's Order**: For each group of items belonging to a single shop, the service performs the following steps within a single database transaction:
     a. **Calculate Totals**: It calculates the subtotal for the items.
     b. **Get Shipping Info**: It retrieves the shop's default pickup address and the user's selected shipping address.
-    c. **Calculate Shipping Fee**: It calls the GHN API (`previewShippingOrder`) with the package dimensions, weight, and destination to get an accurate shipping fee.
+    c. **Calculate Shipping Fee**: It calls the GHN API by trying all available services and automatically selecting the cheapest valid one.
     d. **Create Local Order**: It creates an `orders` record in the database with all the calculated totals (subtotal, shipping, tax).
-    e. **Create GHN Shipping Order**: It calls the GHN API again (`createShippingOrder`) to register the shipment. GHN returns a unique `ghn_order_code`.
+    e. **Create GHN Shipping Order**: It calls the GHN API again (`createShippingOrder`) with the cheapest selected service to register the shipment. GHN returns a unique `ghn_order_code`.
     f. **Save GHN Code**: The `ghn_order_code` is saved to the local `orders` record.
-4.  **Clear Cart**: Once all shops' orders have been processed successfully, the user's cart is cleared.
-5.  **Respond to User**: The API returns a summary of all the newly created orders.
+4.  **Clear Processed Items from Cart**: Once all shops' orders have been processed successfully, the items that were just purchased are removed from the user's cart.
+5.  **Respond to User**: The API returns a detailed summary of all the newly created orders, including the items in each.
 
 ## API Endpoints
 
 ---
 
-### 1. Create Order from Cart (Checkout)
+### 1. Create Orders from Items (Checkout)
 
 -   **Endpoint:** `POST /order/create`
--   **Description:** The main endpoint to initiate the checkout process. It converts the user's cart into one or more orders.
+-   **Description:** The main endpoint to initiate the checkout process. It takes a specific list of items and converts them into one or more orders based on the shops they belong to.
 -   **Auth:** Required (JWT).
 -   **Request Body:**
     ```json
     {
-      "userId": 1,
       "shipping_address_id": 1,
       "note": "Please call before delivering.",
-      "payment_method": "cod"
+      "payment_method": "cod",
+      "items": [
+        { "variant_id": 1, "quantity": 2 },
+        { "variant_id": 10, "quantity": 1 }
+      ]
     }
     ```
 -   **Response (200):**
@@ -46,11 +49,21 @@ The checkout process is the most critical workflow in this module.
       "orders": [
         {
           "id": 101,
-          "user_id": 1,
           "shop_id": 1,
-          "status": "pending",
           "total_amount": 545000,
-          "ghn_order_code": "GHNXYZ123"
+          "ghn_order_code": "GHNXYZ123",
+          "order_items": [
+            {
+              "quantity": 2,
+              "variant": {
+                "id": 2,
+                "name": "50ml"
+              },
+              "product": {
+                "name": "Hydrating Serum"
+              }
+            }
+          ]
         }
       ]
     }
@@ -64,7 +77,6 @@ The checkout process is the most critical workflow in this module.
 -   **Description:** Retrieves a paginated list of orders for the currently authenticated user.
 -   **Auth:** Required (JWT).
 -   **Query Parameters:**
-    -   `userId` (number, required): The ID of the user.
     -   `page` (number, optional): Page number for pagination.
     -   `limit` (number, optional): Items per page.
     -   `status` (string, optional): Filter by order status (e.g., `pending`, `shipped`, `delivered`).
@@ -140,12 +152,7 @@ The checkout process is the most critical workflow in this module.
 -   **Auth:** Required (JWT).
 -   **Params:**
     -   `id` (number): The ID of the order to cancel.
--   **Request Body:**
-    ```json
-    {
-      "userId": 1
-    }
-    ```
+-   **Request Body:** (No body needed)
 -   **Response (200):**
     ```json
     {
@@ -158,67 +165,64 @@ The checkout process is the most critical workflow in this module.
 
 ### 5. GHN Shipping Calculation Endpoints
 
-These endpoints provide direct access to GHN's shipping calculation functionalities, proxied through the Order module.
+These endpoints provide access to GHN's shipping calculation functionalities, proxied through the Order module.
+
+### Calculate Cart Shipping (Recommended)
+
+-   **Endpoint:** `POST /order/calculate-cart-shipping`
+-   **Description:** A high-level endpoint to automatically calculate the cheapest shipping fee for a given list of items. The backend handles all the complex logic of finding addresses, grouping by shop, and selecting the best rate.
+-   **Auth:** Required (JWT).
+-   **Request Body:**
+    ```json
+    {
+      "items": [
+        { "variant_id": 1, "quantity": 2 },
+        { "variant_id": 10, "quantity": 1 }
+      ],
+      "shipping_address_id": 5 // Optional. If not provided, user's default address is used.
+    }
+    ```
+-   **Response (200):**
+    ```json
+    {
+        "total_shipping_fee": 36300,
+        "details": [
+            {
+                "shop_id": 1,
+                "shop_name": "Beauty Store",
+                "fee": 36300,
+                "service_id": 53321
+            }
+        ]
+    }
+    ```
 
 ### Get Available Services
 
 -   **Endpoint:** `POST /order/shipping/services`
--   **Description:** Lấy các gói dịch vụ vận chuyển có sẵn theo tuyến đường.
+-   **Description:** A lower-level endpoint to get the available shipping packages for a specific route.
 -   **Request Body:**
     ```json
     {
       "from_district_id": 1447,
-      "to_district_id": 1442
+      "to_district_id": 1442,
+      "shop_id": 885
     }
     ```
 -   **Response (200):**
     ```json
     [
         {
-            "short_name":"Hàng nặng",
-            "service_type_id":5
-        },
-        {
+            "service_id": 53321,
             "short_name":"Hàng nhẹ",
             "service_type_id":2
+        },
+        {
+            "service_id": 100039,
+            "short_name":"Hàng nặng",
+            "service_type_id":5
         }
     ]
-    ```
-
-### Calculate Shipping Fee
-
--   **Endpoint:** `POST /order/shipping/calculate-fee`
--   **Description:** Tính phí dịch vụ cho một đơn hàng. Note: This service now always uses the 'Heavy Goods' (`service_type_id: 5`) logic, requiring item-level dimensions.
--   **Request Body (`CalculateFeeDto`):**
-    ```json
-    {
-      "from_district_id": 1442,
-      "from_ward_code": "20101",
-      "to_district_id": 1444,
-      "to_ward_code": "20301",
-      "service_id": 53320,
-      "insurance_value": 250000,
-      "cod_amount": 250000,
-      "items": [
-        {
-          "name": "Awesome Product",
-          "quantity": 1,
-          "price": 250000,
-          "length": 20,
-          "width": 15,
-          "height": 10,
-          "weight": 500
-        }
-      ]
-    }
-    ```
--   **Response (200):**
-    ```json
-    {
-        "total": 36300,
-        "service_fee": 36300,
-        "insurance_fee": 0
-    }
     ```
 
 ### Preview Shipping Order
