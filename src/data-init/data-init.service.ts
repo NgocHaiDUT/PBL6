@@ -1,22 +1,23 @@
+
 import { Injectable ,Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3UploadService } from './s3-upload.service';
 import * as fs from 'fs';
 import * as path from 'path';
+
 @Injectable()
 export class DataInitService implements OnModuleInit {
     private readonly logger = new Logger(DataInitService.name);
     constructor(
         private prisma: PrismaService,
-        private s3UploadService: S3UploadService
+        private s3UploadService: S3UploadService,
     ) {}
-    async onModuleInit()
-    {
-        await this.seedData();
-    }
 
-    async seedData()
-    {
+    async onModuleInit() {
+        this.logger.log('DataInitService module initialized');
+        await this.seedData(); 
+    }
+    async seedData() {
         try {
             await this.seedBrands();
             await this.seedCategorys();
@@ -24,23 +25,18 @@ export class DataInitService implements OnModuleInit {
             await this.seedPermissions();
             await this.seedRolePermissions();
             await this.seedShops();
-            await this.seedProducts();
-            
-            // Upload brand logos to S3 (optional - chỉ chạy khi cần)
+            await this.seedProducts(); // Enabled product seeding
+
             // await this.uploadBrandLogosIfNeeded();
-            
-            this.logger.log('Dữ liệu khởi tạo thành công')
-        }
-        catch(error)
-        {
+
+            this.logger.log('Dữ liệu khởi tạo thành công');
+        } catch (error) {
             this.logger.error('Lỗi khi tạo dữ liệu : ', error);
         }
     }
-
-    // Method để upload brand logos nếu cần
+    
     async uploadBrandLogosIfNeeded() {
         try {
-            // Chỉ upload nếu có ảnh local và chưa upload
             const localBrandPath = path.join(process.cwd(), 'uploads', 'brands');
             if (fs.existsSync(localBrandPath)) {
                 this.logger.log('Bắt đầu upload brand logos lên S3...');
@@ -99,7 +95,7 @@ export class DataInitService implements OnModuleInit {
         const categoryData = JSON.parse(categoryRaw);
 
         if(!Array.isArray(categoryData)){
-            this.logger.error('Dữ liệu categories không phải array');
+            this.logger.error('Dữ liệu categories không phải là array');
             return;
         }
 
@@ -172,7 +168,7 @@ export class DataInitService implements OnModuleInit {
         const permissionsData = JSON.parse(permissionsDataRaw);
 
         if(!Array.isArray(permissionsData)) {
-            this.logger.log('Dữ liệu permission không phải array');
+            this.logger.log('Dữ liệu permission không phải là array');
             return;
         }
 
@@ -199,7 +195,7 @@ export class DataInitService implements OnModuleInit {
     const rolePermissionsData = JSON.parse(rolePermissionsDataRaw);
 
     if (!Array.isArray(rolePermissionsData)) {
-        this.logger.error('Dữ liệu role permissions không phải array');
+        this.logger.error('Dữ liệu role permissions không phải là array');
         return;
     }
 
@@ -244,36 +240,85 @@ export class DataInitService implements OnModuleInit {
             return;
         }
 
-        // Tạo user mẫu làm owner của shop
-        const owner = await this.prisma.users.create({
+        // --- Shop 1: BeautyShop ---
+        const owner1 = await this.prisma.users.create({
             data: {
-                email: 'owner@shop.com',
-                password_hash: '$2b$10$example', // Mật khẩu mẫu
-                full_name: 'Shop Owner',
-                phone: '0123456789',
-                avatar_url: '/uploads/avatars/default.jpg',
+                email: 'owner1@shop.com',
+                password_hash: '$2b$10$example',
+                full_name: 'BeautyShop Owner',
+                phone: '0345671392',
                 is_active: true,
-                created_at: new Date(),
             },
         });
 
-        // Tạo shop mẫu
-        const shop = await this.prisma.shops.create({
+        const shop1 = await this.prisma.shops.create({
             data: {
-                owner_id: owner.id,
-                name: 'Beauty Store',
-                slug: 'beauty-store',
-                logo_url: '/uploads/shops/beauty-store-logo.jpg',
-                phone: '0123456789',
-                email: 'info@beautystore.com',
-                cover_url: '/uploads/shops/beauty-store-cover.jpg',
-                description: 'Cửa hàng mỹ phẩm cao cấp với đa dạng sản phẩm chăm sóc da',
+                owner_id: owner1.id,
+                name: 'BeautyShop',
+                slug: 'beautyshop',
+                description: 'Cửa hàng BeautyShop',
                 is_verified: true,
-                created_at: new Date(),
+                ghn_shop_id: 198073,
             },
         });
 
-        this.logger.log(`Đã tạo shop: ${shop.name} với owner: ${owner.full_name} (${owner.email})`);
+        await this.prisma.shop_addresses.create({
+            data: {
+                shop_id: shop1.id,
+                name: 'BeautyShop',
+                phone: '0345671392',
+                province: 'Đà Nẵng',
+                district: 'Liên Chiểu',
+                ward: 'Hoà Hiệp Nam',
+                street: '541 Nguyễn Lương Bằng',
+                is_default: true,
+                // Placeholder GHN IDs
+                ghn_province_id: 203,
+                ghn_district_id: 1530,
+                ghn_ward_code: '40502',
+            },
+        });
+        this.logger.log(`Đã tạo shop: ${shop1.name} với owner: ${owner1.full_name}`);
+
+        // --- Shop 2: SkincareShop ---
+        const owner2 = await this.prisma.users.create({
+            data: {
+                email: 'owner2@shop.com',
+                password_hash: '$2b$10$example',
+                full_name: 'SkincareShop Owner',
+                phone: '0345671392',
+                is_active: true,
+            },
+        });
+
+        const shop2 = await this.prisma.shops.create({
+            data: {
+                owner_id: owner2.id,
+                name: 'SkincareShop',
+                slug: 'skincareshop',
+                description: 'Cửa hàng SkincareShop',
+                is_verified: true,
+                ghn_shop_id: 198074,
+            },
+        });
+
+        await this.prisma.shop_addresses.create({
+            data: {
+                shop_id: shop2.id,
+                name: 'SkincareShop',
+                phone: '0345671392',
+                province: 'Đà Nẵng',
+                district: 'Hải Châu',
+                ward: 'Hải Châu 1',
+                street: '95 Hùng Vương',
+                is_default: true,
+                // Placeholder GHN IDs
+                ghn_province_id: 203,
+                ghn_district_id: 1526,
+                ghn_ward_code: '40103',
+            },
+        });
+        this.logger.log(`Đã tạo shop: ${shop2.name} với owner: ${owner2.full_name}`);
     }
 
     private async seedProducts() {
@@ -294,7 +339,6 @@ export class DataInitService implements OnModuleInit {
 
         for (const productData of productsData) {
             try {
-                // Tạo sản phẩm chính
                 const product = await this.prisma.products.create({
                     data: {
                         name: productData.name,
@@ -310,7 +354,6 @@ export class DataInitService implements OnModuleInit {
                     },
                 });
 
-                // Tạo danh mục sản phẩm
                 if (productData.category_id) {
                     await this.prisma.product_categories.create({
                         data: {
@@ -320,7 +363,6 @@ export class DataInitService implements OnModuleInit {
                     });
                 }
 
-                // Tạo variants
                 if (productData.variants && Array.isArray(productData.variants)) {
                     for (const variantData of productData.variants) {
                         await this.prisma.product_variants.create({
@@ -333,12 +375,15 @@ export class DataInitService implements OnModuleInit {
                                 stock: variantData.stock_quantity,
                                 is_active: true,
                                 created_at: new Date(),
+                                weight: variantData.weight,
+                                length: variantData.length,
+                                width: variantData.width,
+                                height: variantData.height,
                             },
                         });
                     }
                 }
 
-                // Tạo media
                 if (productData.media && Array.isArray(productData.media)) {
                     for (const mediaData of productData.media) {
                         await this.prisma.product_media.create({
@@ -583,3 +628,4 @@ export class DataInitService implements OnModuleInit {
         }
     }
 }
+

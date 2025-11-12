@@ -31,5 +31,15 @@
   { "name": "view_system_logs" },
   { "name": "manage_coupons" },
   { "name": "manage_brands" },
-  { "name": "manage_categorys" }
+  { "name": "manage_categorys" },
+
+  { "name": "create_post" },
+  { "name": "edit_post" },
+  { "name": "delete_post" },
+  { "name": "create_comment" },
+  { "name": "edit_comment" },
+  { "name": "delete_comment" },
+  { "name": "toggle_like" },
+  { "name": "toggle_follow" },
+  { "name": "manage_addresses" }
 ]

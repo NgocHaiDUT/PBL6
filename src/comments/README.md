@@ -1,181 +1,154 @@
 # Comments Module
 
-This module handles the comments functionality for the beauty shopping app, supporting nested comments (replies) for posts and products.
+## Overview
+
+This module manages all functionality related to comments and replies on various targets, such as posts and products. It's designed to be highly flexible, supporting both fully nested comment trees and paginated top-level comments.
 
 ## Features
 
-- **Create Comments**: Add comments to posts or products
-- **Nested Replies**: Support for replies to comments (parent-child relationship)
-- **User Permissions**: Users can only update/delete their own comments
-- **Pagination**: Efficient pagination for comment lists
-- **User Information**: Includes user details (name, email, avatar) with each comment
+-   **Nested Replies**: Supports deeply nested parent-child comment relationships.
+-   **Flexible Fetching**: A powerful query endpoint that can return either a fully nested comment tree or a paginated list of top-level comments.
+-   **Like Integration**: Automatically fetches the like count for each comment and indicates if the current user has liked it.
+-   **Notification Integration**: Notifies the content owner or parent comment owner when a new comment or reply is made.
+-   **Permission Control**: Users can only update or delete their own comments.
 
-## Database Schema
+## Fetching Strategies for Frontend
 
-The comments are stored in the `comments` table with the following structure:
+The main `GET /comments` endpoint offers two primary strategies for fetching data, controlled by the `include_replies` query parameter.
 
-```sql
-comments {
-  id          Int      @id @default(autoincrement())
-  user_id     Int
-  target_type String   -- 'post' or 'product'
-  target_id   Int      -- ID of the post or product
-  content     String
-  parent_id   Int?     -- For nested replies (null for top-level comments)
-  created_at  DateTime @default(now())
-  user        users    @relation(fields: [user_id], references: [id])
-}
-```
+1.  **Nested Tree (`include_replies=true`)**
+    -   **Use Case:** Ideal for loading an entire comment section at once.
+    -   **Behavior:** The API returns a paginated list of **top-level comments only**. Each of these comment objects contains a `replies` array, which in turn contains reply objects, which can also have their own `replies` array, and so on. This provides a complete, ready-to-render data structure.
+
+2.  **Paginated Top-Level (`include_replies=false` or omitted)**
+    -   **Use Case:** Best for performance when a post has many comments, allowing for "load more" functionality on the main comment feed.
+    -   **Behavior:** The API returns a paginated list of **top-level comments only**. Each comment object will **not** contain a `replies` array, but it will have a `replies_count` property. The frontend can use this count to display a "View X replies" button, which can then fetch the replies using the `GET /comments/:id/replies` endpoint.
 
 ## API Endpoints
 
-### Create Comment
-- **POST** `/comments`
-- **Body**: `CreateCommentDto`
-- **Auth**: Required (user_id extracted from JWT)
+---
 
-### Get Comments
-- **GET** `/comments?target_type=post&target_id=1&page=1&limit=20`
-- **Query Parameters**: `QueryCommentsDto`
-- **Returns**: Paginated list of comments with replies count
+### 1. Get Comments for a Target
 
-### Get Comment Details
-- **GET** `/comments/:id`
-- **Returns**: Comment details with all replies
+-   **Endpoint:** `GET /comments`
+-   **Description:** The primary, flexible endpoint to retrieve comments for a target (like a post or product).
+-   **Auth:** Optional. Providing a `user_id` (or being authenticated) is required to get the correct `is_liked` status on comments.
+-   **Query Parameters:**
+    -   `target_type` (string, required): The type of content, e.g., `'post'`.
+    -   `target_id` (number, required): The ID of the content item.
+    -   `include_replies` (boolean, optional): If `true`, returns a nested tree. Defaults to `false`.
+    -   `user_id` (number, optional): The ID of the current user to determine `is_liked` status.
+    -   `page` (number, optional): Page number for top-level comments.
+    -   `limit` (number, optional): Items per page.
+-   **Success Response (200) - Nested (`include_replies=true`):**
+    ```json
+    {
+      "data": [
+        {
+          "id": 1,
+          "content": "This is a top-level comment.",
+          "user": { "id": 2, "full_name": "Jane Doe" },
+          "likes_count": 5,
+          "is_liked": false,
+          "replies": [
+            {
+              "id": 3,
+              "content": "This is a reply to the first comment.",
+              "user": { "id": 3, "full_name": "Sam Smith" },
+              "likes_count": 1,
+              "is_liked": true,
+              "replies": []
+            }
+          ]
+        }
+      ],
+      "total": 1, "page": 1, "limit": 20, "total_pages": 1
+    }
+    ```
+-   **Success Response (200) - Paginated (`include_replies=false`):**
+    ```json
+    {
+      "data": [
+        {
+          "id": 1,
+          "content": "This is a top-level comment.",
+          "user": { "id": 2, "full_name": "Jane Doe" },
+          "likes_count": 5,
+          "is_liked": false,
+          "replies_count": 1
+        }
+      ],
+      "total": 1, "page": 1, "limit": 20, "total_pages": 1
+    }
+    ```
 
-### Get Comment Replies
-- **GET** `/comments/:id/replies`
-- **Returns**: Direct replies to a specific comment
+---
 
-### Update Comment
-- **PATCH** `/comments/:id`
-- **Body**: `UpdateCommentDto`
-- **Auth**: Required (only comment author can update)
+### 2. Create a Comment or Reply
 
-### Delete Comment
-- **DELETE** `/comments/:id`
-- **Auth**: Required (only comment author can delete)
-- **Note**: Deletes all replies as well
+-   **Endpoint:** `POST /comments`
+-   **Description:** Creates a new top-level comment or a reply to an existing comment.
+-   **Auth:** Required (JWT).
+-   **Request Body:**
+    -   To create a top-level comment, `parent_id` should be `null` or omitted.
+    -   To reply to an existing comment, provide its ID in `parent_id`.
+    ```json
+    {
+      "target_type": "post",
+      "target_id": 15,
+      "content": "This is a great post!",
+      "parent_id": null
+    }
+    ```
+-   **Response (201):** The newly created comment object.
+    ```json
+    {
+      "id": 4,
+      "user_id": 1,
+      "target_type": "post",
+      "target_id": 15,
+      "content": "This is a great post!",
+      "parent_id": null,
+      "created_at": "2025-11-10T15:00:00.000Z",
+      "user": { "id": 1, "full_name": "You", "avatar_url": "..." }
+    }
+    ```
 
-## DTOs
+---
 
-### CreateCommentDto
-```typescript
-{
-  target_type: string;    // 'post' or 'product'
-  target_id: number;      // ID of the target
-  content: string;        // Comment content (max 2000 chars)
-  parent_id?: number;     // Optional parent comment ID for replies
-}
-```
+### 3. Get Replies for a Comment
 
-### UpdateCommentDto
-```typescript
-{
-  content?: string;       // Updated content (max 2000 chars)
-}
-```
+-   **Endpoint:** `GET /comments/:id/replies`
+-   **Description:** A dedicated endpoint to get all direct (first-level) replies for a specific parent comment.
+-   **Auth:** Not Required.
+-   **Params:**
+    -   `id` (number): The ID of the parent comment.
+-   **Response (200):** An array of comment objects.
 
-### QueryCommentsDto
-```typescript
-{
-  target_type: string;    // 'post' or 'product'
-  target_id: number;      // ID of the target
-  parent_id?: number;     // Filter by parent (null for top-level)
-  page?: number;          // Page number (default: 1)
-  limit?: number;         // Items per page (default: 20)
-}
-```
+---
 
-## Response Format
+### 4. Update a Comment
 
-### CommentResponse
-```typescript
-{
-  id: number;
-  user_id: number;
-  target_type: string;
-  target_id: number;
-  content: string;
-  parent_id: number | null;
-  created_at: Date;
-  user?: {
-    id: number;
-    full_name: string | null;
-    email: string;
-    avatar_url?: string | null;
-  };
-  replies?: CommentResponse[];
-  replies_count?: number;
-}
-```
+-   **Endpoint:** `PATCH /comments/:id`
+-   **Description:** Updates the content of a comment. Only the author of the comment can perform this action.
+-   **Auth:** Required (JWT).
+-   **Params:**
+    -   `id` (number): The ID of the comment to update.
+-   **Request Body:**
+    ```json
+    {
+      "content": "I have updated my thoughts on this."
+    }
+    ```
+-   **Response (200):** The updated comment object.
 
-### PaginatedCommentsResponse
-```typescript
-{
-  data: CommentResponse[];
-  total: number;
-  page: number;
-  limit: number;
-  total_pages: number;
-}
-```
+---
 
-## Usage Examples
+### 5. Delete a Comment
 
-### Create a top-level comment
-```typescript
-POST /comments
-{
-  "target_type": "post",
-  "target_id": 1,
-  "content": "Great post! Thanks for sharing."
-}
-```
-
-### Reply to a comment
-```typescript
-POST /comments
-{
-  "target_type": "post",
-  "target_id": 1,
-  "content": "I agree with your comment!",
-  "parent_id": 5
-}
-```
-
-### Get comments for a post
-```typescript
-GET /comments?target_type=post&target_id=1&page=1&limit=10
-```
-
-### Get all replies to a comment
-```typescript
-GET /comments/5/replies
-```
-
-## Validation Rules
-
-- **target_type**: Must be either 'post' or 'product'
-- **target_id**: Must be a valid integer and exist in the corresponding table
-- **content**: Required, max 2000 characters
-- **parent_id**: If provided, must be a valid comment ID belonging to the same target
-- **Page and limit**: Must be positive integers
-
-## Security Features
-
-- **Authorization**: Users can only update/delete their own comments
-- **Validation**: All inputs are validated using class-validator
-- **Error Handling**: Proper HTTP status codes and error messages
-- **Cascade Delete**: When a comment is deleted, all its replies are also deleted
-
-## Testing
-
-The module includes comprehensive unit tests for both the controller and service:
-- `comments.controller.spec.ts`
-- `comments.service.spec.ts`
-
-Run tests with:
-```bash
-npm run test
-```
+-   **Endpoint:** `DELETE /comments/:id`
+-   **Description:** Deletes a comment and all of its nested replies. Only the author can perform this action.
+-   **Auth:** Required (JWT).
+-   **Params:**
+    -   `id` (number): The ID of the comment to delete.
+-   **Response (204):** No Content.

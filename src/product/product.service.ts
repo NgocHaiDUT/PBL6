@@ -1730,6 +1730,9 @@ export class ProductService {
                 where: { user_id: userId },
                 include: {
                     cart_items: {
+                        orderBy: {
+                            created_at: 'desc', // Sort items within the cart by most recently added
+                        },
                         include: {
                             product: {
                                 include: {
@@ -1744,28 +1747,50 @@ export class ProductService {
                 }
             });
 
-            if (!cart) {
+            if (!cart || cart.cart_items.length === 0) {
                 return { success: true, cart: [] };
             }
 
-            // Transform cart items to match frontend expectations
-            const cartItems = cart.cart_items.map(item => ({
-                id: item.id,
-                product_id: item.product_id,
-                variant_id: item.variant_id,
-                name: item.product.name,
-                variant_name: item.variant?.name || '',
-                price: Number(item.price_snapshot),
-                quantity: item.quantity,
-                image_url: item.product.product_media[0]?.url || '/placeholder-product.jpg',
-                stock: item.variant?.stock || 0,
-                shop_name: item.product.shop?.name || 'Unknown Shop',
-                brand_name: item.product.brand?.name || 'Unknown Brand',
-                shop_id: item.product.shop_id,
-                brand_id: item.product.brand_id
-            }));
+            // Group cart items by shop
+            const groupedCart: {
+                shop_id: number;
+                shop_name: string;
+                items: any[];
+            }[] = [];
 
-            return { success: true, cart: cartItems };
+            const shopMap = new Map<number, { shop_id: number; shop_name: string; items: any[] }>();
+
+            cart.cart_items.forEach(item => {
+                const shopId = item.product.shop_id;
+                if (!shopMap.has(shopId)) {
+                    shopMap.set(shopId, {
+                        shop_id: shopId,
+                        shop_name: item.product.shop?.name || 'Unknown Shop',
+                        items: [],
+                    });
+                }
+                const shopEntry = shopMap.get(shopId);
+                if (shopEntry) {
+                    shopEntry.items.push({
+                        id: item.id,
+                        product_id: item.product_id,
+                        variant_id: item.variant_id,
+                        name: item.product.name,
+                        variant_name: item.variant?.name || '',
+                        price: Number(item.price_snapshot),
+                        quantity: item.quantity,
+                        image_url: item.product.product_media[0]?.url || '/placeholder-product.jpg',
+                        stock: item.variant?.stock || 0,
+                        brand_name: item.product.brand?.name || 'Unknown Brand',
+                        created_at: item.created_at,
+                    });
+                }
+            });
+
+            // Convert map to array
+            groupedCart.push(...Array.from(shopMap.values()));
+
+            return { success: true, cart: groupedCart };
         } catch (error) {
             console.error('Error fetching cart:', error);
             return { success: false, message: 'Lỗi khi tải giỏ hàng' };

@@ -49,8 +49,27 @@ export class PostsService {
     };
   }
 
-  async createPost(userId: number, createPostDto: CreatePostDto) {
-    const { media_urls, product_ids, tags, ...postData } = createPostDto;
+  async createPost(userId: number, createPostDto: CreatePostDto, files: any[]) {
+    const { product_ids, tags, ...postData } = createPostDto;
+
+    // Allow empty content_md only when there is at least one media file
+    const rawMd = (postData as any)?.content_md as string | undefined;
+    const trimmedMd = typeof rawMd === 'string' ? rawMd.trim() : '';
+    const hasMedia = Array.isArray(files) && files.length > 0;
+    if (!trimmedMd && !hasMedia) {
+      throw new Error('content_md is required when no media is provided');
+    }
+
+    // Remove undefined fields to avoid Prisma receiving undefined
+    const sanitizedBase = Object.fromEntries(
+      Object.entries({
+        ...postData,
+        // enforce defaults and normalized md
+        post_type: (postData as any)?.post_type ?? 'post',
+        visibility: (postData as any)?.visibility ?? 'public',
+        content_md: trimmedMd,
+      }).filter(([, v]) => v !== undefined)
+    );
 
     const existuser = await this.prisma.users.findUnique({
       where : {id : userId},
@@ -64,21 +83,30 @@ export class PostsService {
     // Tạo post
     const post = await this.prisma.posts.create({
       data: {
-        ...postData,
+        // TS: đảm bảo luôn có content_md theo schema
+        content_md: trimmedMd,
+        ...sanitizedBase,
         user_id: userId,
         moderation_status: 'pending',
       },
     });
 
-    // Thêm media nếu có
-    if (media_urls && media_urls.length > 0) {
-      await this.prisma.post_media.createMany({
-        data: media_urls.map((url, index) => ({
+    // 2. Process and create media records from uploaded files
+    if (files && files.length > 0) {
+      const mediaData = files.map((file, index) => {
+        const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
+        const directory = mediaType === 'video' ? 'videos' : 'postimages';
+        const mediaUrl = file.location || `/uploads/${directory}/${file.filename}`;
+        return {
           post_id: post.id,
-          media_url: url,
-          media_type: url.includes('.mp4') || url.includes('.mov') ? 'video' : 'image',
+          media_url: mediaUrl,
+          media_type: mediaType,
           sort_order: index,
-        })),
+        };
+      });
+
+      await this.prisma.post_media.createMany({
+        data: mediaData,
       });
     }
 
@@ -430,7 +458,7 @@ export class PostsService {
 
 
   // Upload cover image for post
-  async uploadCoverImage(postId: number, userId: number, file: Express.Multer.File) {
+  async uploadCoverImage(postId: number, userId: number, file: any) {
     // Verify post exists and user owns it
     const post = await this.prisma.posts.findUnique({
       where: { id: postId },
@@ -444,11 +472,9 @@ export class PostsService {
       throw new ForbiddenException('You can only update your own posts');
     }
 
-    // File path relative to project root (stored in DB)
-    const coverUrl = file.path.replace(/\\/g, '/');
+    const coverUrl = file.location || `/uploads/postimages/${file.filename}`;
     
     // Create or update cover image in post_media table
-    // First, check if there's already a cover image (sort_order: 0)
     const existingCover = await this.prisma.post_media.findFirst({
       where: { 
         post_id: postId,
@@ -485,7 +511,7 @@ export class PostsService {
   }
 
   // Upload video for post
-  async uploadVideo(postId: number, userId: number, file: Express.Multer.File) {
+  async uploadVideo(postId: number, userId: number, file: any) {
     // Verify post exists and user owns it
     const post = await this.prisma.posts.findUnique({
       where: { id: postId },
@@ -499,8 +525,7 @@ export class PostsService {
       throw new ForbiddenException('You can only update your own posts');
     }
 
-    // File path relative to project root (stored in DB)
-    const videoUrl = file.path.replace(/\\/g, '/');
+    const videoUrl = file.location || `/uploads/videos/${file.filename}`;
     
     // Get current max sort_order for this post
     const maxSortOrder = await this.prisma.post_media.findFirst({
@@ -529,7 +554,7 @@ export class PostsService {
   }
 
   // Upload additional media (images/videos)
-  async uploadAdditionalMedia(postId: number, userId: number, files: Express.Multer.File[]) {
+  async uploadAdditionalMedia(postId: number, userId: number, files: any[]) {
     // Verify post exists and user owns it
     const post = await this.prisma.posts.findUnique({
       where: { id: postId },
@@ -554,8 +579,9 @@ export class PostsService {
 
     // Create media records using actual file paths
     const mediaData = files.map((file, index) => {
-      const mediaUrl = file.path.replace(/\\/g, '/');
       const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
+      const directory = mediaType === 'video' ? 'videos' : 'postimages';
+      const mediaUrl = file.location || `/uploads/${directory}/${file.filename}`;
       
       return {
         post_id: postId,
