@@ -70,8 +70,7 @@ export class ProfileController {
     }
 
     @Post('create-shop')
-    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-    @RequirePermissions('create_shop')
+    @UseGuards(AuthGuard('jwt'))
     @UseInterceptors(
         FileFieldsInterceptor([
             { name: 'logo', maxCount: 1 },
@@ -108,7 +107,7 @@ export class ProfileController {
             bannerUrl = (files.banner[0] as any).location || `/uploads/shops/${(files.banner[0] as any).filename}`;
         }
 
-        return this.profileService.createshop(
+        return this.profileService.createshop_temp(
             userId, 
             body.shop_name, 
             body.slug, 
@@ -182,8 +181,4 @@ export class ProfileController {
         const userId = req.user.userId;
         return this.profileService.updatedescriptionshop(userId, body.shopid, body.description);
     }
-
-    
-        
-
 }

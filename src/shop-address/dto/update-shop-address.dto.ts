@@ -32,4 +32,16 @@ export class UpdateShopAddressDto {
   @IsOptional()
   @IsBoolean()
   is_default?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  ghn_province_id?: number;
+
+  @IsOptional()
+  @IsNumber()
+  ghn_district_id?: number;
+
+  @IsOptional()
+  @IsString()
+  ghn_ward_code?: string;
 }
