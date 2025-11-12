@@ -71,7 +71,7 @@ export const imageFileFilter = (req: any, file: any, cb: any) => {
 };
 
 export const videoFileFilter = (req: any, file: any, cb: any) => {
-  // Hỗ trợ nhiều MIME types cho video, đặc biệt MOV từ iPhone
+
   const videoMimeTypes = [
     'video/mp4',
     'video/quicktime', // MOV files

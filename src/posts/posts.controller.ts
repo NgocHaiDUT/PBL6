@@ -158,5 +158,6 @@ export class PostsController {
     // const userId = req.user.id;
     const userId = req.headers['x-user-id'] || req.body.user_id || 1;
     return this.postsService.deleteMedia(mediaId, Number(userId));
+
   }
 }

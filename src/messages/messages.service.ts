@@ -456,8 +456,10 @@ export class MessagesService {
     return this.prisma.messages.count({
       where: {
         conversation_id: conversationId,
+        sender_id: {
+          not: userId // Không đếm tin nhắn của chính mình
+        },
         NOT: {
-          sender_id: userId, // Không đếm tin nhắn của chính mình
           message_reads: {
             some: {
               user_id: userId
@@ -470,44 +472,63 @@ export class MessagesService {
 
   // Tìm kiếm cuộc hội thoại với user khác
   async findOrCreateConversation(userId: number, otherUserId: number) {
+    console.log(`🔍 [findOrCreateConversation] Finding conversation between users ${userId} and ${otherUserId}`);
+    
     if (userId === otherUserId) {
       throw new BadRequestException('Cannot create conversation with yourself');
     }
 
-    // Tìm conversation private đã tồn tại
-    const existingConversation = await this.prisma.conversations.findFirst({
-      where: {
-        type: 'private',
-        participants: {
-          every: {
-            user_id: { in: [userId, otherUserId] }
+    try {
+      // Tìm tất cả conversations private của userId
+      const userConversations = await this.prisma.conversations.findMany({
+        where: {
+          type: 'private',
+          participants: {
+            some: {
+              user_id: userId
+            }
           }
-        }
-      },
-      include: {
-        participants: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                full_name: true,
-                avatar_url: true,
+        },
+        include: {
+          participants: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  full_name: true,
+                  avatar_url: true,
+                }
               }
             }
           }
         }
+      });
+
+      console.log(`📋 [findOrCreateConversation] Found ${userConversations.length} conversations for user ${userId}`);
+
+      // Tìm conversation có đúng 2 participants: userId và otherUserId
+      const existingConversation = userConversations.find(conv => {
+        if (conv.participants.length !== 2) return false;
+        const participantIds = conv.participants.map(p => p.user_id).sort();
+        const targetIds = [userId, otherUserId].sort();
+        return participantIds[0] === targetIds[0] && participantIds[1] === targetIds[1];
+      });
+
+      if (existingConversation) {
+        console.log(`✅ [findOrCreateConversation] Found existing conversation:`, existingConversation.id);
+        return existingConversation;
       }
-    });
 
-    if (existingConversation && existingConversation.participants.length === 2) {
-      return existingConversation;
+      // Tạo conversation mới
+      console.log(`➕ [findOrCreateConversation] Creating new conversation`);
+      return this.createConversation(userId, {
+        participant_ids: [otherUserId],
+        type: 'private'
+      });
+    } catch (error) {
+      console.error('❌ [findOrCreateConversation] Error:', error);
+      throw error;
     }
-
-    // Tạo conversation mới
-    return this.createConversation(userId, {
-      participant_ids: [otherUserId],
-      type: 'private'
-    });
   }
 
   // Xóa tin nhắn (chỉ người gửi mới có thể xóa)

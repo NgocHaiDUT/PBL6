@@ -422,7 +422,6 @@ export class PostsService {
   // Upload cover image for post
   async uploadCoverImage(postId: number, userId: number, file: Express.Multer.File) {
     console.log('🔍 uploadCoverImage called with:', { postId, userId });
-    
     // Verify post exists and user owns it
     const post = await this.prisma.posts.findUnique({
       where: { id: postId },
@@ -526,7 +525,6 @@ export class PostsService {
   // Upload additional media (images/videos)
   async uploadAdditionalMedia(postId: number, userId: number, files: Express.Multer.File[]) {
     console.log('🔍 uploadAdditionalMedia called with:', { postId, userId });
-    
     // Verify post exists and user owns it
     const post = await this.prisma.posts.findUnique({
       where: { id: postId },

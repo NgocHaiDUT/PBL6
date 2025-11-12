@@ -18,6 +18,7 @@ enum user_role {
   user
   seller
   admin
+  staff
 }
 
 enum auth_provider {
@@ -73,51 +74,54 @@ enum skin_type {
 // USERS & AUTH
 ///////////////////////////////////////////////////////
 model users {
-  id            Int           @id @default(autoincrement())
-  email         String        @unique
-  password_hash String?
-  full_name     String?
-  avatar_url    String?
-  phone         String?
-  story         String?
-  firstlogin    Boolean?      @default(true)
-  role          user_role     @default(user)
-  is_active     Boolean       @default(true)
-  created_at    DateTime      @default(now())
-  updated_at    DateTime      @default(now())
-  auth_identities auth_identities[]
-  addresses     addresses[]
-  shops         shops[]
-  reviews       reviews[]
-  wishlists     wishlists[]
-  follows_follower follows[]  @relation("follower")
-  follows_following follows[] @relation("following")
-  posts         posts[]
-  likes         likes[]
-  comments      comments[]
-  skin_analyses skin_analyses[]
-  tryon_sessions tryon_sessions[]
-  recommendations recommendations[]
-  moderation_logs moderation_logs[]
-  notifications  notifications[]
-  audit_logs     audit_logs[]
+  id                        Int                         @id @default(autoincrement())
+  email                     String                      @unique
+  password_hash             String?
+  full_name                 String?
+  avatar_url                String?
+  phone                     String?
+  story                     String?
+  role                      user_role                   @default(user)
+  role_id                   Int?
+  firstlogin                Boolean?                    @default(true)
+  is_active                 Boolean                     @default(true)
+  created_at                DateTime                    @default(now())
+  updated_at                DateTime                    @default(now())
+  auth_identities           auth_identities[]
+  addresses                 addresses[]
+  shops                     shops[]
+  reviews                   reviews[]
+  wishlists                 wishlists[]
+  follows_follower          follows[]                   @relation("follower")
+  follows_following         follows[]                   @relation("following")
+  role_relation             role?                       @relation(fields: [role_id], references: [id])
+  userPermissions           userpermission[]
+  posts                     posts[]
+  likes                     likes[]
+  comments                  comments[]
+  skin_analyses             skin_analyses[]
+  tryon_sessions            tryon_sessions[]
+  recommendations           recommendations[]
+  moderation_logs           moderation_logs[]
+  notifications             notifications[]
+  audit_logs                audit_logs[]
   conversation_participants conversation_participants[]
-  messages       messages[]
-  message_reads  message_reads[]
-  carts         carts?
-  orders        orders[]
-  shop_staffs   shop_staffs[]
+  messages                  messages[]
+  message_reads             message_reads[]
+  carts                     carts?
+  orders                    orders[]
+  shop_staffs               shop_staffs[]
 }
 
 model auth_identities {
-  id               Int         @id @default(autoincrement())
+  id               Int           @id @default(autoincrement())
   user_id          Int
   provider         auth_provider
   provider_user_id String
   access_token     String?
   refresh_token    String?
-  created_at       DateTime    @default(now())
-  user             users       @relation(fields: [user_id], references: [id])
+  created_at       DateTime      @default(now())
+  user             users         @relation(fields: [user_id], references: [id])
 
   @@unique([provider, provider_user_id])
 }
@@ -140,23 +144,57 @@ model addresses {
   orders      orders[]
 }
 
+model role {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  users           users[]
+  rolePermissions rolepermission[]
+}
+
+model permission {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  rolePermissions rolepermission[]
+  userPermissions userpermission[]
+}
+
+model rolepermission {
+  role_id       Int
+  permission_id Int
+
+  role       role       @relation(fields: [role_id], references: [id])
+  permission permission @relation(fields: [permission_id], references: [id])
+
+  @@id([role_id, permission_id])
+}
+
+model userpermission {
+  user_id       Int
+  permission_id Int
+
+  user       users      @relation(fields: [user_id], references: [id])
+  permission permission @relation(fields: [permission_id], references: [id])
+
+  @@id([user_id, permission_id])
+}
+
 ///////////////////////////////////////////////////////
 // SELLER / SHOP
 ///////////////////////////////////////////////////////
 model shops {
-  id          Int        @id @default(autoincrement())
-  owner_id    Int        @unique
+  id          Int           @id @default(autoincrement())
+  owner_id    Int           @unique
   name        String
-  slug        String     @unique
+  slug        String        @unique
   logo_url    String?
   phone       String?
   email       String?
   cover_url   String?
   description String?
-  is_verified Boolean    @default(false)
-  created_at  DateTime   @default(now())
-  updated_at  DateTime   @default(now())
-  owner       users      @relation(fields: [owner_id], references: [id])
+  is_verified Boolean       @default(false)
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @default(now())
+  owner       users         @relation(fields: [owner_id], references: [id])
   shop_staffs shop_staffs[]
   products    products[]
   orders      orders[]
@@ -179,58 +217,58 @@ model shop_staffs {
 // CATALOG
 ///////////////////////////////////////////////////////
 model brands {
-  id         Int       @id @default(autoincrement())
-  name       String    @unique
-  slug       String    @unique
+  id         Int        @id @default(autoincrement())
+  name       String     @unique
+  slug       String     @unique
   logo_url   String?
-  created_at DateTime  @default(now())
+  created_at DateTime   @default(now())
   products   products[]
 }
 
 model categories {
-  id         Int          @id @default(autoincrement())
-  parent_id  Int?
-  name       String
-  slug       String       @unique
-  created_at DateTime     @default(now())
-  parent     categories?  @relation("CategoryParent", fields: [parent_id], references: [id])
-  children   categories[] @relation("CategoryParent")
+  id                 Int                  @id @default(autoincrement())
+  parent_id          Int?
+  name               String
+  slug               String               @unique
+  created_at         DateTime             @default(now())
+  parent             categories?          @relation("CategoryParent", fields: [parent_id], references: [id])
+  children           categories[]         @relation("CategoryParent")
   product_categories product_categories[]
 }
 
 model products {
-  id                Int                 @id @default(autoincrement())
-  shop_id           Int
-  brand_id          Int?
-  name              String
-  slug              String              @unique
-  description       String?
-  how_to_use        String?
-  skin_type_compat  skin_type           @default(unknown)
-  moderation_status moderation_status   @default(approved)
-  is_published      Boolean             @default(false)
-  avg_rating        Decimal?            @default(0.0)
-  review_count      Int                 @default(0)
-  created_at        DateTime            @default(now())
-  updated_at        DateTime            @default(now())
-  shop              shops               @relation(fields: [shop_id], references: [id])
-  brand             brands?             @relation(fields: [brand_id], references: [id])
+  id                 Int                  @id @default(autoincrement())
+  shop_id            Int
+  brand_id           Int?
+  name               String
+  slug               String               @unique
+  description        String?
+  how_to_use         String?
+  skin_type_compat   skin_type            @default(unknown)
+  moderation_status  moderation_status    @default(approved)
+  is_published       Boolean              @default(false)
+  avg_rating         Decimal?             @default(0.0)
+  review_count       Int                  @default(0)
+  created_at         DateTime             @default(now())
+  updated_at         DateTime             @default(now())
+  shop               shops                @relation(fields: [shop_id], references: [id])
+  brand              brands?              @relation(fields: [brand_id], references: [id])
   product_categories product_categories[]
   product_media      product_media[]
   product_variants   product_variants[]
   cart_items         cart_items[]
   order_items        order_items[]
   reviews            reviews[]
-  wishlists         wishlists[]
-  post_products     post_products[]
-  tryon_items       tryon_items[]
+  wishlists          wishlists[]
+  post_products      post_products[]
+  tryon_items        tryon_items[]
 }
 
 model product_categories {
-  product_id Int
+  product_id  Int
   category_id Int
-  product    products   @relation(fields: [product_id], references: [id])
-  category   categories @relation(fields: [category_id], references: [id])
+  product     products   @relation(fields: [product_id], references: [id])
+  category    categories @relation(fields: [category_id], references: [id])
 
   @@id([product_id, category_id])
 }
@@ -246,76 +284,76 @@ model product_media {
 }
 
 model product_variants {
-  id               Int       @id @default(autoincrement())
+  id               Int           @id @default(autoincrement())
   product_id       Int
-  sku              String    @unique
+  sku              String        @unique
   name             String?
   shade_hex        String?
   size_label       String?
   price            Decimal
   compare_at_price Decimal?
-  stock           Int        @default(0)
-  is_active       Boolean    @default(true)
-  created_at      DateTime   @default(now())
-  updated_at      DateTime   @default(now())
-  product         products   @relation(fields: [product_id], references: [id])
-  cart_items      cart_items[]
-  order_items     order_items[]
-  tryon_items     tryon_items[]
+  stock            Int           @default(0)
+  is_active        Boolean       @default(true)
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @default(now())
+  product          products      @relation(fields: [product_id], references: [id])
+  cart_items       cart_items[]
+  order_items      order_items[]
+  tryon_items      tryon_items[]
 }
 
 ///////////////////////////////////////////////////////
 // CART / ORDER / PAYMENT / SHIPMENT
 ///////////////////////////////////////////////////////
 model carts {
-  id         Int         @id @default(autoincrement())
-  user_id    Int         @unique
-  created_at DateTime    @default(now())
-  updated_at DateTime    @default(now())
-  user       users       @relation(fields: [user_id], references: [id])
+  id         Int          @id @default(autoincrement())
+  user_id    Int          @unique
+  created_at DateTime     @default(now())
+  updated_at DateTime     @default(now())
+  user       users        @relation(fields: [user_id], references: [id])
   cart_items cart_items[]
 }
 
 model cart_items {
-  id             Int      @id @default(autoincrement())
+  id             Int               @id @default(autoincrement())
   cart_id        Int
   product_id     Int
   variant_id     Int?
-  quantity       Int      @default(1)
+  quantity       Int               @default(1)
   price_snapshot Decimal
-  created_at     DateTime @default(now())
-  cart          carts    @relation(fields: [cart_id], references: [id])
-  product       products @relation(fields: [product_id], references: [id])
-  variant       product_variants? @relation(fields: [variant_id], references: [id])
+  created_at     DateTime          @default(now())
+  cart           carts             @relation(fields: [cart_id], references: [id])
+  product        products          @relation(fields: [product_id], references: [id])
+  variant        product_variants? @relation(fields: [variant_id], references: [id])
 
   @@unique([cart_id, product_id, variant_id])
 }
 
 model orders {
-  id                Int           @id @default(autoincrement())
-  user_id           Int
-  shop_id           Int
-  status            order_status  @default(pending)
-  payment_status    payment_status @default(unpaid)
-  subtotal_amount   Decimal       @default(0)
-  discount_amount   Decimal       @default(0)
-  shipping_fee      Decimal       @default(0)
-  total_amount      Decimal       @default(0)
+  id                  Int             @id @default(autoincrement())
+  user_id             Int
+  shop_id             Int
+  status              order_status    @default(pending)
+  payment_status      payment_status  @default(unpaid)
+  subtotal_amount     Decimal         @default(0)
+  discount_amount     Decimal         @default(0)
+  shipping_fee        Decimal         @default(0)
+  total_amount        Decimal         @default(0)
   shipping_address_id Int?
-  note             String?
-  created_at       DateTime       @default(now())
-  updated_at       DateTime       @default(now())
-  user            users          @relation(fields: [user_id], references: [id])
-  shop            shops          @relation(fields: [shop_id], references: [id])
-  shipping_address addresses?    @relation(fields: [shipping_address_id], references: [id])
-  order_items      order_items[]
-  payments         payments[]
-  shipments        shipments[]
-  order_coupons    order_coupons[]
+  note                String?
+  created_at          DateTime        @default(now())
+  updated_at          DateTime        @default(now())
+  user                users           @relation(fields: [user_id], references: [id])
+  shop                shops           @relation(fields: [shop_id], references: [id])
+  shipping_address    addresses?      @relation(fields: [shipping_address_id], references: [id])
+  order_items         order_items[]
+  payments            payments[]
+  shipments           shipments[]
+  order_coupons       order_coupons[]
 }
 
 model order_items {
-  id               Int      @id @default(autoincrement())
+  id               Int               @id @default(autoincrement())
   order_id         Int
   product_id       Int
   variant_id       Int?
@@ -324,9 +362,9 @@ model order_items {
   unit_price       Decimal
   quantity         Int
   line_total       Decimal
-  order           orders   @relation(fields: [order_id], references: [id])
-  product         products @relation(fields: [product_id], references: [id])
-  variant         product_variants? @relation(fields: [variant_id], references: [id])
+  order            orders            @relation(fields: [order_id], references: [id])
+  product          products          @relation(fields: [product_id], references: [id])
+  variant          product_variants? @relation(fields: [variant_id], references: [id])
 }
 
 model payments {
@@ -342,33 +380,33 @@ model payments {
 }
 
 model shipments {
-  id              Int            @id @default(autoincrement())
-  order_id        Int
-  status          shipment_status @default(pending)
-  carrier         String?
-  tracking_number String?
-  shipped_at      DateTime?
-  delivered_at    DateTime?
+  id               Int             @id @default(autoincrement())
+  order_id         Int
+  status           shipment_status @default(pending)
+  carrier          String?
+  tracking_number  String?
+  shipped_at       DateTime?
+  delivered_at     DateTime?
   address_snapshot String?
-  created_at      DateTime       @default(now())
-  order           orders         @relation(fields: [order_id], references: [id])
+  created_at       DateTime        @default(now())
+  order            orders          @relation(fields: [order_id], references: [id])
 }
 
 ///////////////////////////////////////////////////////
 // REVIEWS / WISHLIST / COMMUNITY
 ///////////////////////////////////////////////////////
 model reviews {
-  id                  Int      @id @default(autoincrement())
-  user_id             Int
-  product_id          Int
-  rating             Int
-  title             String?
-  content           String?
-  media_url         String?
-  created_at        DateTime @default(now())
-  is_verified_purchase Boolean @default(false)
-  user             users    @relation(fields: [user_id], references: [id])
-  product          products @relation(fields: [product_id], references: [id])
+  id                   Int      @id @default(autoincrement())
+  user_id              Int
+  product_id           Int
+  rating               Int
+  title                String?
+  content              String?
+  media_url            String?
+  created_at           DateTime @default(now())
+  is_verified_purchase Boolean  @default(false)
+  user                 users    @relation(fields: [user_id], references: [id])
+  product              products @relation(fields: [product_id], references: [id])
 
   @@unique([user_id, product_id])
 }
@@ -394,23 +432,23 @@ model follows {
 }
 
 model posts {
-  id                Int              @id @default(autoincrement())
+  id                Int               @id @default(autoincrement())
   user_id           Int
   shop_id           Int?
-  post_type         String           @default("post")
+  post_type         String            @default("post")
   title             String?
   content_md        String
   moderation_status moderation_status @default(pending)
-  visibility        String           @default("public")
-  view_count        Int              @default(0)
-  like_count        Int              @default(0)
-  created_at        DateTime         @default(now())
-  updated_at        DateTime         @default(now())
-  user             users            @relation(fields: [user_id], references: [id])
-  shop             shops?           @relation(fields: [shop_id], references: [id])
-  post_media       post_media[]
-  post_products    post_products[]
-  post_tags        post_tags[]
+  visibility        String            @default("public")
+  view_count        Int               @default(0)
+  like_count        Int               @default(0)
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @default(now())
+  user              users             @relation(fields: [user_id], references: [id])
+  shop              shops?            @relation(fields: [shop_id], references: [id])
+  post_media        post_media[]
+  post_products     post_products[]
+  post_tags         post_tags[]
 }
 
 model post_media {
@@ -424,18 +462,18 @@ model post_media {
 }
 
 model post_products {
-  post_id   Int
+  post_id    Int
   product_id Int
-  post     posts    @relation(fields: [post_id], references: [id])
-  product  products @relation(fields: [product_id], references: [id])
+  post       posts    @relation(fields: [post_id], references: [id])
+  product    products @relation(fields: [product_id], references: [id])
 
   @@id([post_id, product_id])
 }
 
 model tags {
-  id    Int     @id @default(autoincrement())
-  name  String  @unique
-  slug  String  @unique
+  id        Int         @id @default(autoincrement())
+  name      String      @unique
+  slug      String      @unique
   post_tags post_tags[]
 }
 
@@ -476,39 +514,39 @@ model comments {
 // AI: SKIN ANALYSIS / AR TRY-ON / RECS
 ///////////////////////////////////////////////////////
 model skin_analyses {
-  id             Int      @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   user_id        Int?
   image_url      String
   skin_type_pred skin_type @default(unknown)
   issues_json    String?
   routine_advice String?
   model_version  String?
-  created_at     DateTime @default(now())
-  user           users?   @relation(fields: [user_id], references: [id])
+  created_at     DateTime  @default(now())
+  user           users?    @relation(fields: [user_id], references: [id])
 }
 
 model tryon_sessions {
-  id              Int      @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   user_id         Int?
   device          String?
   input_type      String?
   input_image_url String?
   result_url      String?
   latency_ms      Int?
-  created_at      DateTime @default(now())
-  user           users?   @relation(fields: [user_id], references: [id])
-  tryon_items    tryon_items[]
+  created_at      DateTime      @default(now())
+  user            users?        @relation(fields: [user_id], references: [id])
+  tryon_items     tryon_items[]
 }
 
 model tryon_items {
-  id          Int      @id @default(autoincrement())
+  id          Int               @id @default(autoincrement())
   session_id  Int
   product_id  Int?
   variant_id  Int?
   type        String?
   params_json String?
-  session     tryon_sessions @relation(fields: [session_id], references: [id])
-  product     products?      @relation(fields: [product_id], references: [id])
+  session     tryon_sessions    @relation(fields: [session_id], references: [id])
+  product     products?         @relation(fields: [product_id], references: [id])
   variant     product_variants? @relation(fields: [variant_id], references: [id])
 }
 
@@ -526,26 +564,26 @@ model recommendations {
 // PROMO / COUPON
 ///////////////////////////////////////////////////////
 model coupons {
-  id            Int      @id @default(autoincrement())
-  code          String   @unique
-  description   String?
-  discount_type String?
+  id             Int             @id @default(autoincrement())
+  code           String          @unique
+  description    String?
+  discount_type  String?
   discount_value Decimal
-  min_subtotal  Decimal? @default(0)
-  usage_limit   Int?
-  used_count    Int?     @default(0)
-  starts_at     DateTime?
-  ends_at       DateTime?
-  created_at    DateTime @default(now())
-  order_coupons order_coupons[]
+  min_subtotal   Decimal?        @default(0)
+  usage_limit    Int?
+  used_count     Int?            @default(0)
+  starts_at      DateTime?
+  ends_at        DateTime?
+  created_at     DateTime        @default(now())
+  order_coupons  order_coupons[]
 }
 
 model order_coupons {
-  order_id Int
+  order_id  Int
   coupon_id Int
   amount    Decimal
-  order    orders  @relation(fields: [order_id], references: [id])
-  coupon   coupons @relation(fields: [coupon_id], references: [id])
+  order     orders  @relation(fields: [order_id], references: [id])
+  coupon    coupons @relation(fields: [coupon_id], references: [id])
 
   @@id([order_id, coupon_id])
 }
@@ -554,14 +592,14 @@ model order_coupons {
 // ADMIN / MODERATION / ANALYTICS
 ///////////////////////////////////////////////////////
 model moderation_logs {
-  id          Int      @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   moderator_id Int
-  target_type String
-  target_id   Int
-  action      String?
-  reason      String?
-  created_at  DateTime @default(now())
-  moderator   users    @relation(fields: [moderator_id], references: [id])
+  target_type  String
+  target_id    Int
+  action       String?
+  reason       String?
+  created_at   DateTime @default(now())
+  moderator    users    @relation(fields: [moderator_id], references: [id])
 }
 
 model notifications {
@@ -577,47 +615,56 @@ model notifications {
 }
 
 model audit_logs {
-  id         Int      @id @default(autoincrement())
-  actor_id   Int?
-  action     String?
+  id          Int      @id @default(autoincrement())
+  actor_id    Int?
+  action      String?
   entity_type String?
-  entity_id  Int?
-  details    String?
-  ip         String?
-  created_at DateTime @default(now())
-  actor      users?   @relation(fields: [actor_id], references: [id])
+  entity_id   Int?
+  details     String?
+  ip          String?
+  created_at  DateTime @default(now())
+  actor       users?   @relation(fields: [actor_id], references: [id])
 }
 
 model conversations {
-  id         Int      @id @default(autoincrement())
-  type       String   @default("private")
-  created_at DateTime @default(now())
+  id           Int                         @id @default(autoincrement())
+  type         String                      @default("private")
+  created_at   DateTime                    @default(now())
   participants conversation_participants[]
-  messages    messages[]
+  messages     messages[]
 }
 
 model conversation_participants {
   conversation_id Int
   user_id         Int
   role            String?
-  joined_at       DateTime @default(now())
+  joined_at       DateTime      @default(now())
   conversation    conversations @relation(fields: [conversation_id], references: [id])
-  user           users        @relation(fields: [user_id], references: [id])
+  user            users         @relation(fields: [user_id], references: [id])
 
   @@id([conversation_id, user_id])
 }
 
 model messages {
-  id              Int      @id @default(autoincrement())
+  id              Int                  @id @default(autoincrement())
   conversation_id Int
   sender_id       Int
   content         String?
-  post_id         Int?     // Shared post ID
-  message_type    String?  // Message type (text, shared_post, etc.)
-  created_at      DateTime @default(now())
-  conversation    conversations @relation(fields: [conversation_id], references: [id])
-  sender          users         @relation(fields: [sender_id], references: [id])
+  post_id         Int?                 // Shared post ID
+  message_type    String?              // Message type (text, shared_post, image, video, file, etc.)
+  is_edited       Boolean              @default(false)
+  edited_at       DateTime?
+  is_deleted      Boolean              @default(false)
+  deleted_at      DateTime?
+  reply_to_id     Int?                 // ID of message being replied to
+  created_at      DateTime             @default(now())
+  conversation    conversations        @relation(fields: [conversation_id], references: [id])
+  sender          users                @relation(fields: [sender_id], references: [id])
   message_reads   message_reads[]
+  message_reactions message_reactions[]
+  message_media   message_media[]
+  replies         messages[]           @relation("MessageReplies")
+  reply_to        messages?            @relation("MessageReplies", fields: [reply_to_id], references: [id])
 }
 
 model message_reads {
@@ -628,4 +675,28 @@ model message_reads {
   user       users    @relation(fields: [user_id], references: [id])
 
   @@id([message_id, user_id])
+}
+
+model message_reactions {
+  id         Int      @id @default(autoincrement())
+  message_id Int
+  user_id    Int
+  emoji      String   // Emoji reaction (👍, ❤️, 😂, 😮, 😢, 😡)
+  created_at DateTime @default(now())
+  message    messages @relation(fields: [message_id], references: [id], onDelete: Cascade)
+
+  @@unique([message_id, user_id])
+}
+
+model message_media {
+  id          Int      @id @default(autoincrement())
+  message_id  Int
+  media_url   String
+  media_type  String   // image, video, file
+  file_name   String?
+  file_size   Int?
+  duration    Int?     // For videos (in seconds)
+  thumbnail_url String? // For videos
+  created_at  DateTime @default(now())
+  message     messages @relation(fields: [message_id], references: [id], onDelete: Cascade)
 }

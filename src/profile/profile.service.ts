@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { getFileUrl } from './config/local-multer.config';
 @Injectable()
 export class ProfileService {
     constructor(private prisma: PrismaService) {}
@@ -13,9 +14,12 @@ export class ProfileService {
     }
 
     async updateavatar(userId: number, avatarUrl: string): Promise<{ message: string }> {
+        // Convert filename to proper URL path for local storage
+        const properAvatarUrl = getFileUrl(avatarUrl, 'avatars');
+        
         await this.prisma.users.update({
             where: { id: userId },
-            data: { avatar_url: avatarUrl },
+            data: { avatar_url: properAvatarUrl },
         });
         return { message: 'Cập nhật ảnh đại diện thành công' };
     }
@@ -168,7 +172,7 @@ export class ProfileService {
                     phone: true,
                     story: true,
                     created_at: true,
-                    role: true
+                    role_id: true
                 }
             });
 
@@ -186,7 +190,7 @@ export class ProfileService {
                     phone: user.phone,
                     story: user.story,
                     created_at: user.created_at,
-                    role: user.role
+                    role_id: user.role_id
                 }
             };
         } catch (error) {

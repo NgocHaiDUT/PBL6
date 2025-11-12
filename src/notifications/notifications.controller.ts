@@ -81,6 +81,19 @@ export class NotificationsController {
     return this.notificationsService.deleteAllRead(targetUserId);
   }
 
+  // ✅ Route cụ thể phải đặt TRƯỚC route generic :id
+  @Get(':userId/unread-count')
+  async getUnreadCount(
+    @Param('userId', ParseIntPipe) userId: number
+  ): Promise<{ success: boolean; count: number }> {
+    console.log('🔔 [Controller] Getting unread count for user ID:', userId);
+    const stats = await this.notificationsService.getStats(userId);
+    return { 
+      success: true, 
+      count: stats.unread 
+    };
+  }
+
   @Get(':id')
   async findOne(
     @Param('id', ParseIntPipe) id: number,
