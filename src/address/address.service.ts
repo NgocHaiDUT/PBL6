@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { GhnService } from '../ghn/ghn.service';
 
 @Injectable()
 export class AddressService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private readonly ghnService: GhnService,
+    ) {}
 
     async addaddress(userid: number,label : string | undefined, receiver_name : string, phone : string, province: string, district: string, ward: string, street: string, is_default : boolean | undefined, ghn_province_id?: number, ghn_district_id?: number, ghn_ward_code?: string) {
         await this.prisma.addresses.create({
@@ -57,5 +61,18 @@ export class AddressService {
         return this.prisma.addresses.findMany({
             where : { user_id : userid },
         })
+    }
+
+    // GHN Proxy Methods
+    async getProvinces() {
+        return this.ghnService.getProvinces();
+    }
+
+    async getDistricts(province_id: number) {
+        return this.ghnService.getDistricts(province_id);
+    }
+
+    async getWards(district_id: number) {
+        return this.ghnService.getWards(district_id);
     }
 }

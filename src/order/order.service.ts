@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GhnService } from '../ghn/ghn.service';
-import { CreateOrderDto, CreateOrderItemDto, UpdateOrderDto } from '../ghn/dto/ghn-order.dto';
+import { CreateOrderDto, CreateOrderItemDto, UpdateOrderDto, GetServicesDto, CalculateFeeDto, GetLeadtimeDto } from '../ghn/dto/ghn-order.dto';
 
 @Injectable()
 export class OrderService {
@@ -670,6 +670,23 @@ export class OrderService {
             console.error('Error returning GHN order:', error);
             return { success: false, message: 'Lỗi khi yêu cầu trả hàng GHN' };
         }
+    }
+
+    // GHN Shipping Calculation Proxies
+    async getAvailableServices(data: GetServicesDto) {
+        return this.ghnService.getAvailableServices(data);
+    }
+
+    async calculateShippingFee(data: CalculateFeeDto) {
+        return this.ghnService.calculateShippingFee(data);
+    }
+
+    async previewShippingOrder(data: CreateOrderDto) {
+        return this.ghnService.previewShippingOrder(data);
+    }
+
+    async getLeadtime(data: GetLeadtimeDto, shopId: number) {
+        return this.ghnService.getLeadtime(data, shopId);
     }
 }
 

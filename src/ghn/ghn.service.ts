@@ -85,12 +85,6 @@ export class GhnService {
     // Enforce service_type_id to 5 (Heavy goods)
     data.service_type_id = 5;
 
-    // Remove top-level dimensions as GHN will use item-level dimensions for service_type_id 5
-    delete data.length;
-    delete data.width;
-    delete data.height;
-    delete data.weight;
-
     // Validate items for Heavy goods
     if (!data.items || data.items.length === 0) {
       throw new HttpException('Items are required for Heavy goods service_type_id 5', HttpStatus.BAD_REQUEST);

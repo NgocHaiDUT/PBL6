@@ -1,6 +1,7 @@
-import { Controller, Post, Get, Body, Param, Query, BadRequestException, Patch } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query, BadRequestException, Patch, ParseIntPipe } from '@nestjs/common';
 import { OrderService } from './order.service';
-import { CreateOrderDto, QueryOrdersDto } from './dto/create-order.dto';
+import { CheckoutDto, QueryOrdersDto } from './dto/checkout.dto';
+import { GetServicesDto, CalculateFeeDto, CreateOrderDto, GetLeadtimeDto } from '../ghn/dto/ghn-order.dto';
 
 @Controller('order')
 export class OrderController {
@@ -8,7 +9,7 @@ export class OrderController {
 
     @Post('create')
     async createOrder(
-        @Body() body: CreateOrderDto & { userId?: number }
+        @Body() body: CheckoutDto & { userId?: number }
     ) {
         if (!body.userId) {
             return { success: false, message: 'Vui lòng đăng nhập' };
@@ -25,6 +26,31 @@ export class OrderController {
             body.payment_method
         );
     }
+
+    // Shipping Calculation Endpoints (Proxy to GhnService)
+    @Post('shipping/services')
+    async getAvailableServices(@Body() body: GetServicesDto) {
+        return this.orderService.getAvailableServices(body);
+    }
+
+    @Post('shipping/calculate-fee')
+    async calculateShippingFee(@Body() body: CalculateFeeDto) {
+        return this.orderService.calculateShippingFee(body);
+    }
+
+    @Post('shipping/preview')
+    async previewShippingOrder(@Body() body: CreateOrderDto) {
+        return this.orderService.previewShippingOrder(body);
+    }
+
+    @Post('shipping/leadtime')
+    async getLeadtime(@Body() body: GetLeadtimeDto, @Query('shopId', ParseIntPipe) shopId: number) {
+        if (!shopId) {
+            throw new BadRequestException('shopId is required as a query parameter');
+        }
+        return this.orderService.getLeadtime(body, shopId);
+    }
+
 
     @Get('my-orders')
     async getMyOrders(

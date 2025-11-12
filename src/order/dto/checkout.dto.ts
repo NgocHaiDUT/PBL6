@@ -1,4 +1,4 @@
-export class CreateOrderDto {
+export class CheckoutDto {
   shipping_address_id: number;
   note?: string;
   payment_method?: string; // 'cod' | 'online'
@@ -9,4 +9,3 @@ export class QueryOrdersDto {
   limit?: number;
   status?: string;
 }
-
