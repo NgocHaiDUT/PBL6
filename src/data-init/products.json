@@ -9,7 +9,7 @@
     "total_reviews": 128,
     "brand_id": 1,
     "category_id": 1,
-    "shop_id": 1,
+    "shop_id": 2,
     "variants": [
       {
         "name": "50ml",
@@ -51,7 +51,7 @@
     "total_reviews": 95,
     "brand_id": 2,
     "category_id": 2,
-    "shop_id": 1,
+    "shop_id": 2,
     "variants": [
       {
         "name": "30ml",
@@ -80,7 +80,7 @@
     "total_reviews": 67,
     "brand_id": 1,
     "category_id": 3,
-    "shop_id": 1,
+    "shop_id": 2,
     "variants": [
       {
         "name": "200ml",
@@ -117,7 +117,7 @@
     "total_reviews": 89,
     "brand_id": 3,
     "category_id": 4,
-    "shop_id": 1,
+    "shop_id": 2,
     "variants": [
       {
         "name": "50ml",
@@ -151,7 +151,7 @@
     "total_reviews": 156,
     "brand_id": 2,
     "category_id": 5,
-    "shop_id": 1,
+    "shop_id": 2,
     "variants": [
       {
         "name": "100g",
@@ -188,7 +188,7 @@
     "total_reviews": 203,
     "brand_id": 1,
     "category_id": 6,
-    "shop_id": 1,
+    "shop_id": 2,
     "variants": [
       {
         "name": "150ml",
@@ -225,7 +225,7 @@
     "total_reviews": 74,
     "brand_id": 3,
     "category_id": 2,
-    "shop_id": 1,
+    "shop_id": 2,
     "variants": [
       {
         "name": "150ml",
@@ -259,7 +259,7 @@
     "total_reviews": 45,
     "brand_id": 2,
     "category_id": 7,
-    "shop_id": 1,
+    "shop_id": 2,
     "variants": [
       {
         "name": "15ml",
@@ -277,247 +277,6 @@
         "is_primary": true
       }
     ]
-  },
-  {
-    "name": "Son Môi Matte Cao Cấp",
-    "slug": "son-moi-matte-cao-cap",
-    "description": "Son môi matte với độ bền màu cao, không khô môi. Công thức chứa vitamin E và dầu argan giúp môi mềm mại.",
-    "is_published": true,
-    "moderation_status": "approved",
-    "avg_rating": 4.6,
-    "total_reviews": 234,
-    "brand_id": 1,
-    "category_id": 8,
-    "shop_id": 1,
-    "variants": [
-      {
-        "name": "3.5g",
-        "price": 180000,
-        "compare_at_price": 220000,
-        "sku": "SMMCC001-3.5G",
-        "stock": 150,
-        "is_active": true
-      }
-    ],
-    "media": [
-      {
-        "url": "/uploads/products/son-moi-matte-cao-cap-1.jpg",
-        "type": "image",
-        "is_primary": true
-      }
-    ]
-  },
-  {
-    "name": "Mascara Tạo Độ Cong",
-    "slug": "mascara-tao-do-cong",
-    "description": "Mascara với công thức đặc biệt giúp tạo độ cong tự nhiên cho lông mi, không bị vón cục và chống nước.",
-    "is_published": true,
-    "moderation_status": "approved",
-    "avg_rating": 4.4,
-    "total_reviews": 189,
-    "brand_id": 2,
-    "category_id": 9,
-    "shop_id": 1,
-    "variants": [
-      {
-        "name": "8ml",
-        "price": 165000,
-        "compare_at_price": 195000,
-        "sku": "MTDC001-8ML",
-        "stock": 120,
-        "is_active": true
-      }
-    ],
-    "media": [
-      {
-        "url": "/uploads/products/mascara-tao-do-cong-1.jpg",
-        "type": "image",
-        "is_primary": true
-      }
-    ]
-  },
-  {
-    "name": "Kem Nền Liquid Foundation",
-    "slug": "kem-nen-liquid-foundation",
-    "description": "Kem nền liquid với độ che phủ cao, không gây bí da. Công thức chứa SPF 15 và thành phần dưỡng ẩm.",
-    "is_published": true,
-    "moderation_status": "approved",
-    "avg_rating": 4.7,
-    "total_reviews": 312,
-    "brand_id": 3,
-    "category_id": 10,
-    "shop_id": 1,
-    "variants": [
-      {
-        "name": "30ml",
-        "price": 280000,
-        "compare_at_price": 320000,
-        "sku": "KNLF001-30ML",
-        "stock": 80,
-        "is_active": true
-      },
-      {
-        "name": "50ml",
-        "price": 420000,
-        "compare_at_price": 480000,
-        "sku": "KNLF001-50ML",
-        "stock": 60,
-        "is_active": true
-      }
-    ],
-    "media": [
-      {
-        "url": "/uploads/products/kem-nen-liquid-foundation-1.jpg",
-        "type": "image",
-        "is_primary": true
-      },
-      {
-        "url": "/uploads/products/kem-nen-liquid-foundation-2.jpg",
-        "type": "image",
-        "is_primary": false
-      }
-    ]
-  },
-  {
-    "name": "Bộ Cọ Trang Điểm Chuyên Nghiệp",
-    "slug": "bo-co-trang-diem-chuyen-nghiep",
-    "description": "Bộ cọ trang điểm cao cấp với lông tự nhiên mềm mại, thiết kế ergonomic dễ cầm. Bao gồm đầy đủ các loại cọ cần thiết.",
-    "is_published": true,
-    "moderation_status": "approved",
-    "avg_rating": 4.8,
-    "total_reviews": 156,
-    "brand_id": 1,
-    "category_id": 11,
-    "shop_id": 1,
-    "variants": [
-      {
-        "name": "Bộ 12 cọ",
-        "price": 350000,
-        "compare_at_price": 420000,
-        "sku": "BCTDCN001-12CO",
-        "stock": 45,
-        "is_active": true
-      },
-      {
-        "name": "Bộ 18 cọ",
-        "price": 480000,
-        "compare_at_price": 580000,
-        "sku": "BCTDCN001-18CO",
-        "stock": 30,
-        "is_active": true
-      }
-    ],
-    "media": [
-      {
-        "url": "/uploads/products/bo-co-trang-diem-chuyen-nghiep-1.jpg",
-        "type": "image",
-        "is_primary": true
-      }
-    ]
-  },
-  {
-    "name": "Nước Hoa Nữ Sang Trọng",
-    "slug": "nuoc-hoa-nu-sang-trong",
-    "description": "Nước hoa nữ với hương thơm sang trọng, pha trộn giữa hoa hồng, hoa nhài và gỗ đàn hương. Độ bền mùi hương lên đến 8 giờ.",
-    "is_published": true,
-    "moderation_status": "approved",
-    "avg_rating": 4.9,
-    "total_reviews": 98,
-    "brand_id": 2,
-    "category_id": 12,
-    "shop_id": 1,
-    "variants": [
-      {
-        "name": "50ml",
-        "price": 650000,
-        "compare_at_price": 750000,
-        "sku": "NHNST001-50ML",
-        "stock": 25,
-        "is_active": true
-      },
-      {
-        "name": "100ml",
-        "price": 980000,
-        "compare_at_price": 1150000,
-        "sku": "NHNST001-100ML",
-        "stock": 15,
-        "is_active": true
-      }
-    ],
-    "media": [
-      {
-        "url": "/uploads/products/nuoc-hoa-nu-sang-trong-1.jpg",
-        "type": "image",
-        "is_primary": true
-      }
-    ]
-  },
-  {
-    "name": "Sữa Rửa Mặt Dịu Nhẹ",
-    "slug": "sua-rua-mat-diu-nhe-loreal",
-    "description": "Sữa rửa mặt dịu nhẹ với công thức làm sạch sâu, loại bỏ bụi bẩn và tạp chất mà không làm khô da. Phù hợp cho da nhạy cảm.",
-    "is_published": true,
-    "moderation_status": "approved",
-    "avg_rating": 4.3,
-    "total_reviews": 203,
-    "brand_id": 1,
-    "shop_id": 1,
-    "how_to_use": "Làm ướt mặt, massage nhẹ nhàng với sữa rửa mặt, rửa sạch với nước.",
-    "skin_type_compat": "sensitive",
-    "variants": [
-      {
-        "name": "150ml",
-        "price": 85000,
-        "compare_at_price": 120000,
-        "sku": "SRMDN001-150ML",
-        "stock": 50,
-        "is_active": true
-      },
-      {
-        "name": "300ml",
-        "price": 150000,
-        "compare_at_price": 180000,
-        "sku": "SRMDN001-300ML",
-        "stock": 30,
-        "is_active": true
-      }
-    ],
-    "media": [
-      {
-        "url": "/uploads/products/sua-rua-mat-diu-nhe-loreal-1.jpg",
-        "type": "image",
-        "is_primary": true
-      }
-    ]
-  },
-  {
-    "name": "Kem Dưỡng Ẩm 24h",
-    "slug": "kem-duong-am-24h-loreal",
-    "description": "Kem dưỡng ẩm 24h với công thức cấp ẩm sâu, giúp da mềm mịn và căng mướt suốt cả ngày. Không gây nhờn rít.",
-    "is_published": true,
-    "moderation_status": "approved",
-    "avg_rating": 4.6,
-    "total_reviews": 156,
-    "brand_id": 1,
-    "shop_id": 1,
-    "how_to_use": "Thoa đều lên mặt và cổ sau khi rửa mặt, massage nhẹ nhàng cho đến khi thấm hết.",
-    "skin_type_compat": "normal",
-    "variants": [
-      {
-        "name": "50ml",
-        "price": 120000,
-        "compare_at_price": 150000,
-        "sku": "KDA24H001-50ML",
-        "stock": 40,
-        "is_active": true
-      }
-    ],
-    "media": [
-      {
-        "url": "/uploads/products/kem-duong-am-24h-loreal-1.jpg",
-        "type": "image",
-        "is_primary": true
-      }
-    ]
   }
+ 
 ]

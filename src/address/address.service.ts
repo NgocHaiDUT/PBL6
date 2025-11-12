@@ -6,6 +6,13 @@ export class AddressService {
     constructor(private prisma: PrismaService) {}
 
     async addaddress(userid: number,label : string | undefined, receiver_name : string, phone : string, province: string, district: string, ward: string, street: string, is_default : boolean | undefined) {
+        const existuser = await this.prisma.users.findUnique({
+            where : {id : userid},
+            select : {id : true}
+        })
+        if(!existuser) {
+            return { message : "User không tồn tại"}
+        }
         await this.prisma.addresses.create({
             data : {
                 user_id : userid,

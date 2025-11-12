@@ -129,7 +129,7 @@ export class OrderService {
                         data: {
                             order_id: order.id,
                             status: 'pending',
-                            address_snapshot: `${address.line1}, ${address.city}, ${address.state}`
+                            address_snapshot: `${address.street}, ${address.ward}, ${address.district}, ${address.province}`
                         }
                     });
 
@@ -173,21 +173,85 @@ export class OrderService {
                     where,
                     skip,
                     take: limit,
-                    include: {
-                        shop: true,
-                        order_items: {
-                            include: {
-                                product: {
-                                    include: {
-                                        product_media: true
-                                    }
-                                },
-                                variant: true
+                    select: {
+                        id: true,
+                        status: true,
+                        payment_status: true,
+                        subtotal_amount: true,
+                        discount_amount: true,
+                        shipping_fee: true,
+                        total_amount: true,
+                        note: true,
+                        created_at: true,
+                        updated_at: true,
+                        shop: {
+                            select: {
+                                id: true,
+                                name: true,
+                                logo_url: true,
                             }
                         },
-                        shipping_address: true,
-                        payments: true,
-                        shipments: true
+                        order_items: {
+                            select: {
+                                id: true,
+                                name_snapshot: true,
+                                variant_snapshot: true,
+                                unit_price: true,
+                                quantity: true,
+                                line_total: true,
+                                product: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        slug: true,
+                                        product_media: {
+                                            take: 1,
+                                            orderBy: { id: 'asc' },
+                                            select: {
+                                                url: true,
+                                                type: true,
+                                            }
+                                        }
+                                    }
+                                },
+                                variant: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        price: true,
+                                    }
+                                }
+                            }
+                        },
+                        shipping_address: {
+                            select: {
+                                recipient: true,
+                                phone: true,
+                                province: true,
+                                district: true,
+                                ward: true,
+                                street: true,
+                            }
+                        },
+                        payments: {
+                            select: {
+                                id: true,
+                                provider: true,
+                                amount: true,
+                                status: true,
+                                created_at: true,
+                            }
+                        },
+                        shipments: {
+                            select: {
+                                id: true,
+                                status: true,
+                                carrier: true,
+                                tracking_number: true,
+                                shipped_at: true,
+                                delivered_at: true,
+                            }
+                        }
                     },
                     orderBy: { created_at: 'desc' }
                 }),
@@ -219,23 +283,103 @@ export class OrderService {
 
             const order = await this.prisma.orders.findFirst({
                 where,
-                include: {
-                    shop: true,
-                    user: true,
-                    order_items: {
-                        include: {
-                            product: {
-                                include: {
-                                    product_media: true,
-                                    brand: true
-                                }
-                            },
-                            variant: true
+                select: {
+                    id: true,
+                    status: true,
+                    payment_status: true,
+                    subtotal_amount: true,
+                    discount_amount: true,
+                    shipping_fee: true,
+                    total_amount: true,
+                    note: true,
+                    created_at: true,
+                    updated_at: true,
+                    shop: {
+                        select: {
+                            id: true,
+                            name: true,
+                            logo_url: true,
+                            phone: true,
                         }
                     },
-                    shipping_address: true,
-                    payments: true,
-                    shipments: true
+                    user: {
+                        select: {
+                            id: true,
+                            full_name: true,
+                            phone: true,
+                            email: true,
+                        }
+                    },
+                    order_items: {
+                        select: {
+                            id: true,
+                            name_snapshot: true,
+                            variant_snapshot: true,
+                            unit_price: true,
+                            quantity: true,
+                            line_total: true,
+                            product: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    slug: true,
+                                    brand: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                        }
+                                    },
+                                    product_media: {
+                                        take: 1,
+                                        orderBy: { id: 'asc' },
+                                        select: {
+                                            url: true,
+                                            type: true,
+                                        }
+                                    }
+                                }
+                            },
+                            variant: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    price: true,
+                                    stock: true,
+                                }
+                            }
+                        }
+                    },
+                    shipping_address: {
+                        select: {
+                            recipient: true,
+                            phone: true,
+                            province: true,
+                            district: true,
+                            ward: true,
+                            street: true,
+                        }
+                    },
+                    payments: {
+                        select: {
+                            id: true,
+                            provider: true,
+                            amount: true,
+                            status: true,
+                            transaction_id: true,
+                            created_at: true,
+                        }
+                    },
+                    shipments: {
+                        select: {
+                            id: true,
+                            status: true,
+                            carrier: true,
+                            tracking_number: true,
+                            shipped_at: true,
+                            delivered_at: true,
+                            address_snapshot: true,
+                        }
+                    }
                 }
             });
 
@@ -301,11 +445,67 @@ export class OrderService {
                     where,
                     skip,
                     take: limit,
-                    include: {
-                        user: true,
-                        order_items: true,
-                        payments: true,
-                        shipments: true,
+                    select: {
+                        id: true,
+                        status: true,
+                        payment_status: true,
+                        subtotal_amount: true,
+                        discount_amount: true,
+                        shipping_fee: true,
+                        total_amount: true,
+                        note: true,
+                        created_at: true,
+                        updated_at: true,
+                        user: {
+                            select: {
+                                id: true,
+                                full_name: true,
+                                phone: true,
+                                avatar_url: true,
+                            }
+                        },
+                        order_items: {
+                            select: {
+                                id: true,
+                                product_id: true,
+                                variant_id: true,
+                                name_snapshot: true,
+                                variant_snapshot: true,
+                                unit_price: true,
+                                quantity: true,
+                                line_total: true,
+                            }
+                        },
+                        payments: {
+                            select: {
+                                id: true,
+                                provider: true,
+                                amount: true,
+                                status: true,
+                                transaction_id: true,
+                                created_at: true,
+                            }
+                        },
+                        shipments: {
+                            select: {
+                                id: true,
+                                status: true,
+                                carrier: true,
+                                tracking_number: true,
+                                shipped_at: true,
+                                delivered_at: true,
+                            }
+                        },
+                        shipping_address: {
+                            select: {
+                                recipient: true,
+                                phone: true,
+                                province: true,
+                                district: true,
+                                ward: true,
+                                street: true,
+                            }
+                        }
                     },
                     orderBy: { created_at: 'desc' }
                 }),
@@ -360,12 +560,58 @@ export class OrderService {
                     where,
                     skip,
                     take: limit,
-                    include: {
-                        user: true,
-                        shop: true,
-                        order_items: true,
-                        payments: true,
-                        shipments: true
+                    select: {
+                        id: true,
+                        status: true,
+                        payment_status: true,
+                        subtotal_amount: true,
+                        discount_amount: true,
+                        shipping_fee: true,
+                        total_amount: true,
+                        created_at: true,
+                        updated_at: true,
+                        user: {
+                            select: {
+                                id: true,
+                                full_name: true,
+                                email: true,
+                                phone: true,
+                            }
+                        },
+                        shop: {
+                            select: {
+                                id: true,
+                                name: true,
+                                logo_url: true,
+                            }
+                        },
+                        order_items: {
+                            select: {
+                                id: true,
+                                name_snapshot: true,
+                                variant_snapshot: true,
+                                unit_price: true,
+                                quantity: true,
+                                line_total: true,
+                            }
+                        },
+                        payments: {
+                            select: {
+                                id: true,
+                                provider: true,
+                                amount: true,
+                                status: true,
+                                created_at: true,
+                            }
+                        },
+                        shipments: {
+                            select: {
+                                id: true,
+                                status: true,
+                                tracking_number: true,
+                                delivered_at: true,
+                            }
+                        }
                     },
                     orderBy: { created_at: 'desc' }
                 }),

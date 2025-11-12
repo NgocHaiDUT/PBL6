@@ -5,6 +5,39 @@ import { skin_type, moderation_status, Prisma } from '@prisma/client';
 export class ProductService {
     constructor(private prisma: PrismaService) {}
 
+    
+    private generateSlug(text: string): string {
+        return text
+            .toLowerCase()
+            .normalize('NFD') 
+            .replace(/[\u0300-\u036f]/g, '') 
+            .replace(/đ/g, 'd')
+            .replace(/Đ/g, 'D')
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-') 
+            .replace(/-+/g, '-') 
+            .replace(/^-+|-+$/g, '');
+    }
+
+    private async generateUniqueSlug(baseSlug: string): Promise<string> {
+        let slug = baseSlug;
+        let counter = 1;
+        
+        while (true) {
+            const existing = await this.prisma.products.findUnique({
+                where: { slug: slug }
+            });
+            
+            if (!existing) {
+                return slug;
+            }
+            
+            
+            slug = `${baseSlug}-${counter}`;
+            counter++;
+        }
+    }
+
     async getallbrand(){
         var brands = await this.prisma.brands.findMany();
         return { success: true,brands: brands };
@@ -320,11 +353,22 @@ export class ProductService {
                 return { success: false, message: 'Bạn không có quyền tạo sản phẩm cho shop này' };
             }
 
-            const existingProduct = await this.prisma.products.findUnique({
-                where: { slug: slug }
-            });
-            if (existingProduct) {
-                return { success: false, message: 'Slug sản phẩm đã tồn tại' };
+            // Generate unique slug from name if slug is empty or already exists
+            let finalSlug = slug;
+            if (!slug || slug.trim() === '') {
+                // If no slug provided, generate from name
+                const baseSlug = this.generateSlug(name);
+                finalSlug = await this.generateUniqueSlug(baseSlug);
+            } else {
+                // If slug provided, check if it exists
+                const existingProduct = await this.prisma.products.findUnique({
+                    where: { slug: slug }
+                });
+                if (existingProduct) {
+                    // Generate unique slug based on provided slug
+                    const baseSlug = this.generateSlug(slug);
+                    finalSlug = await this.generateUniqueSlug(baseSlug);
+                }
             }
 
             if (brand_id) {
@@ -351,7 +395,7 @@ export class ProductService {
                         shop_id: shop_id,
                         brand_id: brand_id,
                         name: name,
-                        slug: slug,
+                        slug: finalSlug,
                         description: description,
                         how_to_use: how_to_use,
                         skin_type_compat: skin_type_compat,
@@ -388,6 +432,242 @@ export class ProductService {
                 success: false, 
                 message: 'Lỗi khi thêm sản phẩm',
                 error: error.message 
+            };
+        }
+    }
+
+    async editProduct(
+        product_id: number,
+        user_id: number,
+        name?: string,
+        slug?: string,
+        description?: string,
+        how_to_use?: string,
+        skin_type_compat?: skin_type,
+        is_published?: boolean,
+        brand_id?: number,
+        category_ids?: number[]
+    ) {
+        try {
+            // Check if product exists
+            const product = await this.prisma.products.findUnique({
+                where: { id: product_id },
+                include: { shop: true }
+            });
+
+            if (!product) {
+                return { success: false, message: 'Sản phẩm không tồn tại' };
+            }
+
+            // Check permission
+            const permission = await this.prisma.userpermission.findFirst({
+                where: {
+                    user_id: user_id,
+                    permission: { name: 'edit_product' }
+                }
+            });
+
+            if (!permission) {
+                return { success: false, message: 'Bạn không có quyền chỉnh sửa sản phẩm' };
+            }
+
+            // Check if user has permission to edit this shop's product
+            const isOwner = product.shop.owner_id === user_id;
+            const isStaff = await this.prisma.shop_staffs.findFirst({
+                where: {
+                    shop_id: product.shop_id,
+                    user_id: user_id
+                }
+            });
+
+            if (!isOwner && !isStaff) {
+                return { success: false, message: 'Bạn không có quyền chỉnh sửa sản phẩm của shop này' };
+            }
+
+            // Check slug uniqueness if provided
+            let finalSlug = slug;
+            if (slug && slug !== product.slug) {
+                const existingSlug = await this.prisma.products.findUnique({
+                    where: { slug: slug }
+                });
+                if (existingSlug) {
+                    // Generate unique slug
+                    const baseSlug = this.generateSlug(slug);
+                    finalSlug = await this.generateUniqueSlug(baseSlug);
+                }
+            }
+
+            // Validate brand if provided
+            if (brand_id) {
+                const brand = await this.prisma.brands.findUnique({
+                    where: { id: brand_id }
+                });
+                if (!brand) {
+                    return { success: false, message: 'Thương hiệu không tồn tại' };
+                }
+            }
+
+            // Validate categories if provided
+            if (category_ids && category_ids.length > 0) {
+                const categories = await this.prisma.categories.findMany({
+                    where: { id: { in: category_ids } }
+                });
+                if (categories.length !== category_ids.length) {
+                    return { success: false, message: 'Một số danh mục không tồn tại' };
+                }
+            }
+
+            // Build update data object
+            const updateData: any = {
+                updated_at: new Date()
+            };
+
+            if (name !== undefined) updateData.name = name;
+            if (finalSlug !== undefined) updateData.slug = finalSlug;
+            if (description !== undefined) updateData.description = description;
+            if (how_to_use !== undefined) updateData.how_to_use = how_to_use;
+            if (skin_type_compat !== undefined) updateData.skin_type_compat = skin_type_compat;
+            if (is_published !== undefined) updateData.is_published = is_published;
+            if (brand_id !== undefined) updateData.brand_id = brand_id;
+
+            // Update product and categories in transaction
+            const result = await this.prisma.$transaction(async (tx) => {
+                // Update product
+                const updatedProduct = await tx.products.update({
+                    where: { id: product_id },
+                    data: updateData
+                });
+
+                // Update categories if provided
+                if (category_ids !== undefined) {
+                    // Delete existing categories
+                    await tx.product_categories.deleteMany({
+                        where: { product_id: product_id }
+                    });
+
+                    // Add new categories
+                    if (category_ids.length > 0) {
+                        await tx.product_categories.createMany({
+                            data: category_ids.map(category_id => ({
+                                product_id: product_id,
+                                category_id: category_id
+                            }))
+                        });
+                    }
+                }
+
+                return updatedProduct;
+            });
+
+            return {
+                success: true,
+                message: 'Cập nhật sản phẩm thành công',
+                product: result
+            };
+
+        } catch (error) {
+            console.error('Error editing product:', error);
+            return {
+                success: false,
+                message: 'Lỗi khi cập nhật sản phẩm',
+                error: error.message
+            };
+        }
+    }
+
+    async deleteProduct(product_id: number, user_id: number) {
+        try {
+            // Check if product exists
+            const product = await this.prisma.products.findUnique({
+                where: { id: product_id },
+                include: { shop: true }
+            });
+
+            if (!product) {
+                return { success: false, message: 'Sản phẩm không tồn tại' };
+            }
+
+            // Check permission
+            const permission = await this.prisma.userpermission.findFirst({
+                where: {
+                    user_id: user_id,
+                    permission: { name: 'delete_product' }
+                }
+            });
+
+            if (!permission) {
+                return { success: false, message: 'Bạn không có quyền xóa sản phẩm' };
+            }
+
+            // Check if user has permission to delete this shop's product
+            const isOwner = product.shop.owner_id === user_id;
+            const isStaff = await this.prisma.shop_staffs.findFirst({
+                where: {
+                    shop_id: product.shop_id,
+                    user_id: user_id
+                }
+            });
+
+            if (!isOwner && !isStaff) {
+                return { success: false, message: 'Bạn không có quyền xóa sản phẩm của shop này' };
+            }
+
+            // Check if product has orders (should not delete if has orders)
+            const hasOrders = await this.prisma.order_items.findFirst({
+                where: { product_id: product_id }
+            });
+
+            if (hasOrders) {
+                return { 
+                    success: false, 
+                    message: 'Không thể xóa sản phẩm đã có đơn hàng. Bạn có thể ẩn sản phẩm thay vì xóa.' 
+                };
+            }
+
+            // Delete product and related data in transaction
+            await this.prisma.$transaction(async (tx) => {
+                // Delete related data
+                await tx.product_categories.deleteMany({
+                    where: { product_id: product_id }
+                });
+
+                await tx.product_media.deleteMany({
+                    where: { product_id: product_id }
+                });
+
+                await tx.product_variants.deleteMany({
+                    where: { product_id: product_id }
+                });
+
+                await tx.cart_items.deleteMany({
+                    where: { product_id: product_id }
+                });
+
+                await tx.wishlists.deleteMany({
+                    where: { product_id: product_id }
+                });
+
+                await tx.reviews.deleteMany({
+                    where: { product_id: product_id }
+                });
+
+                // Finally delete the product
+                await tx.products.delete({
+                    where: { id: product_id }
+                });
+            });
+
+            return {
+                success: true,
+                message: 'Xóa sản phẩm thành công'
+            };
+
+        } catch (error) {
+            console.error('Error deleting product:', error);
+            return {
+                success: false,
+                message: 'Lỗi khi xóa sản phẩm',
+                error: error.message
             };
         }
     }
@@ -448,6 +728,185 @@ export class ProductService {
         }
     }
 
+    async editProductVariant(
+        variant_id: number,
+        user_id: number,
+        sku?: string,
+        name?: string,
+        price?: number,
+        stock?: number,
+        shade_hex?: string,
+        size_label?: string,
+        compare_at_price?: number,
+        is_active?: boolean
+    ) {
+        try {
+            // Check if variant exists
+            const variant = await this.prisma.product_variants.findUnique({
+                where: { id: variant_id },
+                include: {
+                    product: {
+                        include: { shop: true }
+                    }
+                }
+            });
+
+            if (!variant) {
+                return { success: false, message: 'Variant không tồn tại' };
+            }
+
+            // Check permission
+            const permission = await this.prisma.userpermission.findFirst({
+                where: {
+                    user_id: user_id,
+                    permission: { name: 'edit_product' }
+                }
+            });
+
+            if (!permission) {
+                return { success: false, message: 'Bạn không có quyền chỉnh sửa variant' };
+            }
+
+            // Check if user has permission to edit this shop's product variant
+            const isOwner = variant.product.shop.owner_id === user_id;
+            const isStaff = await this.prisma.shop_staffs.findFirst({
+                where: {
+                    shop_id: variant.product.shop_id,
+                    user_id: user_id
+                }
+            });
+
+            if (!isOwner && !isStaff) {
+                return { success: false, message: 'Bạn không có quyền chỉnh sửa variant của shop này' };
+            }
+
+            // Check SKU uniqueness if provided
+            if (sku && sku !== variant.sku) {
+                const existingSku = await this.prisma.product_variants.findUnique({
+                    where: { sku: sku }
+                });
+                if (existingSku) {
+                    return { success: false, message: 'SKU đã tồn tại' };
+                }
+            }
+
+            // Build update data
+            const updateData: any = {
+                updated_at: new Date()
+            };
+
+            if (sku !== undefined) updateData.sku = sku;
+            if (name !== undefined) updateData.name = name;
+            if (price !== undefined) updateData.price = price;
+            if (stock !== undefined) updateData.stock = stock;
+            if (shade_hex !== undefined) updateData.shade_hex = shade_hex;
+            if (size_label !== undefined) updateData.size_label = size_label;
+            if (compare_at_price !== undefined) updateData.compare_at_price = compare_at_price;
+            if (is_active !== undefined) updateData.is_active = is_active;
+
+            // Update variant
+            const updatedVariant = await this.prisma.product_variants.update({
+                where: { id: variant_id },
+                data: updateData
+            });
+
+            return {
+                success: true,
+                message: 'Cập nhật variant thành công',
+                variant: updatedVariant
+            };
+
+        } catch (error) {
+            console.error('Error editing variant:', error);
+            return {
+                success: false,
+                message: 'Lỗi khi cập nhật variant',
+                error: error.message
+            };
+        }
+    }
+
+    async deleteProductVariant(variant_id: number, user_id: number) {
+        try {
+            // Check if variant exists
+            const variant = await this.prisma.product_variants.findUnique({
+                where: { id: variant_id },
+                include: {
+                    product: {
+                        include: { shop: true }
+                    }
+                }
+            });
+
+            if (!variant) {
+                return { success: false, message: 'Variant không tồn tại' };
+            }
+
+            // Check permission
+            const permission = await this.prisma.userpermission.findFirst({
+                where: {
+                    user_id: user_id,
+                    permission: { name: 'delete_product' }
+                }
+            });
+
+            if (!permission) {
+                return { success: false, message: 'Bạn không có quyền xóa variant' };
+            }
+
+            // Check if user has permission to delete this shop's product variant
+            const isOwner = variant.product.shop.owner_id === user_id;
+            const isStaff = await this.prisma.shop_staffs.findFirst({
+                where: {
+                    shop_id: variant.product.shop_id,
+                    user_id: user_id
+                }
+            });
+
+            if (!isOwner && !isStaff) {
+                return { success: false, message: 'Bạn không có quyền xóa variant của shop này' };
+            }
+
+            // Check if variant has orders
+            const hasOrders = await this.prisma.order_items.findFirst({
+                where: { variant_id: variant_id }
+            });
+
+            if (hasOrders) {
+                return { 
+                    success: false, 
+                    message: 'Không thể xóa variant đã có đơn hàng. Bạn có thể set is_active = false thay vì xóa.' 
+                };
+            }
+
+            // Delete variant and related data
+            await this.prisma.$transaction(async (tx) => {
+                // Delete cart items
+                await tx.cart_items.deleteMany({
+                    where: { variant_id: variant_id }
+                });
+
+                // Delete the variant
+                await tx.product_variants.delete({
+                    where: { id: variant_id }
+                });
+            });
+
+            return {
+                success: true,
+                message: 'Xóa variant thành công'
+            };
+
+        } catch (error) {
+            console.error('Error deleting variant:', error);
+            return {
+                success: false,
+                message: 'Lỗi khi xóa variant',
+                error: error.message
+            };
+        }
+    }
+
     async addProductMedia(
         product_id: number,
         url: string,
@@ -484,6 +943,147 @@ export class ProductService {
                 success: false, 
                 message: 'Lỗi khi thêm media',
                 error: error.message 
+            };
+        }
+    }
+
+    async editProductMedia(
+        media_id: number,
+        user_id: number,
+        type?: string,
+        sort_order?: number
+    ) {
+        try {
+            // Check if media exists
+            const media = await this.prisma.product_media.findUnique({
+                where: { id: media_id },
+                include: {
+                    product: {
+                        include: { shop: true }
+                    }
+                }
+            });
+
+            if (!media) {
+                return { success: false, message: 'Media không tồn tại' };
+            }
+
+            // Check permission
+            const permission = await this.prisma.userpermission.findFirst({
+                where: {
+                    user_id: user_id,
+                    permission: { name: 'edit_product' }
+                }
+            });
+
+            if (!permission) {
+                return { success: false, message: 'Bạn không có quyền chỉnh sửa media' };
+            }
+
+            // Check if user has permission to edit this shop's product media
+            const isOwner = media.product.shop.owner_id === user_id;
+            const isStaff = await this.prisma.shop_staffs.findFirst({
+                where: {
+                    shop_id: media.product.shop_id,
+                    user_id: user_id
+                }
+            });
+
+            if (!isOwner && !isStaff) {
+                return { success: false, message: 'Bạn không có quyền chỉnh sửa media của shop này' };
+            }
+
+            // Build update data
+            const updateData: any = {};
+
+            if (type !== undefined) updateData.type = type;
+            if (sort_order !== undefined) updateData.sort_order = sort_order;
+
+            // Update media
+            const updatedMedia = await this.prisma.product_media.update({
+                where: { id: media_id },
+                data: updateData
+            });
+
+            return {
+                success: true,
+                message: 'Cập nhật media thành công',
+                media: updatedMedia
+            };
+
+        } catch (error) {
+            console.error('Error editing media:', error);
+            return {
+                success: false,
+                message: 'Lỗi khi cập nhật media',
+                error: error.message
+            };
+        }
+    }
+
+    async deleteProductMedia(media_id: number, user_id: number) {
+        try {
+            // Check if media exists
+            const media = await this.prisma.product_media.findUnique({
+                where: { id: media_id },
+                include: {
+                    product: {
+                        include: { shop: true }
+                    }
+                }
+            });
+
+            if (!media) {
+                return { success: false, message: 'Media không tồn tại' };
+            }
+
+            // Check permission
+            const permission = await this.prisma.userpermission.findFirst({
+                where: {
+                    user_id: user_id,
+                    permission: { name: 'delete_product' }
+                }
+            });
+
+            if (!permission) {
+                return { success: false, message: 'Bạn không có quyền xóa media' };
+            }
+
+            // Check if user has permission to delete this shop's product media
+            const isOwner = media.product.shop.owner_id === user_id;
+            const isStaff = await this.prisma.shop_staffs.findFirst({
+                where: {
+                    shop_id: media.product.shop_id,
+                    user_id: user_id
+                }
+            });
+
+            if (!isOwner && !isStaff) {
+                return { success: false, message: 'Bạn không có quyền xóa media của shop này' };
+            }
+
+            // Delete media
+            await this.prisma.product_media.delete({
+                where: { id: media_id }
+            });
+
+            // TODO: Delete physical file from uploads folder if needed
+            // const filePath = path.join(process.cwd(), media.url);
+            // if (fs.existsSync(filePath)) {
+            //     fs.unlinkSync(filePath);
+            // }
+
+            return {
+                success: true,
+                message: 'Xóa media thành công'
+            };
+
+        } catch (error) {
+            console.error('Error deleting media:', error);
+            return {
+                success: false,
+                message: 'Lỗi khi xóa media',
+                error: error.message
             };
         }
     }
@@ -590,7 +1190,7 @@ export class ProductService {
                         orderBy: {
                             sort_order: 'asc'
                         },
-                        take: 5 // Limit media per product
+                        take: 10
                     },
                     product_variants: {
                         where: {
@@ -637,6 +1237,12 @@ export class ProductService {
                 });
             }
 
+            // Transform products to include first image
+            const productsWithFirstImage = filteredProducts.map(product => ({
+                ...product,
+                first_image: product.product_media.length > 0 ? product.product_media[0].url : null
+            }));
+
             // Calculate pagination metadata
             const totalPages = Math.ceil(totalProducts / limit);
             const hasNextPage = page < totalPages;
@@ -645,7 +1251,7 @@ export class ProductService {
             return {
                 success: true,
                 data: {
-                    products: filteredProducts,
+                    products: productsWithFirstImage,
                     pagination: {
                         total: totalProducts,
                         page: page,

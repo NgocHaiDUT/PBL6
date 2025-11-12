@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
 export class ShopService {
     constructor(private prisma : PrismaService){}
@@ -12,6 +12,15 @@ export class ShopService {
 
         if (!managestaffPermission) {
             return { success: false, message: "Lỗi hệ thống, quyền manage_shop_staff không tồn tại" };
+        }
+        
+        const staff = await this.prisma.users.findUnique({
+            where: { email: emailstaff },
+            select: { id: true, email: true }
+        });
+
+        if (!staff) {
+            return { success: false, message: "Nhân viên không tồn tại" };
         }
 
         const hasmanagestaffPermission = await this.prisma.userpermission.findFirst({
@@ -42,21 +51,21 @@ export class ShopService {
             return { success: false, message: "Bạn không có quyền quản lý cửa hàng này" };
         }
 
-        const staff = await this.prisma.users.findUnique({
-            where: { email: emailstaff },
-            select: { id: true, email: true }
-        });
-
-        if (!staff) {
-            return { success: false, message: "Nhân viên không tồn tại" };
-        }
-        
         const existingStaff = await this.prisma.shop_staffs.findFirst({
             where: { shop_id: shopid, user_id: staff.id }
         });
 
         if (existingStaff) {
             return { success: false, message: "Người này đã là nhân viên của cửa hàng" };
+        }
+
+        const isshopowner = await this.prisma.shops.findUnique({
+            where : {owner_id : staff.id},
+            select : {owner_id : true}
+        })
+        
+        if(!isshopowner){
+            return { success: false, message : "Không thể thêm chủ shop làm nhân viên"}
         }
 
         const staffRole = await this.prisma.role.findUnique({
@@ -126,17 +135,6 @@ export class ShopService {
             return { success: false, message: "Cửa hàng không tồn tại" };
         }
 
-        const isOwner = shop.owner_id === userid;
-        const isManager = await this.prisma.shop_staffs.findFirst({
-            where: { shop_id: shopid, user_id: userid, is_manager: true },
-            select: { id: true }
-        });
-
-        if (!isOwner && !isManager) {
-            return { success: false, message: "Bạn không có quyền quản lý cửa hàng này" };
-        }
-
-        
         const staff = await this.prisma.users.findUnique({
             where: { email: staffemail },
             select: { id: true, email: true }

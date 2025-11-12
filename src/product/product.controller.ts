@@ -1,8 +1,9 @@
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
 import { Controller,Body,Post , Get, UploadedFile ,Query, UseInterceptors, BadRequestException, Param, ParseIntPipe, Put,Delete} from '@nestjs/common';
-// Import S3 config instead of local file config
-import { s3BrandConfig } from './config/s3-product.config';
+// Import local file config for local testing
+// import { s3BrandConfig } from './config/s3-product.config';
+import { brandMulterConfig, productMediaMulterConfig } from './config/product-multer.config';
 @Controller('product')
 export class ProductController {
     constructor(private readonly productservice : ProductService ) {}
@@ -22,7 +23,7 @@ export class ProductController {
     }
 
     @Post('add-brand')
-    @UseInterceptors(FileInterceptor('file', s3BrandConfig))
+    @UseInterceptors(FileInterceptor('file', brandMulterConfig))
     async addbrand(
         @Body() body : {userid:string,name: string,slug : string},
         @UploadedFile() file: any,
@@ -31,8 +32,8 @@ export class ProductController {
         if(!file) {
             throw new BadRequestException('Thiếu file ảnh');
         }
-        // S3 trả về full URL trong file.location
-        const brandUrl = file.location;
+        // Local storage - construct relative path
+        const brandUrl = `/uploads/brands/${file.filename}`;
         return this.productservice.addbrand(Number(body.userid),body.name,body.slug,brandUrl);
     }
     
@@ -53,7 +54,7 @@ export class ProductController {
     }
 
     @Post('edit-brand-logo')
-    @UseInterceptors(FileInterceptor('file', s3BrandConfig))
+    @UseInterceptors(FileInterceptor('file', brandMulterConfig))
     async editbrandlogo(
         @Body() body : {userid:string,id : string},
         @UploadedFile() file: any, 
@@ -62,8 +63,8 @@ export class ProductController {
         if(!body.id || !file) {
             return {success : false , message : 'Thiếu trường hoặc file ảnh'};
         }
-        // S3 trả về full URL trong file.location
-        const brandUrl = file.location;
+        // Local storage - construct relative path
+        const brandUrl = `/uploads/brands/${file.filename}`;
         return this.productservice.editbrandslogo(Number(body.userid),Number(body.id),brandUrl);
     }
 
@@ -93,30 +94,103 @@ export class ProductController {
         user_id: string;
         shop_id: string;
         name: string;
-        slug: string;
+        slug?: string; 
         skin_type_compat: string;
         is_published: boolean;
         how_to_use?: string;
         description?: string;
         brand_id?: string;
-        category_ids?: number[];
+        category_ids?: any[]; 
     }) {
-        if (!body.user_id || !body.shop_id || !body.name || !body.slug || !body.skin_type_compat) {
-            return { success: false, message: 'Thiếu trường bắt buộc' };
+        if (!body.user_id || !body.shop_id || !body.name || !body.skin_type_compat) {
+            return { success: false, message: 'Thiếu trường bắt buộc (user_id, shop_id, name, skin_type_compat)' };
         }
+
+        const validSkinTypes = ['unknown', 'normal', 'oily', 'dry', 'combination', 'sensitive'];
+        if (!validSkinTypes.includes(body.skin_type_compat)) {
+            return { 
+                success: false, 
+                message: `skin_type_compat không hợp lệ. Chỉ chấp nhận: ${validSkinTypes.join(', ')}`,
+                received: body.skin_type_compat
+            };
+        }
+
+        const categoryIds = body.category_ids 
+            ? body.category_ids.map(id => Number(id))
+            : undefined;
 
         return this.productservice.addproducts(
             Number(body.user_id),
             Number(body.shop_id),
             body.name,
-            body.slug,
+            body.slug || '', 
             body.skin_type_compat as any,
             body.is_published ?? false,
             body.how_to_use,
             body.description,
             body.brand_id ? Number(body.brand_id) : undefined,
-            body.category_ids
+            categoryIds
         );
+    }
+
+    @Put('edit-product/:id')
+    async editProduct(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() body: {
+            user_id: string;
+            name?: string;
+            slug?: string;
+            description?: string;
+            how_to_use?: string;
+            skin_type_compat?: string;
+            is_published?: boolean;
+            brand_id?: string;
+            category_ids?: any[];
+        }
+    ) {
+        if (!body.user_id) {
+            return { success: false, message: 'user_id là bắt buộc' };
+        }
+
+        if (body.skin_type_compat) {
+            const validSkinTypes = ['unknown', 'normal', 'oily', 'dry', 'combination', 'sensitive'];
+            if (!validSkinTypes.includes(body.skin_type_compat)) {
+                return { 
+                    success: false, 
+                    message: `skin_type_compat không hợp lệ. Chỉ chấp nhận: ${validSkinTypes.join(', ')}`,
+                    received: body.skin_type_compat
+                };
+            }
+        }
+
+        const categoryIds = body.category_ids 
+            ? body.category_ids.map(id => Number(id))
+            : undefined;
+
+        return this.productservice.editProduct(
+            id,
+            Number(body.user_id),
+            body.name,
+            body.slug,
+            body.description,
+            body.how_to_use,
+            body.skin_type_compat as any,
+            body.is_published,
+            body.brand_id ? Number(body.brand_id) : undefined,
+            categoryIds
+        );
+    }
+
+    @Delete('delete-product/:id')
+    async deleteProduct(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() body: { user_id: string }
+    ) {
+        if (!body.user_id) {
+            return { success: false, message: 'user_id là bắt buộc' };
+        }
+
+        return this.productservice.deleteProduct(id, Number(body.user_id));
     }
 
     @Post('add-product-variant')
@@ -146,23 +220,108 @@ export class ProductController {
         );
     }
 
-    @Post('add-product-media')
-    async addProductMedia(@Body() body: {
-        product_id: string;
-        url: string;
-        type?: string;
-        sort_order?: string;
-    }) {
-        if (!body.product_id || !body.url) {
-            return { success: false, message: 'Thiếu trường bắt buộc' };
+    @Put('edit-product-variant/:id')
+    async editProductVariant(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() body: {
+            user_id: string;
+            sku?: string;
+            name?: string;
+            price?: string;
+            stock?: string;
+            shade_hex?: string;
+            size_label?: string;
+            compare_at_price?: string;
+            is_active?: boolean;
+        }
+    ) {
+        if (!body.user_id) {
+            return { success: false, message: 'user_id là bắt buộc' };
         }
 
-        return this.productservice.addProductMedia(
-            Number(body.product_id),
-            body.url,
-            body.type || 'image',
-            body.sort_order ? Number(body.sort_order) : 0
+        return this.productservice.editProductVariant(
+            id,
+            Number(body.user_id),
+            body.sku,
+            body.name,
+            body.price ? Number(body.price) : undefined,
+            body.stock ? Number(body.stock) : undefined,
+            body.shade_hex,
+            body.size_label,
+            body.compare_at_price ? Number(body.compare_at_price) : undefined,
+            body.is_active
         );
+    }
+
+    @Delete('delete-product-variant/:id')
+    async deleteProductVariant(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() body: { user_id: string }
+    ) {
+        if (!body.user_id) {
+            return { success: false, message: 'user_id là bắt buộc' };
+        }
+
+        return this.productservice.deleteProductVariant(id, Number(body.user_id));
+    }
+
+    @Post('add-product-media')
+    @UseInterceptors(FileInterceptor('file', productMediaMulterConfig))
+    async addProductMedia(
+        @Query('product_id') product_id: string,   
+        @Query('type') type?: string,
+        @Query('sort_order') sort_order?: string,
+        @UploadedFile() file?: any,
+    ) {
+        if (!product_id) {
+            return { success: false, message: 'product_id là bắt buộc' };
+        }
+        
+        if (!file) {
+            return { success: false, message: 'Thiếu file ảnh' };
+        }
+
+        const mediaUrl = `/uploads/products/${file.filename}`;
+
+        return this.productservice.addProductMedia(
+            Number(product_id),
+            mediaUrl,
+            type || 'image',
+            sort_order ? Number(sort_order) : 0
+        );
+    }
+
+    @Put('edit-product-media/:id')
+    async editProductMedia(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() body: {
+            user_id: string;
+            type?: string;
+            sort_order?: string;
+        }
+    ) {
+        if (!body.user_id) {
+            return { success: false, message: 'user_id là bắt buộc' };
+        }
+
+        return this.productservice.editProductMedia(
+            id,
+            Number(body.user_id),
+            body.type,
+            body.sort_order ? Number(body.sort_order) : undefined
+        );
+    }
+
+    @Delete('delete-product-media/:id')
+    async deleteProductMedia(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() body: { user_id: string }
+    ) {
+        if (!body.user_id) {
+            return { success: false, message: 'user_id là bắt buộc' };
+        }
+
+        return this.productservice.deleteProductMedia(id, Number(body.user_id));
     }
 
     @Get('shop/:shopId/products')

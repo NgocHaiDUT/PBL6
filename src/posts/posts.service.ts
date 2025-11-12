@@ -52,6 +52,15 @@ export class PostsService {
   async createPost(userId: number, createPostDto: CreatePostDto) {
     const { media_urls, product_ids, tags, ...postData } = createPostDto;
 
+    const existuser = await this.prisma.users.findUnique({
+      where : {id : userId},
+      select : {id : true}
+    })
+    if(!existuser)
+    {
+      return {success : false,message : "User không tồn tại",data : null}
+    }
+
     // Tạo post
     const post = await this.prisma.posts.create({
       data: {
@@ -390,8 +399,9 @@ export class PostsService {
   async deletePost(id: number, userId: number) {
     const post = await this.prisma.posts.findUnique({
       where: { id },
+      select : {user_id : true}
     });
-
+    
     if (!post) {
       throw new NotFoundException('Post not found');
     }

@@ -5,7 +5,6 @@ import { ShopService } from './shop.service';
 export class ShopController {
     constructor(private readonly shopService: ShopService) {}
 
-    // Thêm nhân viên vào shop
     @Post('staff')
     async addStaff(
         @Body() body: { 

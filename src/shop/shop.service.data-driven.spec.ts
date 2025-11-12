@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ShopService } from './shop.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TestDataReader, TestCase } from './__test-data__/test-data-reader';
 import { TestReportWriter, TestResult } from './__test-reports__/test-report-writer';
 import { ScreenshotHelper } from './__test-reports__/screenshot-helper';
-import { PostsService } from './posts.service';
 
 function autoSetupMocksFromMetadata(testCase: TestCase, mockPrisma: any) {
   jest.clearAllMocks();
@@ -16,6 +16,35 @@ function autoSetupMocksFromMetadata(testCase: TestCase, mockPrisma: any) {
   for (const [mockPath, mockValue] of Object.entries(testCase.mockSetup)) {
     const parts = mockPath.split('.');
     
+    if (mockPath === '$transaction') {
+      if (typeof mockValue === 'object' && mockValue !== null) {
+        mockPrisma.$transaction.mockImplementation(async (callback) => {
+          const txMock: any = {};
+
+          for (const [txPath, txReturnValue] of Object.entries(mockValue)) {
+            const [table, method] = txPath.split('.');
+            
+            if (!txMock[table]) {
+              txMock[table] = {};
+            }
+            
+            txMock[table][method] = jest.fn().mockResolvedValue(txReturnValue);
+          }
+          
+          return callback(txMock);
+        });
+      } else if (mockValue === true) {
+        mockPrisma.$transaction.mockImplementation(async (callback) => {
+          return callback({
+            shop_staffs: { create: jest.fn(), deleteMany: jest.fn(), findFirst: jest.fn() },
+            users: { update: jest.fn() },
+            userpermission: { createMany: jest.fn(), deleteMany: jest.fn() },
+          });
+        });
+      }
+      continue;
+    }
+
     let target = mockPrisma;
     for (let i = 0; i < parts.length - 1; i++) {
       target = target[parts[i]];
@@ -43,52 +72,46 @@ function autoSetupMocksFromMetadata(testCase: TestCase, mockPrisma: any) {
   }
 
 }
-describe('POSTS - Data-Driven Testing', () => {
-  let service: PostsService;
+
+describe('ShopService - Data-Driven Testing', () => {
+  let service: ShopService;
   let prismaService: PrismaService;
   const testResults: TestResult[] = [];
 
   const mockPrismaService = {
-    users : {
-      findUnique : jest.fn()
+    permission: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
     },
-    posts : {
-      create : jest.fn(),
-      findMany : jest.fn(),
-      findUnique : jest.fn(),
-      update : jest.fn(),
-      delete : jest.fn()
+    userpermission: {
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      createMany: jest.fn(),
+      deleteMany: jest.fn(),
     },
-    tags : {
-      findUnique : jest.fn(),
-      create : jest.fn()
+    shops: {
+      findUnique: jest.fn(),
     },
-    post_tags : {
-      create : jest.fn(),
-      deleteMany : jest.fn()
+    shop_staffs: {
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      deleteMany: jest.fn(),
     },
-    post_media : {
-      createMany : jest.fn(),
-      deleteMany : jest.fn()
+    users: {
+      findUnique: jest.fn(),
+      update: jest.fn(),
     },
-    post_products : {
-      createMany : jest.fn(),
-      deleteMany : jest.fn()
+    role: {
+      findUnique: jest.fn(),
     },
-    likes : {
-      deleteMany : jest.fn(),
-      count : jest.fn()
-    },
-    comments : {
-      deleteMany : jest.fn(),
-      count : jest.fn()
-    }
+    $transaction: jest.fn(),
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        PostsService,
+        ShopService,
         {
           provide: PrismaService,
           useValue: mockPrismaService,
@@ -96,7 +119,7 @@ describe('POSTS - Data-Driven Testing', () => {
       ],
     }).compile();
 
-    service = module.get<PostsService>(PostsService);
+    service = module.get<ShopService>(ShopService);
     prismaService = module.get<PrismaService>(PrismaService);
   });
 
@@ -104,8 +127,8 @@ describe('POSTS - Data-Driven Testing', () => {
     jest.clearAllMocks();
   });
 
-  describe('deletePost', () => {
-    const testData = TestDataReader.getTestCasesForFunction('test-case.json', 'deletePost');
+  describe('addstaff', () => {
+    const testData = TestDataReader.getTestCasesForFunction('test-case.json', 'addstaff');
 
     beforeAll(() => {
       TestDataReader.printTestCasesSummary(testData);
@@ -123,9 +146,11 @@ describe('POSTS - Data-Driven Testing', () => {
         try {
           autoSetupMocksFromMetadata(testCase, mockPrismaService);
 
-          actualResult = await service.deletePost(
-              testCase.input.id,
-              testCase.input.userId
+          actualResult = await service.addstaff(
+            testCase.input.userid,
+            testCase.input.staffemail,
+            testCase.input.shopid,
+            testCase.input.is_manager
           );
 
           const isMatch = 
@@ -158,7 +183,88 @@ describe('POSTS - Data-Driven Testing', () => {
           const testResult: TestResult = {
             testCaseId: testCase.testCaseId,
             description: testCase.testCaseDescription,
-            functionName: 'deletePost',
+            functionName: 'addstaff',
+            input: JSON.stringify(testCase.input, null, 2),
+            expected: JSON.stringify(testCase.expectedResult, null, 2),
+            actual: JSON.stringify(actualResult, null, 2),
+            status: testStatus,
+            executionTime: `${executionTime}ms`,
+            timestamp: new Date().toISOString(),
+            errorMessage,
+          };
+
+          testResults.push(testResult);
+
+          if (testResult.status === 'FAIL') {
+            console.log(`❌ ${testCase.testCaseId}: FAIL`);
+            console.log(`   Expected: ${testCase.expectedResult.message}`);
+            console.log(`   Actual: ${actualResult?.message}`);
+          }
+
+          if (shouldThrow) {
+            throw caughtError;
+          }
+        }
+      });
+    });
+  });
+
+  describe('removestaff', () => {
+    const testData = TestDataReader.getTestCasesForFunction('test-case.json', 'removestaff');
+
+    beforeAll(() => {
+      TestDataReader.printTestCasesSummary(testData);
+    });
+
+    testData.forEach((testCase: TestCase) => {
+      it(`${testCase.testCaseId}: ${testCase.testCaseDescription}`, async () => {
+        const startTime = Date.now();
+        let actualResult: any;
+        let errorMessage: string | undefined;
+        let testStatus: 'PASS' | 'FAIL' = 'PASS';
+        let shouldThrow = false;
+        let caughtError: any;
+
+        try {
+          autoSetupMocksFromMetadata(testCase, mockPrismaService);
+
+          actualResult = await service.removestaff(
+            testCase.input.userid,
+            testCase.input.staffemail,
+            testCase.input.shopid
+          );
+
+          const isMatch = 
+            actualResult?.success === testCase.expectedResult.success &&
+            actualResult?.message === testCase.expectedResult.message;
+
+          if (!isMatch) {
+            testStatus = 'FAIL';
+            errorMessage = `Expected: ${testCase.expectedResult.message}, Got: ${actualResult?.message}`;
+          }
+
+          expect(actualResult).toEqual(testCase.expectedResult);
+
+        } catch (error) {
+          testStatus = 'FAIL';
+          
+          if (!actualResult) {
+            actualResult = { success: false, message: error.message };
+          }
+          
+          if (!errorMessage) {
+            errorMessage = error.message;
+          }
+          
+          shouldThrow = true;
+          caughtError = error;
+        } finally {
+          const executionTime = Date.now() - startTime;
+
+          const testResult: TestResult = {
+            testCaseId: testCase.testCaseId,
+            description: testCase.testCaseDescription,
+            functionName: 'removestaff',
             input: JSON.stringify(testCase.input, null, 2),
             expected: JSON.stringify(testCase.expectedResult, null, 2),
             actual: JSON.stringify(actualResult, null, 2),
