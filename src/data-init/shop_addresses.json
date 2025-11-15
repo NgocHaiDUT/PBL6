@@ -1,0 +1,35 @@
+[
+  {
+    "shop_id": 2,
+    "name": "Kho hàng chính",
+    "phone": "0281234567",
+    "email": "kho@cosmeticshop.vn",
+    "province": "Thành phố Hồ Chí Minh",
+    "district": "Quận 7",
+    "ward": "Phường Tân Quy",
+    "street": "555 Nguyễn Thị Thập",
+    "is_default": true
+  },
+  {
+    "shop_id": 2,
+    "name": "Chi nhánh Quận 1",
+    "phone": "0281234568",
+    "email": "q1@cosmeticshop.vn",
+    "province": "Thành phố Hồ Chí Minh",
+    "district": "Quận 1",
+    "ward": "Phường Bến Nghé",
+    "street": "123 Nguyễn Huệ",
+    "is_default": false
+  },
+  {
+    "shop_id": 2,
+    "name": "Chi nhánh Thủ Đức",
+    "phone": "0281234569",
+    "email": "thuduc@cosmeticshop.vn",
+    "province": "Thành phố Hồ Chí Minh",
+    "district": "Thành phố Thủ Đức",
+    "ward": "Phường Linh Trung",
+    "street": "456 Đại lộ Võ Văn Ngân",
+    "is_default": false
+  }
+]

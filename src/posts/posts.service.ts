@@ -418,8 +418,9 @@ export class PostsService {
   async deletePost(id: number, userId: number) {
     const post = await this.prisma.posts.findUnique({
       where: { id },
+      select : {user_id : true}
     });
-
+    
     if (!post) {
       throw new NotFoundException('Post not found');
     }

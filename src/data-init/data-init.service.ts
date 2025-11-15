@@ -1,5 +1,6 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+
+import { Injectable ,Logger, OnModuleInit } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { S3UploadService } from './s3-upload.service';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -404,5 +405,226 @@ export class DataInitService implements OnModuleInit {
         }
 
         this.logger.log(`Đã tạo ${productsData.length} sản phẩm thành công`);
+    }
+
+    async seedAddresses() {
+        try {
+            const existingAddresses = await this.prisma.addresses.count();
+            if (existingAddresses > 0) {
+                this.logger.log('Addresses đã tồn tại, không khởi tạo mới');
+                return { success: false, message: 'Addresses đã tồn tại' };
+            }
+
+            const addressesFilePath = path.join(process.cwd(), 'src', 'data-init', 'addresses.json');
+            const addressesDataRaw = fs.readFileSync(addressesFilePath, 'utf8');
+            const addressesData = JSON.parse(addressesDataRaw);
+
+            if (!Array.isArray(addressesData)) {
+                this.logger.error('Dữ liệu addresses không phải là array');
+                return { success: false, message: 'Dữ liệu addresses không hợp lệ' };
+            }
+
+            for (const address of addressesData) {
+                await this.prisma.addresses.create({
+                    data: {
+                        user_id: address.user_id,
+                        label: address.label,
+                        recipient: address.recipient,
+                        phone: address.phone,
+                        province: address.province,
+                        district: address.district,
+                        ward: address.ward,
+                        street: address.street,
+                        is_default: address.is_default,
+                        created_at: new Date(),
+                    },
+                });
+            }
+
+            this.logger.log(`Đã tạo ${addressesData.length} địa chỉ thành công`);
+            return { success: true, message: `Đã tạo ${addressesData.length} địa chỉ thành công` };
+        } catch (error) {
+            this.logger.error('Lỗi khi tạo addresses:', error);
+            return { success: false, message: 'Lỗi khi tạo addresses', error: error.message };
+        }
+    }
+
+    async seedShopAddresses() {
+        try {
+            const existingShopAddresses = await this.prisma.shop_addresses.count();
+            if (existingShopAddresses > 0) {
+                this.logger.log('Shop addresses đã tồn tại, không khởi tạo mới');
+                return { success: false, message: 'Shop addresses đã tồn tại' };
+            }
+
+            const shopAddressesFilePath = path.join(process.cwd(), 'src', 'data-init', 'shop_addresses.json');
+            const shopAddressesDataRaw = fs.readFileSync(shopAddressesFilePath, 'utf8');
+            const shopAddressesData = JSON.parse(shopAddressesDataRaw);
+
+            if (!Array.isArray(shopAddressesData)) {
+                this.logger.error('Dữ liệu shop_addresses không phải là array');
+                return { success: false, message: 'Dữ liệu shop_addresses không hợp lệ' };
+            }
+
+            for (const shopAddress of shopAddressesData) {
+                await this.prisma.shop_addresses.create({
+                    data: {
+                        shop_id: shopAddress.shop_id,
+                        name: shopAddress.name,
+                        phone: shopAddress.phone,
+                        email: shopAddress.email,
+                        province: shopAddress.province,
+                        district: shopAddress.district,
+                        ward: shopAddress.ward,
+                        street: shopAddress.street,
+                        is_default: shopAddress.is_default,
+                    },
+                });
+            }
+
+            this.logger.log(`Đã tạo ${shopAddressesData.length} địa chỉ shop thành công`);
+            return { success: true, message: `Đã tạo ${shopAddressesData.length} địa chỉ shop thành công` };
+        } catch (error) {
+            this.logger.error('Lỗi khi tạo shop addresses:', error);
+            return { success: false, message: 'Lỗi khi tạo shop addresses', error: error.message };
+        }
+    }
+
+    async seedOrders() {
+        try {
+            const existingOrders = await this.prisma.orders.count();
+            if (existingOrders > 0) {
+                this.logger.log('Orders đã tồn tại, không khởi tạo mới');
+                return { success: false, message: 'Orders đã tồn tại' };
+            }
+
+            // Lấy danh sách products từ DB để map ID
+            const productsInDB = await this.prisma.products.findMany({
+                where: { shop_id: 2 },
+                orderBy: { id: 'asc' },
+                select: { id: true, name: true }
+            });
+
+            if (productsInDB.length === 0) {
+                this.logger.error('Không tìm thấy products trong DB. Vui lòng chạy seed products trước!');
+                return { success: false, message: 'Không tìm thấy products. Chạy POST /data-init/products trước!' };
+            }
+
+            // Tạo map: product_id trong JSON (1,2,3...) -> product_id thực tế trong DB
+            const productIdMap = new Map<number, number>();
+            productsInDB.forEach((product, index) => {
+                productIdMap.set(index + 1, product.id); // JSON dùng 1,2,3... map sang ID thực
+            });
+
+            this.logger.log(`Product ID mapping: ${JSON.stringify([...productIdMap.entries()])}`);
+
+            const ordersFilePath = path.join(process.cwd(), 'src', 'data-init', 'orders.json');
+            const ordersDataRaw = fs.readFileSync(ordersFilePath, 'utf8');
+            const ordersData = JSON.parse(ordersDataRaw);
+
+            if (!Array.isArray(ordersData)) {
+                this.logger.error('Dữ liệu orders không phải là array');
+                return { success: false, message: 'Dữ liệu orders không hợp lệ' };
+            }
+
+            for (const orderData of ordersData) {
+                try {
+                    // Tạo order
+                    const order = await this.prisma.orders.create({
+                        data: {
+                            user_id: orderData.user_id,
+                            shop_id: orderData.shop_id,
+                            status: orderData.status as any,
+                            payment_status: orderData.payment_status as any,
+                            subtotal_amount: orderData.subtotal_amount,
+                            discount_amount: orderData.discount_amount,
+                            shipping_fee: orderData.shipping_fee,
+                            total_amount: orderData.total_amount,
+                            shipping_address_id: orderData.shipping_address_id,
+                            pickup_address_id: orderData.pickup_address_id,
+                            note: orderData.note,
+                            created_at: new Date(orderData.created_at),
+                            updated_at: new Date(orderData.updated_at),
+                        },
+                    });
+
+                    // Tạo order items với product_id đã được map
+                    if (orderData.order_items && Array.isArray(orderData.order_items)) {
+                        for (const item of orderData.order_items) {
+                            const realProductId = productIdMap.get(item.product_id);
+                            if (!realProductId) {
+                                this.logger.warn(`Không tìm thấy product_id mapping cho ${item.product_id}, skip item này`);
+                                continue;
+                            }
+
+                            // Lấy variant_id thực tế từ product
+                            const variants = await this.prisma.product_variants.findMany({
+                                where: { product_id: realProductId },
+                                orderBy: { id: 'asc' }
+                            });
+
+                            const realVariantId = variants[item.variant_id - 1]?.id || variants[0]?.id;
+                            if (!realVariantId) {
+                                this.logger.warn(`Không tìm thấy variant cho product ${realProductId}`);
+                                continue;
+                            }
+
+                            await this.prisma.order_items.create({
+                                data: {
+                                    order_id: order.id,
+                                    product_id: realProductId,
+                                    variant_id: realVariantId,
+                                    name_snapshot: item.name_snapshot,
+                                    variant_snapshot: item.variant_snapshot,
+                                    unit_price: item.unit_price,
+                                    quantity: item.quantity,
+                                    line_total: item.line_total,
+                                },
+                            });
+                        }
+                    }
+
+                    // Tạo payment
+                    if (orderData.payment) {
+                        await this.prisma.payments.create({
+                            data: {
+                                order_id: order.id,
+                                provider: orderData.payment.provider,
+                                amount: orderData.payment.amount,
+                                status: orderData.payment.status as any,
+                                transaction_id: orderData.payment.transaction_id,
+                                created_at: new Date(orderData.payment.created_at),
+                            },
+                        });
+                    }
+
+                    // Tạo shipment
+                    if (orderData.shipment) {
+                        await this.prisma.shipments.create({
+                            data: {
+                                order_id: order.id,
+                                status: orderData.shipment.status as any,
+                                carrier: orderData.shipment.carrier,
+                                tracking_number: orderData.shipment.tracking_number,
+                                shipped_at: orderData.shipment.shipped_at ? new Date(orderData.shipment.shipped_at) : null,
+                                delivered_at: orderData.shipment.delivered_at ? new Date(orderData.shipment.delivered_at) : null,
+                                address_snapshot: orderData.shipment.address_snapshot,
+                                created_at: new Date(),
+                            },
+                        });
+                    }
+
+                    this.logger.log(`Đã tạo order #${order.id}`);
+                } catch (error) {
+                    this.logger.error(`Lỗi khi tạo order:`, error);
+                }
+            }
+
+            this.logger.log(`Đã tạo ${ordersData.length} đơn hàng thành công`);
+            return { success: true, message: `Đã tạo ${ordersData.length} đơn hàng thành công` };
+        } catch (error) {
+            this.logger.error('Lỗi khi tạo orders:', error);
+            return { success: false, message: 'Lỗi khi tạo orders', error: error.message };
+        }
     }
 }

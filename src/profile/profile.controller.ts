@@ -21,6 +21,13 @@ export class ProfileController {
         return this.profileService.getProfile(req.user.userId);
     }
 
+    @UseGuards(AuthGuard('jwt'))
+    @Get('me')
+    getMyProfile(@Req() req: any) {
+        // Alias for /profile, commonly expected by frontend
+        return this.profileService.getProfile(req.user.userId);
+    }
+
 
     @Get('permission')
     @UseGuards(AuthGuard('jwt'))

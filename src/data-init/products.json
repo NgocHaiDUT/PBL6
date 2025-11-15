@@ -9,7 +9,7 @@
     "total_reviews": 128,
     "brand_id": 1,
     "category_id": 1,
-    "shop_id": 1,
+    "shop_id": 2,
     "variants": [
       {
         "name": "50ml",
@@ -59,7 +59,7 @@
     "total_reviews": 95,
     "brand_id": 2,
     "category_id": 2,
-    "shop_id": 1,
+    "shop_id": 2,
     "variants": [
       {
         "name": "30ml",
@@ -92,7 +92,7 @@
     "total_reviews": 67,
     "brand_id": 1,
     "category_id": 3,
-    "shop_id": 1,
+    "shop_id": 2,
     "variants": [
       {
         "name": "200ml",
@@ -137,7 +137,7 @@
     "total_reviews": 89,
     "brand_id": 3,
     "category_id": 4,
-    "shop_id": 1,
+    "shop_id": 2,
     "variants": [
       {
         "name": "50ml",
@@ -175,7 +175,7 @@
     "total_reviews": 156,
     "brand_id": 2,
     "category_id": 5,
-    "shop_id": 1,
+    "shop_id": 2,
     "variants": [
       {
         "name": "100g",
@@ -220,7 +220,7 @@
     "total_reviews": 203,
     "brand_id": 1,
     "category_id": 6,
-    "shop_id": 1,
+    "shop_id": 2,
     "variants": [
       {
         "name": "150ml",
@@ -265,7 +265,7 @@
     "total_reviews": 74,
     "brand_id": 3,
     "category_id": 2,
-    "shop_id": 1,
+    "shop_id": 2,
     "variants": [
       {
         "name": "150ml",

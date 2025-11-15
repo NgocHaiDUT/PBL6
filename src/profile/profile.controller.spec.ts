@@ -4,7 +4,7 @@ import { ProfileService } from './profile.service';
 
 describe('ProfileController', () => {
   let controller: ProfileController;
-
+  
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ProfileController],

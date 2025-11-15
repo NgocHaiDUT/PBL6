@@ -87,7 +87,7 @@ export class AuthController {
         }
         return this.authService.changePasswordFirstTime(body.userId, body.newPassword);
     }
-
+    
 
   @Get('google')
   @UseGuards(AuthGuard('google'))

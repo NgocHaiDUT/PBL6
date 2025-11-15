@@ -1,9 +1,13 @@
 import { Controller, Post, Get } from '@nestjs/common';
 import { S3UploadService } from './s3-upload.service';
+import { DataInitService } from './data-init.service';
 
 @Controller('data-init')
 export class DataInitController {
-    constructor(private readonly s3UploadService: S3UploadService) {}
+    constructor(
+        private readonly s3UploadService: S3UploadService,
+        private readonly dataInitService: DataInitService,
+    ) {}
 
     @Post('upload-brand-logos')
     async uploadBrandLogos() {
@@ -28,5 +32,20 @@ export class DataInitController {
         return {
             message: 'Use POST /data-init/upload-brand-logos to upload brand logos to S3'
         };
+    }
+
+    @Post('addresses')
+    async seedAddresses() {
+        return await this.dataInitService.seedAddresses();
+    }
+
+    @Post('shop-addresses')
+    async seedShopAddresses() {
+        return await this.dataInitService.seedShopAddresses();
+    }
+
+    @Post('orders')
+    async seedOrders() {
+        return await this.dataInitService.seedOrders();
     }
 }
