@@ -1,4 +1,7 @@
-import { Controller, Post, Delete, Get, Put, Body, Param, ParseIntPipe,Query } from '@nestjs/common';
+import { Controller, Post, Delete, Get, Put, Body, Param, ParseIntPipe, Query, UseGuards, Req } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { ShopService } from './shop.service';
 
 @Controller('shop')
@@ -6,16 +9,19 @@ export class ShopController {
     constructor(private readonly shopService: ShopService) {}
 
     @Post('staff')
+    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+    @RequirePermissions('manage_shop_staff')
     async addStaff(
         @Body() body: { 
-            userid: number; 
             staffemail: string; 
             shopid: number; 
             is_manager?: boolean 
-        }
+        },
+        @Req() req: any
     ) {
+        const userId = req.user.userId;
         return this.shopService.addstaff(
-            body.userid, 
+            userId, 
             body.staffemail, 
             body.shopid, 
             body.is_manager ?? false
@@ -24,15 +30,18 @@ export class ShopController {
 
     // Xóa nhân viên khỏi shop
     @Delete('staff')
+    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+    @RequirePermissions('manage_shop_staff')
     async removeStaff(
         @Body() body: { 
-            userid: number; 
             staffemail: string; 
             shopid: number; 
-        }
+        },
+        @Req() req: any
     ) {
+        const userId = req.user.userId;
         return this.shopService.removestaff(
-            body.userid, 
+            userId, 
             body.staffemail, 
             body.shopid
         );
@@ -45,16 +54,19 @@ export class ShopController {
     }
 
     @Post('staff/permissions')
+    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+    @RequirePermissions('manage_shop_staff')
     async updateStaffPermissions(
         @Body() body: { 
-            userid: number; 
             staffemail: string; 
             shopid: number; 
             permissions: string[]  
-        }
+        },
+        @Req() req: any
     ) {
+        const userId = req.user.userId;
         return this.shopService.updatestaffpermission(
-            body.userid, 
+            userId, 
             body.staffemail, 
             body.shopid, 
             body.permissions
@@ -70,16 +82,19 @@ export class ShopController {
     }
 
     @Delete('staff/permissions')
+    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+    @RequirePermissions('manage_shop_staff')
     async deleteStaffPermissions(
         @Body() body: { 
-            userid: number; 
             staffemail: string; 
             shopid: number; 
             permissions: string[]  
-        }
+        },
+        @Req() req: any
     ) {
+        const userId = req.user.userId;
         return this.shopService.deletestaffpermission(
-            body.userid, 
+            userId, 
             body.staffemail, 
             body.shopid, 
             body.permissions

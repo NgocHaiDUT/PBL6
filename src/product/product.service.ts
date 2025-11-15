@@ -50,257 +50,157 @@ export class ProductService {
         return { success: true, categories: categories };
     }
 
-    async addbrand(userid : number,name: string, slug : string,logo_url: string){
-        var brandpermission = await this.prisma.permission.findFirst({
-            where : {name : "manage_brands"},
-            select : {id : true}
-        })
-        if(!brandpermission){
-            return {message : "Lỗi hệ thống , permission manage_brands không tồn tại"}
-        }
-
-        var hasbrandpermission = await this.prisma.userpermission.findFirst({
-            where : {user_id: userid, permission_id : brandpermission.id},
-            select : {user_id : true}
-        })
-        if(!hasbrandpermission) {
-            return {message : "Bạn không có quyền brand"}
-        }
+    async addbrand(userid: number, name: string, slug: string, logo_url: string) {
+        // Permission check is handled by @RequirePermissions decorator in controller
         
         var ishasbrandname = await this.prisma.brands.findUnique({
-            where : { name : name }
+            where: { name: name }
         })
-        if(ishasbrandname){
-            return { success: false,message: 'Tên thương hiệu đã tồn tại' };
+        if (ishasbrandname) {
+            return { success: false, message: 'Tên thương hiệu đã tồn tại' };
         }
         var ishasbrandslug = await this.prisma.brands.findUnique({
-            where : { slug : slug }
+            where: { slug: slug }
         })
-        if(ishasbrandslug){
-            return { success: false,message: 'Slug thương hiệu đã tồn tại' };
+        if (ishasbrandslug) {
+            return { success: false, message: 'Slug thương hiệu đã tồn tại' };
         }
         await this.prisma.brands.create({
-            data : {
-                name : name,
-                slug : slug,
-                logo_url : logo_url
+            data: {
+                name: name,
+                slug: slug,
+                logo_url: logo_url
             }
         })
-        return { success: true,message: 'Thêm thương hiệu thành công' };
+        return { success: true, message: 'Thêm thương hiệu thành công' };
     }
 
-    async editbrandname(userid:number,id: number,name: string){
-        var brandpermission = await this.prisma.permission.findFirst({
-            where : {name : "manage_brands"},
-            select : {id : true}
-        })
-        if(!brandpermission)
-        {
-            return  {message : "Lỗi hệ thống, không tìm thấy quyền manage_brands"}
-        }
-        var hasbrandpermission = await this.prisma.userpermission.findFirst({
-            where : {user_id:userid , permission_id : brandpermission.id},
-            select : {user_id : true}
-        })
-        if(!hasbrandpermission){
-            return {message : "Bạn không có quyền về thương hiệu"}
-        }
+    async editbrandname(userid: number, id: number, name: string) {
+        // Permission check is handled by @RequirePermissions decorator in controller
 
         var ishasbrand = await this.prisma.brands.findUnique({
-            where : { id : id }
+            where: { id: id }
         })
-        if(!ishasbrand){
-            return { success: false,message: 'Thương hiệu không tồn tại' };
+        if (!ishasbrand) {
+            return { success: false, message: 'Thương hiệu không tồn tại' };
         }
         var ishasbrandname = await this.prisma.brands.findFirst({
-            where : { name : name, id: { not: id } }
+            where: { name: name, id: { not: id } }
         })
-        if(ishasbrandname){
-            return { success: false,message: 'Tên thương hiệu đã tồn tại' };
+        if (ishasbrandname) {
+            return { success: false, message: 'Tên thương hiệu đã tồn tại' };
         }
         await this.prisma.brands.update({
-            where : { id : id },
-            data : {
-                name : name,
+            where: { id: id },
+            data: {
+                name: name,
             }
         })
-        return { success: true,message: 'Cập nhật thương hiệu thành công' };
+        return { success: true, message: 'Cập nhật thương hiệu thành công' };
     }
 
-    async editbrandslug(userid:number,id: number, slug:string){
-        var brandpermission = await this.prisma.permission.findFirst({
-            where : {name : "manage_brands"},
-            select : {id : true}
-        })
-        if(!brandpermission)
-        {
-            return  {message : "Lỗi hệ thống, không tìm thấy quyền manage_brands"}
-        }
-        var hasbrandpermission = await this.prisma.userpermission.findFirst({
-            where : {user_id:userid , permission_id : brandpermission.id},
-            select : {user_id : true}
-        })
-        if(!hasbrandpermission){
-            return {message : "Bạn không có quyền về thương hiệu"}
-        }
+    async editbrandslug(userid: number, id: number, slug: string) {
+        // Permission check is handled by @RequirePermissions decorator in controller
 
         var ishasbrand = await this.prisma.brands.findUnique({
-            where : {id : id}
+            where: { id: id }
         })
-        if(!ishasbrand)
-            return {success: false, message: 'Thương hiệu không tồn tại'};
+        if (!ishasbrand)
+            return { success: false, message: 'Thương hiệu không tồn tại' };
         var ishasbrandslug = await this.prisma.brands.findUnique({
-            where : {slug : slug}     
+            where: { slug: slug }
         })
-        if(ishasbrandslug)
-            return {success: false, message: 'Slug thương hiệu đã tồn tại'};
+        if (ishasbrandslug)
+            return { success: false, message: 'Slug thương hiệu đã tồn tại' };
         await this.prisma.brands.update({
-            where : {id : id},
-            data : {slug : slug}
+            where: { id: id },
+            data: { slug: slug }
         })
-        return {success: true, message: 'Cập nhật Slug thương hiệu thành công'};
+        return { success: true, message: 'Cập nhật Slug thương hiệu thành công' };
     }
 
-    async editbrandslogo(userid:number,id:number, logo_url:string){
-        var brandpermission = await this.prisma.permission.findFirst({
-            where : {name : "manage_brands"},
-            select : {id : true}
-        })
-        if(!brandpermission)
-        {
-            return  {message : "Lỗi hệ thống, không tìm thấy quyền manage_brands"}
-        }
-        var hasbrandpermission = await this.prisma.userpermission.findFirst({
-            where : {user_id:userid , permission_id : brandpermission.id},
-            select : {user_id : true}
-        })
-        if(!hasbrandpermission){
-            return {message : "Bạn không có quyền về thương hiệu"}
-        }
+    async editbrandslogo(userid: number, id: number, logo_url: string) {
+        // Permission check is handled by @RequirePermissions decorator in controller
 
         var ishasbrand = await this.prisma.brands.findUnique({
-            where : {id : id}
+            where: { id: id }
         })
-        if(!ishasbrand)
-            return {success: false, message: 'Thương hiệu không tồn tại'};
+        if (!ishasbrand)
+            return { success: false, message: 'Thương hiệu không tồn tại' };
         await this.prisma.brands.update({
-            where : {id : id},
-            data : {logo_url : logo_url}
+            where: { id: id },
+            data: { logo_url: logo_url }
         })
-        return {success:true,message : 'Cập nhật logo thương hiệu thành công'};
+        return { success: true, message: 'Cập nhật logo thương hiệu thành công' };
     }
 
-    async addcategory(userid:number,name: string, slug : string,parent_id?: number){
-        var categorypermission = await this.prisma.permission.findFirst({
-            where : {name : "manage_categorys"},
-            select : {id : true}
-        })
-        if(!categorypermission)
-        {
-            return  {message : "Lỗi hệ thống, không tìm thấy quyền manage_categorys"}
-        }
-        var hascategorypermission = await this.prisma.userpermission.findFirst({
-            where : {user_id:userid , permission_id : categorypermission.id},
-            select : {user_id : true}
-        })
-        if(!hascategorypermission){
-            return {message : "Bạn không có quyền về danh mục"}
-        }
+    async addcategory(userid: number, name: string, slug: string, parent_id?: number) {
+        // Permission check is handled by @RequirePermissions decorator in controller
 
         var ishascategoryname = await this.prisma.categories.findFirst({
-            where : { name : name }
+            where: { name: name }
         })
-        if(ishascategoryname){
-            return { success: false,message: 'Tên danh mục đã tồn tại' };
+        if (ishascategoryname) {
+            return { success: false, message: 'Tên danh mục đã tồn tại' };
         }
         var ishascategoryslug = await this.prisma.categories.findUnique({
-            where : { slug : slug }
+            where: { slug: slug }
         })
-        if(ishascategoryslug){
-            return { success: false,message: 'Slug danh mục đã tồn tại' };
+        if (ishascategoryslug) {
+            return { success: false, message: 'Slug danh mục đã tồn tại' };
         }
         await this.prisma.categories.create({
-            data : {
-                parent_id : parent_id,
-                name : name,
-                slug : slug,
+            data: {
+                parent_id: parent_id,
+                name: name,
+                slug: slug,
             }
         })
-        return { success: true,message: 'Thêm danh mục thành công' };
+        return { success: true, message: 'Thêm danh mục thành công' };
     }
      
-    async editnamecategory(userid:number,id : number, name:string)
-    {
-        var categorypermission = await this.prisma.permission.findFirst({
-            where : {name : "manage_categorys"},
-            select : {id : true}
-        })
-        if(!categorypermission)
-        {
-            return  {message : "Lỗi hệ thống, không tìm thấy quyền manage_categorys"}
-        }
-        var hascategorypermission = await this.prisma.userpermission.findFirst({
-            where : {user_id:userid , permission_id : categorypermission.id},
-            select : {user_id : true}
-        })
-        if(!hascategorypermission){
-            return {message : "Bạn không có quyền về danh mục"}
-        }
+    async editnamecategory(userid: number, id: number, name: string) {
+        // Permission check is handled by @RequirePermissions decorator in controller
 
         var ishascategory = await this.prisma.categories.findFirst({
-            where : {id : id}
+            where: { id: id }
         })
-        if(!ishascategory)
-            return {success: false , message : 'Danh mục không tồn tại'};
+        if (!ishascategory)
+            return { success: false, message: 'Danh mục không tồn tại' };
 
         var ishascategoryname = await this.prisma.categories.findFirst({
-            where : {name : name}
+            where: { name: name }
         })
         if (ishascategoryname)
-            return {success : false , message : 'Tên danh mục đã tồn tại'};
+            return { success: false, message: 'Tên danh mục đã tồn tại' };
 
         await this.prisma.categories.update({
-            where : { id : id},
-            data : {name : name}
+            where: { id: id },
+            data: { name: name }
         })
-        return {success: true , message : 'Cập nhật tên danh mục thành công'};
-
+        return { success: true, message: 'Cập nhật tên danh mục thành công' };
     }
 
-    async editslugcategory(userid:number,id : number , slug : string){
-        var categorypermission = await this.prisma.permission.findFirst({
-            where : {name : "manage_categorys"},
-            select : {id : true}
-        })
-        if(!categorypermission)
-        {
-            return  {message : "Lỗi hệ thống, không tìm thấy quyền manage_categorys"}
-        }
-        var hascategorypermission = await this.prisma.userpermission.findFirst({
-            where : {user_id:userid , permission_id : categorypermission.id},
-            select : {user_id : true}
-        })
-        if(!hascategorypermission){
-            return {message : "Bạn không có quyền về danh mục"}
-        }
-        
+    async editslugcategory(userid: number, id: number, slug: string) {
+        // Permission check is handled by @RequirePermissions decorator in controller
+
         var ishascategory = await this.prisma.categories.findFirst({
-            where : {id : id}
+            where: { id: id }
         })
-        if(!ishascategory)
-            return {success: false , message : 'Danh mục không tồn tại'};
+        if (!ishascategory)
+            return { success: false, message: 'Danh mục không tồn tại' };
         var ishascategoryslug = await this.prisma.categories.findUnique({
-            where : { slug : slug}
+            where: { slug: slug }
         })
 
-        if(ishascategoryslug)
-            return {sucess : false, message : 'Slug danh mục đã tồn tại'};
+        if (ishascategoryslug)
+            return { success: false, message: 'Slug danh mục đã tồn tại' };
 
         await this.prisma.categories.update({
-            where : { id : id},
-            data : { slug : slug }
+            where: { id: id },
+            data: { slug: slug }
         })
-        return {success : true , message : 'Cập nhật slug danh mục thành công'};
+        return { success: true, message: 'Cập nhật slug danh mục thành công' };
     }
 
     async addproducts(
@@ -316,22 +216,7 @@ export class ProductService {
         category_ids?: number[]
     ) {
         try {
-            // Kiểm tra permission create_product
-            const permission = await this.prisma.userpermission.findFirst({
-                where: {
-                    user_id: user_id,
-                    permission: {
-                        name: 'create_product'
-                    }
-                },
-                include: {
-                    permission: true
-                }
-            });
-
-            if (!permission) {
-                return { success: false, message: 'Bạn không có quyền tạo sản phẩm' };
-            }
+            // Permission check is handled by @RequirePermissions decorator in controller
 
             const shop = await this.prisma.shops.findUnique({
                 where: { id: shop_id }
@@ -459,18 +344,7 @@ export class ProductService {
                 return { success: false, message: 'Sản phẩm không tồn tại' };
             }
 
-            // Check permission
-            const permission = await this.prisma.userpermission.findFirst({
-                where: {
-                    user_id: user_id,
-                    permission: { name: 'edit_product' }
-                }
-            });
-
-            if (!permission) {
-                return { success: false, message: 'Bạn không có quyền chỉnh sửa sản phẩm' };
-            }
-
+            // Permission check is handled by @RequirePermissions decorator in controller
             // Check if user has permission to edit this shop's product
             const isOwner = product.shop.owner_id === user_id;
             const isStaff = await this.prisma.shop_staffs.findFirst({
@@ -587,18 +461,7 @@ export class ProductService {
                 return { success: false, message: 'Sản phẩm không tồn tại' };
             }
 
-            // Check permission
-            const permission = await this.prisma.userpermission.findFirst({
-                where: {
-                    user_id: user_id,
-                    permission: { name: 'delete_product' }
-                }
-            });
-
-            if (!permission) {
-                return { success: false, message: 'Bạn không có quyền xóa sản phẩm' };
-            }
-
+            // Permission check is handled by @RequirePermissions decorator in controller
             // Check if user has permission to delete this shop's product
             const isOwner = product.shop.owner_id === user_id;
             const isStaff = await this.prisma.shop_staffs.findFirst({
@@ -755,18 +618,7 @@ export class ProductService {
                 return { success: false, message: 'Variant không tồn tại' };
             }
 
-            // Check permission
-            const permission = await this.prisma.userpermission.findFirst({
-                where: {
-                    user_id: user_id,
-                    permission: { name: 'edit_product' }
-                }
-            });
-
-            if (!permission) {
-                return { success: false, message: 'Bạn không có quyền chỉnh sửa variant' };
-            }
-
+            // Permission check is handled by @RequirePermissions decorator in controller
             // Check if user has permission to edit this shop's product variant
             const isOwner = variant.product.shop.owner_id === user_id;
             const isStaff = await this.prisma.shop_staffs.findFirst({
@@ -842,18 +694,7 @@ export class ProductService {
                 return { success: false, message: 'Variant không tồn tại' };
             }
 
-            // Check permission
-            const permission = await this.prisma.userpermission.findFirst({
-                where: {
-                    user_id: user_id,
-                    permission: { name: 'delete_product' }
-                }
-            });
-
-            if (!permission) {
-                return { success: false, message: 'Bạn không có quyền xóa variant' };
-            }
-
+            // Permission check is handled by @RequirePermissions decorator in controller
             // Check if user has permission to delete this shop's product variant
             const isOwner = variant.product.shop.owner_id === user_id;
             const isStaff = await this.prisma.shop_staffs.findFirst({
@@ -968,18 +809,7 @@ export class ProductService {
                 return { success: false, message: 'Media không tồn tại' };
             }
 
-            // Check permission
-            const permission = await this.prisma.userpermission.findFirst({
-                where: {
-                    user_id: user_id,
-                    permission: { name: 'edit_product' }
-                }
-            });
-
-            if (!permission) {
-                return { success: false, message: 'Bạn không có quyền chỉnh sửa media' };
-            }
-
+            // Permission check is handled by @RequirePermissions decorator in controller
             // Check if user has permission to edit this shop's product media
             const isOwner = media.product.shop.owner_id === user_id;
             const isStaff = await this.prisma.shop_staffs.findFirst({
@@ -1037,18 +867,7 @@ export class ProductService {
                 return { success: false, message: 'Media không tồn tại' };
             }
 
-            // Check permission
-            const permission = await this.prisma.userpermission.findFirst({
-                where: {
-                    user_id: user_id,
-                    permission: { name: 'delete_product' }
-                }
-            });
-
-            if (!permission) {
-                return { success: false, message: 'Bạn không có quyền xóa media' };
-            }
-
+            // Permission check is handled by @RequirePermissions decorator in controller
             // Check if user has permission to delete this shop's product media
             const isOwner = media.product.shop.owner_id === user_id;
             const isStaff = await this.prisma.shop_staffs.findFirst({
@@ -1730,6 +1549,9 @@ export class ProductService {
                 where: { user_id: userId },
                 include: {
                     cart_items: {
+                        orderBy: {
+                            created_at: 'desc', // Sort items within the cart by most recently added
+                        },
                         include: {
                             product: {
                                 include: {
@@ -1744,28 +1566,50 @@ export class ProductService {
                 }
             });
 
-            if (!cart) {
+            if (!cart || cart.cart_items.length === 0) {
                 return { success: true, cart: [] };
             }
 
-            // Transform cart items to match frontend expectations
-            const cartItems = cart.cart_items.map(item => ({
-                id: item.id,
-                product_id: item.product_id,
-                variant_id: item.variant_id,
-                name: item.product.name,
-                variant_name: item.variant?.name || '',
-                price: Number(item.price_snapshot),
-                quantity: item.quantity,
-                image_url: item.product.product_media[0]?.url || '/placeholder-product.jpg',
-                stock: item.variant?.stock || 0,
-                shop_name: item.product.shop?.name || 'Unknown Shop',
-                brand_name: item.product.brand?.name || 'Unknown Brand',
-                shop_id: item.product.shop_id,
-                brand_id: item.product.brand_id
-            }));
+            // Group cart items by shop
+            const groupedCart: {
+                shop_id: number;
+                shop_name: string;
+                items: any[];
+            }[] = [];
 
-            return { success: true, cart: cartItems };
+            const shopMap = new Map<number, { shop_id: number; shop_name: string; items: any[] }>();
+
+            cart.cart_items.forEach(item => {
+                const shopId = item.product.shop_id;
+                if (!shopMap.has(shopId)) {
+                    shopMap.set(shopId, {
+                        shop_id: shopId,
+                        shop_name: item.product.shop?.name || 'Unknown Shop',
+                        items: [],
+                    });
+                }
+                const shopEntry = shopMap.get(shopId);
+                if (shopEntry) {
+                    shopEntry.items.push({
+                        id: item.id,
+                        product_id: item.product_id,
+                        variant_id: item.variant_id,
+                        name: item.product.name,
+                        variant_name: item.variant?.name || '',
+                        price: Number(item.price_snapshot),
+                        quantity: item.quantity,
+                        image_url: item.product.product_media[0]?.url || '/placeholder-product.jpg',
+                        stock: item.variant?.stock || 0,
+                        brand_name: item.product.brand?.name || 'Unknown Brand',
+                        created_at: item.created_at,
+                    });
+                }
+            });
+
+            // Convert map to array
+            groupedCart.push(...Array.from(shopMap.values()));
+
+            return { success: true, cart: groupedCart };
         } catch (error) {
             console.error('Error fetching cart:', error);
             return { success: false, message: 'Lỗi khi tải giỏ hàng' };

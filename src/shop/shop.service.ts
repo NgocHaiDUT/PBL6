@@ -5,14 +5,7 @@ export class ShopService {
     constructor(private prisma : PrismaService){}
 
     async addstaff(userid: number, emailstaff: string, shopid: number, is_manager: boolean = false) {
-        const managestaffPermission = await this.prisma.permission.findUnique({
-            where: { name: "manage_shop_staff" },
-            select: { id: true }
-        });
-
-        if (!managestaffPermission) {
-            return { success: false, message: "Lỗi hệ thống, quyền manage_shop_staff không tồn tại" };
-        }
+        // Permission check is handled by @RequirePermissions decorator in controller
         
         const staff = await this.prisma.users.findUnique({
             where: { email: emailstaff },
@@ -21,15 +14,6 @@ export class ShopService {
 
         if (!staff) {
             return { success: false, message: "Nhân viên không tồn tại" };
-        }
-
-        const hasmanagestaffPermission = await this.prisma.userpermission.findFirst({
-            where: { user_id: userid, permission_id: managestaffPermission.id },
-            select: { user_id: true }
-        });
-
-        if (!hasmanagestaffPermission) {
-            return { success: false, message: "Bạn không có quyền thêm nhân viên" };
         }
 
         const shop = await this.prisma.shops.findUnique({
@@ -108,23 +92,7 @@ export class ShopService {
     }
 
     async removestaff(userid: number, staffemail: string, shopid: number) {
-        const managestaffPermission = await this.prisma.permission.findUnique({
-            where: { name: "manage_shop_staff" },
-            select: { id: true }
-        });
-
-        if (!managestaffPermission) {
-            return { success: false, message: "Lỗi hệ thống, quyền manage_shop_staff không tồn tại" };
-        }
-
-        const hasmanagestaffPermission = await this.prisma.userpermission.findFirst({
-            where: { user_id: userid, permission_id: managestaffPermission.id },
-            select: { user_id: true }
-        });
-
-        if (!hasmanagestaffPermission) {
-            return { success: false, message: "Bạn không có quyền xóa nhân viên" };
-        }
+        // Permission check is handled by @RequirePermissions decorator in controller
 
         const shop = await this.prisma.shops.findUnique({
             where: { id: shopid },
@@ -215,23 +183,7 @@ export class ShopService {
     }
 
     async updatestaffpermission(userid: number, staffemail: string, shopid: number, permissionNames: string[]) {
-        const managestaffPermission = await this.prisma.permission.findUnique({
-            where: { name: "manage_shop_staff" },
-            select: { id: true }
-        });
-
-        if (!managestaffPermission) {
-            return { success: false, message: "Lỗi hệ thống, quyền manage_shop_staff không tồn tại" };
-        }
-
-        const hasmanagestaffPermission = await this.prisma.userpermission.findFirst({
-            where: { user_id: userid, permission_id: managestaffPermission.id },
-            select: { user_id: true }
-        });
-
-        if (!hasmanagestaffPermission) {
-            return { success: false, message: "Bạn không có quyền cập nhật quyền nhân viên" };
-        }
+        // Permission check is handled by @RequirePermissions decorator in controller
 
         const shop = await this.prisma.shops.findUnique({
             where: { id: shopid },
@@ -302,23 +254,7 @@ export class ShopService {
     }
 
     async deletestaffpermission(userid: number, staffemail: string, shopid: number, permissionNames: string[]) {
-        const managestaffPermission = await this.prisma.permission.findUnique({
-            where: { name: "manage_shop_staff" },
-            select: { id: true }
-        });
-
-        if (!managestaffPermission) {
-            return { success: false, message: "Lỗi hệ thống, quyền manage_shop_staff không tồn tại" };
-        }
-
-        const hasmanagestaffPermission = await this.prisma.userpermission.findFirst({
-            where: { user_id: userid, permission_id: managestaffPermission.id },
-            select: { user_id: true }
-        });
-
-        if (!hasmanagestaffPermission) {
-            return { success: false, message: "Bạn không có quyền xóa quyền nhân viên" };
-        }
+        // Permission check is handled by @RequirePermissions decorator in controller
 
         const shop = await this.prisma.shops.findUnique({
             where: { id: shopid },

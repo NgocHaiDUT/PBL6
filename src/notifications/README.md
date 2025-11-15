@@ -1,179 +1,140 @@
 # Notifications Module
 
-This module handles user notifications in the beauty shopping application, including likes, comments, follows, and order updates.
+## Overview
+
+This module manages all user-facing notifications within the application. It provides a centralized system for informing users about important events such as new likes, comments, follows, and order status changes.
 
 ## Features
 
-- **Create Notifications**: Send notifications to users
-- **Query Notifications**: Get paginated list of user's notifications
-- **Mark as Read**: Mark individual or all notifications as read
-- **Notification Stats**: Get unread/read notification counts
-- **Cleanup**: Delete all read notifications
-- **Helper Methods**: Pre-built notification types for common actions
+-   **Centralized Notification Feed**: A single API to fetch all of a user's notifications.
+-   **Rich Contextual Data**: Uses a `meta_json` field to store detailed information about the event, allowing the frontend to build rich, interactive notification items.
+-   **Read/Unread Management**: Endpoints to get unread counts and to mark notifications as read, either individually or in bulk.
+-   **Automated Generation**: The `NotificationHelperService` is used by other modules (`Likes`, `Comments`, `Follows`, `Order`) to automatically create notifications for relevant user actions.
+
+## Notification Data Structure
+
+A key part of each notification is the `meta_json` field. This JSON object contains all the necessary context for the frontend to render the notification and handle user interaction (e.g., navigating to a specific post or user profile).
+
+**Example `meta_json` for a "post like" notification:**
+```json
+{
+  "actor_id": 2,
+  "actor_name": "Jane Doe",
+  "actor_avatar": "/uploads/avatars/jane.jpg",
+  "post_id": 15,
+  "post_title": "My Morning Skincare Routine"
+}
+```
+-   `actor_*`: Information about the user who performed the action.
+-   `post_*`, `comment_*`: Information about the target content.
 
 ## API Endpoints
 
-### POST /notifications
-Create a new notification for the current user
+---
 
-**Body:**
-```json
-{
-  "type": "like",
-  "title": "New Like",
-  "body": "Someone liked your post",
-  "meta_json": {
-    "target_type": "post",
-    "target_id": 1
-  }
-}
-```
+### 1. Get User's Notifications
 
-### GET /notifications
-Get paginated list of current user's notifications
+-   **Endpoint:** `GET /notifications`
+-   **Description:** Retrieves a paginated list of notifications for the authenticated user.
+-   **Auth:** Required (JWT).
+-   **Query Parameters:**
+    -   `userId` (number, optional): For testing; user ID is taken from JWT in production.
+    -   `is_read` (boolean, optional): Filter by read status (e.g., `is_read=false` for unread notifications).
+    -   `page` (number, optional): Page number for pagination (default: 1).
+    -   `limit` (number, optional): Items per page (default: 20).
+-   **Response (200):**
+    ```json
+    {
+      "data": [
+        {
+          "id": 1,
+          "user_id": 1,
+          "type": "post_like",
+          "title": "Có người thích bài viết của bạn",
+          "body": "Jane Doe đã thích bài viết của bạn",
+          "is_read": false,
+          "meta_json": "{\"actor_id\":2,\"actor_name\":\"Jane Doe\",\"actor_avatar\":\"/uploads/avatars/jane.jpg\",\"post_id\":15}",
+          "created_at": "2025-11-10T12:00:00.000Z"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "limit": 20,
+      "total_pages": 1
+    }
+    ```
 
-**Query Parameters:**
-- `type` (optional): Filter by notification type
-- `is_read` (optional): Filter by read status (true/false)
-- `page` (optional): Page number (default: 1)
-- `limit` (optional): Items per page (default: 20)
+---
 
-### GET /notifications/stats
-Get notification statistics for current user
+### 2. Get Notification Statistics
 
-**Response:**
-```json
-{
-  "total": 100,
-  "unread": 5,
-  "read": 95
-}
-```
+-   **Endpoint:** `GET /notifications/stats`
+-   **Description:** Retrieves the total, unread, and read notification counts for the user.
+-   **Auth:** Required (JWT).
+-   **Query Parameters:**
+    -   `userId` (number, optional): For testing.
+-   **Response (200):**
+    ```json
+    {
+      "total": 15,
+      "unread": 3,
+      "read": 12
+    }
+    ```
 
-### POST /notifications/mark-all-read
-Mark all notifications as read for current user
+---
 
-**Response:**
-```json
-{
-  "updated": 5
-}
-```
+### 3. Mark a Notification as Read
 
-### DELETE /notifications/read
-Delete all read notifications for current user
+-   **Endpoint:** `PATCH /notifications/:id/mark-read`
+-   **Description:** Marks a single notification as read.
+-   **Auth:** Required (JWT).
+-   **Params:**
+    -   `id` (number): The ID of the notification to mark as read.
+-   **Request Body (Optional):**
+    -   `user_id` can be passed for testing.
+-   **Response (200):** The updated notification object.
+    ```json
+    {
+      "id": 1,
+      "user_id": 1,
+      "type": "post_like",
+      "title": "...",
+      "body": "...",
+      "is_read": true,
+      "meta_json": "...",
+      "created_at": "2025-11-10T12:00:00.000Z"
+    }
+    ```
 
-**Response:**
-```json
-{
-  "deleted": 95
-}
-```
+---
 
-### GET /notifications/:id
-Get a specific notification by ID (must belong to current user)
+### 4. Mark All Notifications as Read
 
-### PATCH /notifications/:id
-Update a notification (typically to mark as read)
+-   **Endpoint:** `POST /notifications/mark-all-read`
+-   **Description:** Marks all unread notifications for the user as read.
+-   **Auth:** Required (JWT).
+-   **Request Body (Optional):**
+    -   `user_id` can be passed for testing.
+-   **Response (200):**
+    ```json
+    {
+      "updated": 3
+    }
+    ```
 
-**Body:**
-```json
-{
-  "is_read": true
-}
-```
+---
 
-### PATCH /notifications/:id/mark-read
-Shortcut to mark a specific notification as read
+### 5. Delete All Read Notifications
 
-### DELETE /notifications/:id
-Delete a specific notification
-
-## Database Schema
-
-The module uses the `notifications` table with the following structure:
-- `id`: Primary key
-- `user_id`: Reference to users table
-- `type`: Notification type (like, comment, follow, order, etc.)
-- `title`: Notification title
-- `body`: Notification content
-- `is_read`: Read status (default: false)
-- `meta_json`: Additional metadata as JSON string
-- `created_at`: Timestamp when notification was created
-
-## Notification Types
-
-The service includes helper methods for common notification types:
-
-### Like Notifications
-```typescript
-await notificationsService.createLikeNotification(
-  targetUserId,
-  likerName,
-  'post', 
-  postId
-);
-```
-
-### Comment Notifications
-```typescript
-await notificationsService.createCommentNotification(
-  targetUserId,
-  commenterName,
-  'post',
-  postId
-);
-```
-
-### Follow Notifications
-```typescript
-await notificationsService.createFollowNotification(
-  targetUserId,
-  followerName
-);
-```
-
-### Order Notifications
-```typescript
-await notificationsService.createOrderNotification(
-  userId,
-  orderId,
-  'shipped'
-);
-```
-
-## Metadata Structure
-
-The `meta_json` field can contain additional information:
-
-```json
-{
-  "target_type": "post",
-  "target_id": 123,
-  "action": "like",
-  "order_id": 456,
-  "status": "shipped"
-}
-```
-
-## Integration with Other Modules
-
-This module is designed to work with:
-- **Likes Module**: Auto-create notifications when users like content
-- **Comments Module**: Auto-create notifications for new comments
-- **Posts Module**: Notify post authors of interactions
-- **Orders Module**: Send order status updates
-- **Users Module**: Notify about new followers
-
-## Error Handling
-
-- `NotFoundException`: When notification doesn't exist or doesn't belong to user
-- Proper validation for all input fields
-- User isolation - users can only access their own notifications
-
-## Performance Considerations
-
-- Notifications are ordered by `created_at DESC` for recent-first display
-- Pagination is implemented to handle large notification lists
-- Bulk operations for marking all as read and deleting read notifications
-- Indexed queries on `user_id` and `is_read` for performance
+-   **Endpoint:** `DELETE /notifications/read`
+-   **Description:** Deletes all notifications that have been marked as read for the current user.
+-   **Auth:** Required (JWT).
+-   **Request Body (Optional):**
+    -   `user_id` can be passed for testing.
+-   **Response (200):**
+    ```json
+    {
+      "deleted": 12
+    }
+    ```

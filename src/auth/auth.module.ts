@@ -1,16 +1,23 @@
 import { Module } from '@nestjs/common';
-import { PassportModule } from '@nestjs/passport';
-import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
 import { GoogleStrategy } from './google.strategy';
 import { FacebookStrategy } from './facebook.strategy';
-import { PrismaModule } from 'src/prisma/prisma.module';
-import { RequirePasswordChangeGuard } from './guards/require-password-change.guard';
+import { PrismaModule } from '../prisma/prisma.module';
+import { JwtModule } from '@nestjs/jwt';
+
+import { JwtStrategy } from './jwt.strategy';
 
 @Module({
-  imports: [PassportModule.register({ session: false }), PrismaModule],
+  imports: [
+    PrismaModule,
+    JwtModule.register({
+      global: true,
+      secret: process.env.JWT_SECRET || 'your-fallback-secret-key', 
+      signOptions: { expiresIn: '1d' }, 
+    }),
+  ],
+  providers: [AuthService, GoogleStrategy, FacebookStrategy, JwtStrategy],
   controllers: [AuthController],
-  providers: [AuthService, GoogleStrategy, FacebookStrategy, RequirePasswordChangeGuard],
-  exports: [RequirePasswordChangeGuard],
 })
 export class AuthModule {}

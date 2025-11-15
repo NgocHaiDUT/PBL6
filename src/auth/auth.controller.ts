@@ -1,15 +1,18 @@
-import {  Controller, Get, Req, UseGuards,Post,Body, BadRequestException, Res, Headers } from '@nestjs/common';
+import { Controller, Get, Req, UseGuards, Post, Body, BadRequestException, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { MailerService } from '@nestjs-modules/mailer';
 import * as bcrypt from 'bcrypt';
-import type { Response } from 'express';
+import { JwtService } from '@nestjs/jwt';
+
 @Controller('auth')
 export class AuthController {
   constructor(
-        private readonly authService: AuthService,
-        private readonly mailerService: MailerService
-    ) {}
+    private readonly authService: AuthService,
+    private readonly mailerService: MailerService,
+    private jwtService: JwtService,
+  ) {}
 
     @Post('register')
     async register(@Body() body: { email?: string; full_name?: string; phone?: string; }) {
@@ -60,7 +63,7 @@ export class AuthController {
                                 text: `Mật khẩu mới của bạn là: ${newPassword}`,
                                 html: `Mật khẩu mới của bạn là: ${newPassword}`,
                             });
-                            }
+                            } 
             catch (error) {
             return { success: false, message: 'Email không tồn tại' };
             }
@@ -84,40 +87,28 @@ export class AuthController {
         }
         return this.authService.changePasswordFirstTime(body.userId, body.newPassword);
     }
-
+    
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleLogin() {
+    // chuyển hướng sang Google OAuth
   }
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  googleCallback(@Req() req, @Res() res: Response) {
+  async googleCallback(@Req() req, @Res() res: Response) {
+    const frontend = process.env.FRONTEND_URL || 'http://localhost:5173';
     try {
-      const user = req.user;
-      
+      const user = req.user as any;
       if (!user) {
-        const frontendUrl = `http://localhost:5173/auth/callback?success=false&error=authentication_failed`;
-        return res.redirect(frontendUrl);
+        return res.redirect(`${frontend}/?oauth_error=user_not_found`);
       }
-      
-      const userData = {
-        id: user.id,
-        email: user.email,
-        full_name: user.full_name,
-        avatar_url: user.avatar_url
-      };
-      
-      const encodedData = encodeURIComponent(JSON.stringify(userData));
-      
-      const frontendUrl = `http://localhost:5173/auth/callback?user=${encodedData}&success=true`;
-      
-      return res.redirect(frontendUrl);
+      const payload = { sub: user.id, email: user.email };
+      const accessToken = await this.jwtService.signAsync(payload);
+      return res.redirect(`${frontend}/auth/callback?access_token=${accessToken}`);
     } catch (error) {
-      console.error('Google callback error:', error);
-      const frontendUrl = `http://localhost:5173/auth/callback?success=false&error=callback_error`;
-      return res.redirect(frontendUrl);
+      return res.redirect(`${frontend}/?oauth_error=authentication_failed`);
     }
   }
 
@@ -127,30 +118,18 @@ export class AuthController {
 
   @Get('facebook/callback')
   @UseGuards(AuthGuard('facebook'))
-  facebookCallback(@Req() req, @Res() res: Response) {
+  async facebookCallback(@Req() req, @Res() res: Response) {
+    const frontend = process.env.FRONTEND_URL || 'http://localhost:5173';
     try {
-      const user = req.user;
-      
+      const user = req.user as any;
       if (!user) {
-        const frontendUrl = `http://localhost:5173/auth/callback?success=false&error=authentication_failed`;
-        return res.redirect(frontendUrl);
+        return res.redirect(`${frontend}/?oauth_error=user_not_found`);
       }
-      
-      const userData = {
-        id: user.id,
-        email: user.email,
-        full_name: user.full_name,
-        avatar_url: user.avatar_url
-      };
-      
-      const encodedData = encodeURIComponent(JSON.stringify(userData));
-      const frontendUrl = `http://localhost:5173/auth/callback?user=${encodedData}&success=true`;
-      
-      return res.redirect(frontendUrl);
+      const payload = { sub: user.id, email: user.email };
+      const accessToken = await this.jwtService.signAsync(payload);
+      return res.redirect(`${frontend}/auth/callback?access_token=${accessToken}`);
     } catch (error) {
-      console.error('Facebook callback error:', error);
-      const frontendUrl = `http://localhost:5173/auth/callback?success=false&error=callback_error`;
-      return res.redirect(frontendUrl);
+      return res.redirect(`${frontend}/?oauth_error=authentication_failed`);
     }
   }
 }
