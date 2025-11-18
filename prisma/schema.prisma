@@ -91,6 +91,8 @@ model users {
   role_id                   Int?
   firstlogin                Boolean?                    @default(true)
   is_active                 Boolean                     @default(true)
+  is_deleted                Boolean                     @default(false)
+  deleted_at                DateTime?
   created_at                DateTime                    @default(now())
   updated_at                DateTime                    @default(now())
   auth_identities           auth_identities[]
