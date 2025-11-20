@@ -1,4 +1,5 @@
-import { IsString, IsInt, IsOptional } from 'class-validator';
+import { IsString, IsInt, IsOptional, IsIn, IsObject } from 'class-validator';
+import { message_type } from '@prisma/client';
 
 export class CreateMessageDto {
   @IsOptional()
@@ -13,6 +14,7 @@ export class CreateMessageDto {
   @IsInt()
   receiver_id?: number;
 
+  @IsOptional()
   @IsString()
   content: string;
 
@@ -21,6 +23,9 @@ export class CreateMessageDto {
   postId?: number;
 
   @IsOptional()
-  @IsString()
-  messageType?: string;
+  messageType?: message_type;
+
+  @IsOptional()
+  @IsObject()
+  payload?: any;
 }

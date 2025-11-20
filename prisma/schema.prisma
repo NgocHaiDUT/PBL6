@@ -70,6 +70,14 @@ enum skin_type {
   sensitive
 }
 
+enum message_type {
+  TEXT
+  IMAGE
+  VIDEO
+  SHARE_POST
+  SHARE_PRODUCT
+}
+
 ///////////////////////////////////////////////////////
 // USERS & AUTH
 ///////////////////////////////////////////////////////
@@ -110,6 +118,7 @@ model users {
   message_reads             message_reads[]
   carts                     carts?
   orders                    orders[]
+  refresh_tokens            refresh_tokens[]
   shop_staffs               shop_staffs[]
 }
 
@@ -126,22 +135,34 @@ model auth_identities {
   @@unique([provider, provider_user_id])
 }
 
+// ✅ Refresh Tokens Table - Lưu trữ refresh token để tự động gia hạn access token
+model refresh_tokens {
+  id            Int      @id @default(autoincrement())
+  user_id       Int
+  token         String   @unique
+  expires_at    DateTime
+  created_at    DateTime @default(now())
+  is_revoked    Boolean  @default(false)
+  user          users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([token])
+}
+
 model addresses {
-  id          Int      @id @default(autoincrement())
-  user_id     Int
-  label       String?
-  recipient   String?
-  phone       String?
-  line1       String?
-  line2       String?
-  city        String?
-  state       String?
-  postal_code String?
-  country     String?
-  is_default  Boolean  @default(false)
-  created_at  DateTime @default(now())
-  user        users    @relation(fields: [user_id], references: [id])
-  orders      orders[]
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  label      String?
+  recipient  String
+  phone      String
+  province   String
+  district   String
+  ward       String
+  street     String
+  is_default Boolean  @default(false)
+  created_at DateTime @default(now())
+  user       users    @relation(fields: [user_id], references: [id])
+  orders     orders[]
 }
 
 model role {
@@ -182,23 +203,39 @@ model userpermission {
 // SELLER / SHOP
 ///////////////////////////////////////////////////////
 model shops {
-  id          Int           @id @default(autoincrement())
-  owner_id    Int           @unique
+  id          Int              @id @default(autoincrement())
+  owner_id    Int              @unique
   name        String
-  slug        String        @unique
+  slug        String           @unique
   logo_url    String?
   phone       String?
   email       String?
   cover_url   String?
   description String?
-  is_verified Boolean       @default(false)
-  created_at  DateTime      @default(now())
-  updated_at  DateTime      @default(now())
-  owner       users         @relation(fields: [owner_id], references: [id])
+  is_verified Boolean          @default(false)
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @default(now())
+  owner       users            @relation(fields: [owner_id], references: [id])
   shop_staffs shop_staffs[]
   products    products[]
   orders      orders[]
   posts       posts[]
+  addresses   shop_addresses[]
+}
+
+model shop_addresses {
+  id         Int      @id @default(autoincrement())
+  shop_id    Int
+  name       String
+  phone      String
+  email      String?
+  province   String
+  district   String
+  ward       String
+  street     String
+  is_default Boolean  @default(false)
+  shop       shops    @relation(fields: [shop_id], references: [id])
+  orders     orders[]
 }
 
 model shop_staffs {
@@ -340,12 +377,14 @@ model orders {
   shipping_fee        Decimal         @default(0)
   total_amount        Decimal         @default(0)
   shipping_address_id Int?
+  pickup_address_id   Int?
   note                String?
   created_at          DateTime        @default(now())
   updated_at          DateTime        @default(now())
   user                users           @relation(fields: [user_id], references: [id])
   shop                shops           @relation(fields: [shop_id], references: [id])
   shipping_address    addresses?      @relation(fields: [shipping_address_id], references: [id])
+  pickup_address      shop_addresses? @relation(fields: [pickup_address_id], references: [id])
   order_items         order_items[]
   payments            payments[]
   shipments           shipments[]
@@ -646,12 +685,12 @@ model conversation_participants {
 }
 
 model messages {
-  id              Int                  @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   conversation_id Int
   sender_id       Int
+  type            message_type  @default(TEXT)
   content         String?
   post_id         Int?                 // Shared post ID
-  message_type    String?              // Message type (text, shared_post, image, video, file, etc.)
   is_edited       Boolean              @default(false)
   edited_at       DateTime?
   is_deleted      Boolean              @default(false)
@@ -660,6 +699,7 @@ model messages {
   created_at      DateTime             @default(now())
   conversation    conversations        @relation(fields: [conversation_id], references: [id])
   sender          users                @relation(fields: [sender_id], references: [id])
+  payload         Json?
   message_reads   message_reads[]
   message_reactions message_reactions[]
   message_media   message_media[]

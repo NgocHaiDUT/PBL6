@@ -49,6 +49,13 @@ export class LikesController {
     return this.likesService.getStats(targetType, targetId, finalUserId);
   }
 
+  @Get('totalLikesByUser/:userId')
+  async getTotalLikesByUser(
+    @Param('userId', ParseIntPipe) userId: number,
+  ): Promise<{ total_likes: number }> {
+    return this.likesService.getTotalLikesByUser(userId);
+  }
+
   @Post('toggle/:targetType/:targetId')
   async toggleLike(
     @Param('targetType') targetType: string,
@@ -62,11 +69,6 @@ export class LikesController {
     return this.likesService.toggleLike(targetType, targetId, userId);
   }
 
-  @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<LikeResponse> {
-    return this.likesService.findOne(id);
-  }
-
   @Delete(':targetType/:targetId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(
@@ -77,5 +79,9 @@ export class LikesController {
     // TODO: Extract user ID from JWT token when auth is implemented
     const userId = req.user?.id || 1; // Temporary fallback
     return this.likesService.remove(targetType, targetId, userId);
+  }
+  @Get(':id')
+  async findOne(@Param('id', ParseIntPipe) id: number): Promise<LikeResponse> {
+    return this.likesService.findOne(id);
   }
 }

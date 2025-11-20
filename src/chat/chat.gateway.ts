@@ -9,6 +9,8 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger, Injectable } from '@nestjs/common';
+import { MessagesService } from '../messages/messages.service';
+import { SendMessageDto } from './dto/send-message.dto';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -26,13 +28,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly logger = new Logger(ChatGateway.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private messagesService: MessagesService,
+    private prisma: PrismaService,
+  ) {}
 
   handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
-    client.emit('connected', { 
+    client.emit('connected', {
       message: 'Connected to chat server',
-      clientId: client.id 
+      clientId: client.id,
     });
   }
 
@@ -42,6 +47,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('join')
   handleJoin(@MessageBody() userId: number, @ConnectedSocket() client: Socket) {
+    if (!userId) return;
     client.join(`${userId}`);
     this.logger.log(`User ${userId} joined room`);
     client.emit('joined', { userId, message: 'Successfully joined chat' });
@@ -49,12 +55,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
-    @MessageBody() data: { senderId: number; receiverId: number; content: string; postId?: number; messageType?: string },
-
+    @MessageBody() data: { 
+      senderId: number; 
+      receiverId: number; 
+      content: string; 
+      postId?: number; 
+      messageType?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHARE_POST' | 'SHARE_PRODUCT';
+    },
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      this.logger.log(`Message from ${data.senderId} to ${data.receiverId}: ${data.content}`);
+      this.logger.log(
+        `Message from ${data.senderId} to ${data.receiverId}: ${data.content}`,
+      );
 
       // 1. Find existing conversation between two users
       const conversations = await this.prisma.conversations.findMany({
@@ -92,14 +105,23 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         });
       }
 
-      // 2. Create message
+      // 2. Determine message type
+      let messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHARE_POST' | 'SHARE_PRODUCT' = 'TEXT';
+      
+      if (data.postId) {
+        messageType = 'SHARE_POST';
+      } else if (data.messageType) {
+        messageType = data.messageType;
+      }
+
+      // 3. Create message
       const message = await this.prisma.messages.create({
         data: {
           conversation_id: conversation.id,
           sender_id: data.senderId,
           content: data.content,
           post_id: data.postId, // ✅ Include postId
-          message_type: data.messageType, // ✅ Include messageType
+          type: messageType, // ✅ Use enum value
         },
         include: {
           sender: {
@@ -116,20 +138,23 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(`Created message with data:`, {
         id: message.id,
         post_id: (message as any).post_id,
-        message_type: (message as any).message_type,
+        type: message.type,
         postId: data.postId,
         messageType: data.messageType
       });
 
-      // 3. Format message for frontend
+      // 4. Format message for frontend
       const formattedMessage = {
         id: message.id,
+        conversationId: message.conversation_id,
         senderId: message.sender_id,
-        receiverId: data.receiverId,
+        receiverId: data.receiverId, // Keep receiverId for frontend convenience
         content: message.content,
+        type: message.type,
+        payload: message.payload,
         createdAt: message.created_at.toISOString(),
         sharedPostId: (message as any).post_id || null, // ✅ Include shared post ID
-        messageType: (message as any).message_type || null, // ✅ Include message type
+        messageType: message.type, // ✅ Use the enum type
         sender: {
           Id: message.sender?.id || message.sender_id,
           Fullname: message.sender?.full_name || 'Unknown User',
@@ -141,11 +166,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(`Formatted message:`, {
         sharedPostId: formattedMessage.sharedPostId,
         messageType: formattedMessage.messageType,
+        type: message.type,
         originalPostId: data.postId,
         originalMessageType: data.messageType
       });
 
-      // 4. Send message to both users
+      // 5. Send message to both users
       this.server.to(`${data.senderId}`).emit('newMessage', formattedMessage);
       this.server.to(`${data.receiverId}`).emit('newMessage', formattedMessage);
 
@@ -154,7 +180,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         success: true,
         message: formattedMessage,
       });
-
     } catch (error) {
       this.logger.error('Error sending message:', error);
       client.emit('messageSent', {
@@ -163,6 +188,41 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
     }
   }
+
+  @SubscribeMessage('deleteMessage')
+  async handleMessageDeletion(
+    @MessageBody() data: { messageId: number; userId: number },
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      this.logger.log(`User ${data.userId} attempting to delete message ${data.messageId}`);
+      
+      // Use the service to delete the message
+      const result = await this.messagesService.deleteMessage(data.messageId, data.userId);
+
+      // Find conversation to notify participants
+      const message = await this.messagesService.getMessageById(data.messageId); // You might need to create this service method
+      if (message) {
+        const conversation = await this.messagesService.getConversationById(message.conversation_id, data.userId);
+        if (conversation) {
+          // Notify all participants about the deletion
+          conversation.participants.forEach(p => {
+            this.server.to(`${p.user_id}`).emit('messageDeleted', { 
+              messageId: data.messageId, 
+              conversationId: conversation.id 
+            });
+          });
+        }
+      }
+
+      client.emit('messageDeletionResult', { success: true, ...result });
+
+    } catch (error) {
+      this.logger.error(`Failed to delete message ${data.messageId}:`, error);
+      client.emit('messageDeletionResult', { success: false, error: error.message });
+    }
+  }
+
 
   @SubscribeMessage('openChat')
   async handleOpenChat(
@@ -266,7 +326,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             content: msg.content,
             createdAt: msg.created_at.toISOString(),
             sharedPostId: (msg as any).post_id, // ✅ Include shared post ID
-            messageType: (msg as any).message_type, // ✅ Include message type
+            messageType: msg.type, // ✅ Use 'type' field (enum message_type)
             reactions: formattedReactions, // ✅ Include reactions
             mediaFiles: mediaFiles, // ✅ Include media files
             sender: {
@@ -303,18 +363,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       
       client.emit('conversation', { 
         with: {
-          Id: targetUser.id,
+          Id: targetUser.id, // ✅ Use uppercase 'Id' to match frontend
           Fullname: targetUser.full_name || 'Unknown User',
           Avatar: targetUser.avatar_url,
-        }, 
-        messages: formattedMessages 
+        },
+        messages: formattedMessages,
+        pagination: {
+          total: formattedMessages.length,
+          hasMore: false,
+        },
       });
 
       client.emit('chatOpened', {
         success: true,
         targetId: data.targetId,
       });
-
     } catch (error) {
       this.logger.error('Error opening chat:', error);
       client.emit('chatOpened', {
@@ -326,67 +389,34 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('markConversationRead')
   async handleMarkConversationRead(
-    @MessageBody() data: { userId: number; partnerId: number },
+    @MessageBody() data: { userId: number; conversationId: number },
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      this.logger.log(`User ${data.userId} marked conversation with ${data.partnerId} as read`);
-      
-      // Find conversation
-      const conversations = await this.prisma.conversations.findMany({
-        where: {
-          type: 'private'
-        },
-        include: {
-          participants: true,
-          messages: true
-        }
-      });
+      this.logger.log(
+        `User ${data.userId} marked conversation ${data.conversationId} as read`,
+      );
 
-      const conversation = conversations.find(conv => {
-        const userIds = conv.participants.map(p => p.user_id).sort();
-        const targetIds = [data.userId, data.partnerId].sort();
-        return userIds.length === 2 && 
-               userIds[0] === targetIds[0] && 
-               userIds[1] === targetIds[1];
-      });
+      await this.messagesService.markAllMessagesAsRead(
+        data.conversationId,
+        data.userId,
+      );
 
-      if (conversation) {
-        // Mark all messages as read for this user
-        const messageIds = conversation.messages.map(m => m.id);
-        
-        // Create message reads (skip if already exists)
-        for (const messageId of messageIds) {
-          await this.prisma.message_reads.upsert({
-            where: {
-              message_id_user_id: {
-                message_id: messageId,
-                user_id: data.userId
-              }
-            },
-            create: {
-              message_id: messageId,
-              user_id: data.userId,
-            },
-            update: {
-              read_at: new Date()
-            }
-          });
-        }
+      // Notify other participants that messages have been read
+      const conversation = await this.messagesService.getConversationById(data.conversationId, data.userId);
+      const partner = conversation.participants.find(p => p.user_id !== data.userId);
+      if (partner) {
+        this.server.to(`${partner.user_id}`).emit('conversationMarkedRead', {
+          conversationId: data.conversationId,
+          readBy: data.userId,
+        });
       }
-
-      // Notify partner that messages have been read
-      this.server.to(`${data.partnerId}`).emit('conversationMarkedRead', {
-        userId: data.userId,
-        partnerId: data.partnerId,
-      });
 
       // Confirm to sender
       client.emit('conversationReadConfirmed', {
-        partnerId: data.partnerId,
+        conversationId: data.conversationId,
         message: 'Conversation marked as read',
       });
-
     } catch (error) {
       this.logger.error('Error marking conversation as read:', error);
     }
@@ -396,13 +426,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleGetOnlineUsers(@ConnectedSocket() client: Socket) {
     const rooms = this.server.sockets.adapter.rooms;
     const onlineUserIds: number[] = [];
-    
+
     for (const [roomName] of rooms) {
       if (/^\d+$/.test(roomName)) {
         onlineUserIds.push(parseInt(roomName));
       }
     }
-    
+
     client.emit('onlineUsers', onlineUserIds);
   }
 
@@ -696,10 +726,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         });
       }
 
-      // 2. Determine message type
-      const messageType = data.mediaFiles.length > 0 
-        ? (data.mediaFiles[0].type === 'image' ? 'image' : data.mediaFiles[0].type === 'video' ? 'video' : 'file')
-        : 'text';
+      // 2. Determine message type based on enum message_type
+      let messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHARE_POST' | 'SHARE_PRODUCT' = 'TEXT';
+      
+      if (data.mediaFiles.length > 0) {
+        const firstMediaType = data.mediaFiles[0].type;
+        if (firstMediaType === 'image') {
+          messageType = 'IMAGE';
+        } else if (firstMediaType === 'video') {
+          messageType = 'VIDEO';
+        }
+      }
 
       // 3. Create message
       const message = await this.prisma.messages.create({
@@ -707,7 +744,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           conversation_id: conversation.id,
           sender_id: data.senderId,
           content: data.content || '',
-          message_type: messageType,
+          type: messageType, // ✅ Use 'type' field with enum value
         },
         include: {
           sender: {

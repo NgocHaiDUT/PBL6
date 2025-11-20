@@ -6,14 +6,19 @@ import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false, transform: true }));
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false, transform: true,skipMissingProperties: true }));
+  
+  // ✅ Enable CORS FIRST (before static assets)
+  app.enableCors({
+    origin: true, // ✅ Allow all origins for mobile development
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+    allowedHeaders: 'Content-Type,Authorization,Range', // ✅ Add Range header
+    exposedHeaders: 'Content-Range,Accept-Ranges,Content-Length', // ✅ Expose video headers
+  });
   
   // Serve static files from uploads directory
-  // Use absolute path to ensure it works in both dev and prod
-  const uploadsPath = join(process.cwd(), 'uploads');
-  console.log('📁 Serving static files from:', uploadsPath);
-  
-  app.useStaticAssets(uploadsPath, {
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads/',
     setHeaders: (res, path) => {
       // Set proper MIME types for videos
@@ -24,23 +29,16 @@ async function bootstrap() {
       } else if (path.endsWith('.webm')) {
         res.setHeader('Content-Type', 'video/webm');
       }
-      // Enable byte-range requests for video streaming
+      // ✅ Enable byte-range requests for video streaming (iOS requirement)
       res.setHeader('Accept-Ranges', 'bytes');
-      // Add CORS headers for videos
+      // ✅ Add CORS headers for videos (allow all origins)
       res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Range');
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length');
     },
   });
-  
-  app.enableCors({
-    origin: '*', 
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-  });
-  const port = process.env.PORT ?? 3000;
-  await app.listen(port);
-  
-  const logger = new Logger('Bootstrap');
-  logger.log(`🚀 Application is running on: http://localhost:${port}`);
-  logger.log(`🔌 WebSocket server is running on: ws://localhost:${port}`);
+
+  await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

@@ -1,24 +1,23 @@
 import { Module } from '@nestjs/common';
-import { PassportModule } from '@nestjs/passport';
-import { JwtModule } from '@nestjs/jwt';
-import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
 import { GoogleStrategy } from './google.strategy';
 import { FacebookStrategy } from './facebook.strategy';
+import { PrismaModule } from '../prisma/prisma.module';
+import { JwtModule } from '@nestjs/jwt';
+
 import { JwtStrategy } from './jwt.strategy';
-import { PrismaModule } from 'src/prisma/prisma.module';
 
 @Module({
   imports: [
-    PassportModule.register({ session: false }), 
+    PrismaModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'your-secret-key-change-this-in-production',
-      signOptions: { expiresIn: '7d' },
+      global: true,
+      secret: process.env.JWT_SECRET || 'your-fallback-secret-key', // Use a strong secret in production
+      signOptions: { expiresIn: '30d' }, // ✅ Token expires in 30 days (tăng từ 1d lên 30d)
     }),
-    PrismaModule
   ],
-  controllers: [AuthController],
   providers: [AuthService, GoogleStrategy, FacebookStrategy, JwtStrategy],
-  exports: [AuthService, JwtModule],
+  controllers: [AuthController],
 })
 export class AuthModule {}

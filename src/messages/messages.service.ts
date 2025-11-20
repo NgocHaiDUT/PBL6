@@ -195,6 +195,19 @@ export class MessagesService {
     return conversation;
   }
 
+  // Lấy chi tiết tin nhắn
+  async getMessageById(messageId: number) {
+    const message = await this.prisma.messages.findUnique({
+      where: { id: messageId },
+    });
+
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    return message;
+  }
+
   // Gửi tin nhắn
   async sendMessage(userId: number, createMessageDto: CreateMessageDto) {
     const { conversation_id, sender_id, receiver_id, content, postId, messageType } = createMessageDto;
@@ -264,7 +277,7 @@ export class MessagesService {
         sender_id: sender_id || userId,
         content,
         post_id: postId, // ✅ Include postId
-        message_type: messageType // ✅ Include messageType
+        type: messageType, // ✅ Include messageType as enum
       },
       include: {
         sender: {
