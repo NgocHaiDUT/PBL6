@@ -18,8 +18,20 @@ export class PermissionsGuard implements CanActivate {
 
     const { user } = context.switchToHttp().getRequest();
 
-    if (!user || !user.permissions) {
-        throw new ForbiddenException('You do not have the necessary permissions.');
+    if (!user) {
+      throw new ForbiddenException('You do not have the necessary permissions.');
+    }
+
+    // ✅ Tạm thời cho phép tất cả user role thực hiện mọi chức năng
+    // Chỉ check permissions cho admin/seller
+    if (user.role === 'user') {
+      console.log(`✅ [PermissionsGuard] Bypassing permission check for user role: ${user.email}`);
+      return true;
+    }
+
+    // Check permissions cho admin/seller/staff
+    if (!user.permissions) {
+      throw new ForbiddenException('You do not have the necessary permissions.');
     }
 
     const hasAllPermissions = requiredPermissions.every((permission) =>

@@ -42,6 +42,37 @@ export class OrderController {
         );
     }
 
+    @Post('create-from-product')
+    async createOrderFromProduct(
+        @Body() body: {
+            userId?: number;
+            product_id: number;
+            variant_id?: number;
+            quantity: number;
+            shipping_address_id: number;
+            note?: string;
+            payment_method?: string;
+        }
+    ) {
+        if (!body.userId) {
+            return { success: false, message: 'Vui lòng đăng nhập' };
+        }
+
+        if (!body.product_id || !body.quantity || !body.shipping_address_id) {
+            throw new BadRequestException('Thiếu thông tin sản phẩm hoặc địa chỉ giao hàng');
+        }
+
+        return this.orderService.createOrderFromProduct(
+            body.userId,
+            body.product_id,
+            body.variant_id || null,
+            body.quantity,
+            body.shipping_address_id,
+            body.note,
+            body.payment_method
+        );
+    }
+
     // Shipping Calculation Endpoints (Proxy to GhnService)
     @Post('shipping/services')
     async getAvailableServices(@Body() body: GetServicesDto) {
@@ -60,6 +91,7 @@ export class OrderController {
         }
         return this.orderService.getLeadtime(body, shopId);
     }
+    
     @Get('my-orders')
     @UseGuards(AuthGuard('jwt'))
     async getMyOrders(

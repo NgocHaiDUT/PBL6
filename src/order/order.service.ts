@@ -4,6 +4,21 @@ import { CreateOrderDto, CreateOrderItemDto, UpdateOrderDto, GetServicesDto, Cal
 import { DeliveryService } from 'src/delivery/delivery.service';
 import { CalculateCartShippingDto } from './dto/calculate-shipping.dto';
 
+interface ProductVariant {
+    id: number;
+    name: string | null;
+    product_id: number;
+    sku: string;
+    shade_hex: string | null;
+    size_label: string | null;
+    price: any;
+    compare_at_price: any;
+    stock: number;
+    is_active: boolean;
+    created_at: Date;
+    updated_at: Date;
+}
+
 @Injectable()
 export class OrderService {
     constructor(
@@ -1209,6 +1224,141 @@ export class OrderService {
 
     async getLeadtime(data: GetLeadtimeDto, shopId: number) {
         return this.deliveryService.getLeadtime(data, shopId);
+    }
+
+    // Create order directly from product (Buy Now functionality)
+    async createOrderFromProduct(userId: number, productId: number, variantId: number | null, quantity: number, shippingAddressId: number, note?: string, paymentMethod?: string) {
+        try {
+            // Validate shipping address
+            const address = await this.prisma.addresses.findFirst({
+                where: {
+                    id: shippingAddressId,
+                    user_id: userId
+                }
+            });
+
+            if (!address) {
+                return { success: false, message: 'Địa chỉ giao hàng không hợp lệ' };
+            }
+
+            // Get product info
+            const product = await this.prisma.products.findFirst({
+                where: { id: productId },
+                include: {
+                    shop: true,
+                    product_variants: true,
+                    brand: true
+                }
+            });
+
+            if (!product) {
+                return { success: false, message: 'Sản phẩm không tồn tại' };
+            }
+
+            // Get variant or use default
+            let variant: ProductVariant | null = null;
+            if (variantId) {
+                variant = await this.prisma.product_variants.findFirst({
+                    where: { 
+                        id: variantId,
+                        product_id: productId
+                    }
+                }) as ProductVariant | null;
+                if (!variant) {
+                    return { success: false, message: 'Phiên bản sản phẩm không tồn tại' };
+                }
+            } else if (product.product_variants.length > 0) {
+                variant = product.product_variants[0] as ProductVariant; // Use first variant as default
+            }
+
+            if (!variant) {
+                return { success: false, message: 'Sản phẩm không có phiên bản hợp lệ' };
+            }
+
+            // Check stock
+            if (variant.stock < quantity) {
+                return { success: false, message: 'Không đủ hàng trong kho' };
+            }
+
+            // Calculate amounts
+            const unitPrice = Number(variant.price);
+            const subtotal = unitPrice * quantity;
+            const shippingFee = subtotal >= 500000 ? 0 : 30000; // Free shipping for orders > 500k
+            const tax = 0; // No tax for direct orders
+            const totalAmount = subtotal + shippingFee + tax;
+
+            // Create order using transaction
+            const orderData = await this.prisma.$transaction(async (tx) => {
+                // Create order
+                const order = await tx.orders.create({
+                    data: {
+                        user_id: userId,
+                        shop_id: product.shop_id,
+                        shipping_address_id: shippingAddressId,
+                        status: 'pending' as any,
+                        payment_status: 'unpaid' as any,
+                        subtotal_amount: subtotal,
+                        discount_amount: 0,
+                        shipping_fee: shippingFee,
+                        total_amount: totalAmount,
+                        note: note
+                    }
+                });
+
+                // Create order item
+                await tx.order_items.create({
+                    data: {
+                        order_id: order.id,
+                        product_id: productId,
+                        variant_id: variantId,
+                        name_snapshot: product.name,
+                        variant_snapshot: variant.name || '',
+                        unit_price: unitPrice,
+                        quantity: quantity,
+                        line_total: subtotal
+                    }
+                });
+
+                // Create payment record
+                await tx.payments.create({
+                    data: {
+                        order_id: order.id,
+                        provider: paymentMethod || 'cod',
+                        amount: totalAmount,
+                        status: 'unpaid' as any
+                    }
+                });
+
+                // Create shipment record
+                await tx.shipments.create({
+                    data: {
+                        order_id: order.id,
+                        status: 'pending',
+                        address_snapshot: `${address.street}, ${address.ward}, ${address.district}, ${address.province}`
+                    }
+                });
+
+                // Update product variant stock
+                await tx.product_variants.update({
+                    where: { id: variant.id },
+                    data: {
+                        stock: variant.stock - quantity
+                    }
+                });
+
+                return order;
+            });
+
+            return {
+                success: true,
+                message: 'Đặt hàng thành công',
+                orders: [orderData]
+            };
+
+        } catch (error) {
+            console.error('Error creating order from product:', error);
+            return { success: false, message: 'Lỗi khi tạo đơn hàng' };
+        }
     }
 }
 

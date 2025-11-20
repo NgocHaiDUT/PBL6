@@ -15,25 +15,49 @@ export class AuthController {
   ) {}
 
     @Post('register')
-    async register(@Body() body: { email?: string; full_name?: string; phone?: string; }) {
-    if (!body || !body.email) {
-      throw new BadRequestException('email is required');
-    }
-        const password = Math.random().toString(36).slice(-8);
-        const hashedPassword = await bcrypt.hash(password, 10);
+    async register(@Body() body: { email?: string; full_name?: string; phone?: string }) {
+        if (!body || !body.email || !body.full_name) {
+            throw new BadRequestException('email and full_name are required');
+        }
+        
+        // Tự động tạo mật khẩu tạm thời
+        const temporaryPassword = Math.random().toString(36).slice(-8);
+        
+        // Gửi email với mật khẩu tạm thời
         try {
-            await this.mailerService
-                        .sendMail({
-              to: `${body.email}`,
-                            subject: 'Đăng ký tài khoản',
-                                text: `Mật khẩu tạm thời của bạn là: ${password}`,  
-                                html: `Mật khẩu tạm thời của bạn là: ${password}`, 
-                            });
-                            } catch (error) {
-                            console.error('Error sending email:', error);
-                            return { success: false, message: 'Email không tồn tại' };
-                            }
-    return this.authService.register(body.email, body.full_name ?? '', body.phone ?? '', hashedPassword);
+            await this.mailerService.sendMail({
+                to: body.email,
+                subject: 'Chào mừng bạn đến với Beauty Shop - Mật khẩu tạm thời',
+                html: `
+                    <h2>Chào mừng ${body.full_name}!</h2>
+                    <p>Tài khoản của bạn đã được tạo thành công.</p>
+                    <p><strong>Mật khẩu tạm thời:</strong> ${temporaryPassword}</p>
+                    <p>Vui lòng đăng nhập và đổi mật khẩu ngay lập tức.</p>
+                    <p>Mật khẩu này chỉ có hiệu lực cho lần đăng nhập đầu tiên.</p>
+                `,
+            });
+        } catch (error) {
+            console.error('Failed to send email:', error);
+            return { success: false, message: 'Không thể gửi email. Vui lòng kiểm tra lại địa chỉ email.' };
+        }
+        
+        // Đăng ký với mật khẩu tạm thời
+        const result = await this.authService.register(
+            body.email,
+            body.full_name,
+            body.phone ?? '',
+            temporaryPassword
+        );
+        
+        if (result.success) {
+            return {
+                success: true,
+                message: 'Đăng ký thành công! Mật khẩu tạm thời đã được gửi đến email của bạn.',
+                email: body.email, // Trả về email để mobile app có thể sử dụng
+            };
+        }
+        
+        return result;
     }
 
     @Post('login')
@@ -81,11 +105,50 @@ export class AuthController {
     }
 
     @Post('change-password-first-time')
-    async changePasswordFirstTime(@Body() body: { userId?: number; newPassword?: string }) {
-        if (!body || !body.userId || !body.newPassword) {
-            throw new BadRequestException('userId and newPassword are required');
+    async changePasswordFirstTime(@Body() body: { email?: string; temporaryPassword?: string; newPassword?: string }) {
+        if (!body || !body.email || !body.temporaryPassword || !body.newPassword) {
+            throw new BadRequestException('email, temporaryPassword, and newPassword are required');
         }
-        return this.authService.changePasswordFirstTime(body.userId, body.newPassword);
+        
+        // Xác thực mật khẩu tạm thời
+        const loginResult = await this.authService.login(body.email, body.temporaryPassword);
+        
+        if (!loginResult.success) {
+            return { success: false, message: 'Mật khẩu tạm thời không đúng' };
+        }
+        
+        // Lấy user từ email
+        const user = await this.authService.getUserByEmail(body.email);
+        if (!user) {
+            return { success: false, message: 'Người dùng không tồn tại' };
+        }
+        
+        // Đổi mật khẩu và set firstlogin = false
+        const result = await this.authService.changePasswordFirstTime(user.id, body.newPassword);
+        
+        if (result.success) {
+            // Tạo JWT token để tự động đăng nhập
+            const payload = { sub: user.id, email: user.email };
+            const accessToken = await this.jwtService.signAsync(payload);
+            
+            return {
+                success: true,
+                message: 'Đổi mật khẩu thành công',
+                access_token: accessToken, // ✅ Nhất quán với login endpoint (snake_case)
+                requiresPasswordChange: false,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    full_name: user.full_name,
+                    role: user.role,
+                    avatar_url: user.avatar_url,
+                    phone: user.phone,
+                    firstlogin: false,
+                },
+            };
+        }
+        
+        return result;
     }
     
 

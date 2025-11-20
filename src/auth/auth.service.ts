@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
@@ -26,16 +26,17 @@ export class AuthService {
             }
         });
 
+
         if (!roleuserid) {
         return { success: false, message: 'Lỗi hệ thống: Không tìm thấy role user' };
         }
-        
+        const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = await this.PrismaService.users.create({
             data: { 
                 email : email, 
                 full_name : full_name,
                 phone  : phone,
-                password_hash : password,
+                password_hash : hashedPassword,
                 avatar_url : "",
                 role_id : roleuserid.id,
                 firstlogin : true
@@ -123,6 +124,19 @@ export class AuthService {
 
     async getUserById(id: number) {
         return await this.PrismaService.users.findUnique({ where: { id } });
+    }
+
+    async getUserByEmail(email: string) {
+        return await this.PrismaService.users.findUnique({ 
+            where: { email },
+            include: {
+                role: {
+                    select: {
+                        name: true,
+                    },
+                },
+            },
+        });
     }
 
     async changePasswordFirstTime(userId: number, newPassword: string) {

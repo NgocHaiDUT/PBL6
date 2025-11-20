@@ -11,7 +11,9 @@ import {
   ParseIntPipe,
   HttpStatus,
   HttpCode,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
@@ -23,6 +25,7 @@ import {
 } from './interfaces/notification.interface';
 
 @Controller('notifications')
+@UseGuards(AuthGuard('jwt')) // ✅ Require JWT for all endpoints
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
@@ -32,8 +35,7 @@ export class NotificationsController {
     @Body() createNotificationDto: CreateNotificationDto,
     @Request() req: any,
   ): Promise<NotificationResponse> {
-    // TODO: Extract user ID from JWT token when auth is implemented
-    const userId = req.user?.id || 1; // Temporary fallback
+    const userId = req.user?.sub || req.user?.userId;
     return this.notificationsService.createForUser(userId, createNotificationDto);
   }
 
@@ -42,8 +44,9 @@ export class NotificationsController {
     @Query() queryDto: QueryNotificationsDto & { userId?: string },
     @Request() req: any,
   ): Promise<PaginatedNotificationsResponse> {
-    // Use userId from query parameter, fallback to JWT token, then fallback to 1
-    const targetUserId = queryDto.userId ? parseInt(queryDto.userId, 10) : (req.user?.id || 1);
+    // ✅ Use userId from query param if provided, otherwise from JWT
+    const jwtUserId = req.user?.sub || req.user?.userId;
+    const targetUserId = queryDto.userId ? parseInt(queryDto.userId, 10) : jwtUserId;
     console.log('🔔 [Controller] Getting notifications for user ID:', targetUserId);
     return this.notificationsService.findAllForUser(targetUserId, queryDto);
   }
@@ -53,8 +56,9 @@ export class NotificationsController {
     @Request() req: any,
     @Query('userId') userId?: string
   ): Promise<NotificationStatsResponse> {
-    // Use userId from query parameter, fallback to JWT token, then fallback to 1
-    const targetUserId = userId ? parseInt(userId, 10) : (req.user?.id || 1);
+    // ✅ Use userId from query if provided, otherwise from JWT
+    const jwtUserId = req.user?.sub || req.user?.userId;
+    const targetUserId = userId ? parseInt(userId, 10) : jwtUserId;
     console.log('🔔 [Controller] Getting notification stats for user ID:', targetUserId);
     return this.notificationsService.getStats(targetUserId);
   }
@@ -64,8 +68,9 @@ export class NotificationsController {
     @Body() body: { user_id?: string | number },
     @Request() req: any
   ): Promise<{ updated: number }> {
-    // Use user_id from body, fallback to JWT token, then fallback to 1
-    const targetUserId = body.user_id ? (typeof body.user_id === 'string' ? parseInt(body.user_id, 10) : body.user_id) : (req.user?.id || 1);
+    // ✅ Use user_id from body if provided, otherwise from JWT
+    const jwtUserId = req.user?.sub || req.user?.userId;
+    const targetUserId = body.user_id ? (typeof body.user_id === 'string' ? parseInt(body.user_id, 10) : body.user_id) : jwtUserId;
     console.log('🔔 [Controller] Marking all as read for user ID:', targetUserId);
     return this.notificationsService.markAllAsRead(targetUserId);
   }
@@ -75,10 +80,24 @@ export class NotificationsController {
     @Body() body: { user_id?: string | number },
     @Request() req: any
   ): Promise<{ deleted: number }> {
-    // Use user_id from body, fallback to JWT token, then fallback to 1
-    const targetUserId = body.user_id ? (typeof body.user_id === 'string' ? parseInt(body.user_id, 10) : body.user_id) : (req.user?.id || 1);
+    // ✅ Use user_id from body if provided, otherwise from JWT
+    const jwtUserId = req.user?.sub || req.user?.userId;
+    const targetUserId = body.user_id ? (typeof body.user_id === 'string' ? parseInt(body.user_id, 10) : body.user_id) : jwtUserId;
     console.log('🔔 [Controller] Deleting all read notifications for user ID:', targetUserId);
     return this.notificationsService.deleteAllRead(targetUserId);
+  }
+
+  // ✅ Route cụ thể phải đặt TRƯỚC route generic :id
+  @Get(':userId/unread-count')
+  async getUnreadCount(
+    @Param('userId', ParseIntPipe) userId: number
+  ): Promise<{ success: boolean; count: number }> {
+    console.log('🔔 [Controller] Getting unread count for user ID:', userId);
+    const stats = await this.notificationsService.getStats(userId);
+    return { 
+      success: true, 
+      count: stats.unread 
+    };
   }
 
   @Get(':id')
@@ -86,8 +105,7 @@ export class NotificationsController {
     @Param('id', ParseIntPipe) id: number,
     @Request() req: any,
   ): Promise<NotificationResponse> {
-    // TODO: Extract user ID from JWT token when auth is implemented
-    const userId = req.user?.id || 1; // Temporary fallback
+    const userId = req.user?.sub || req.user?.userId;
     return this.notificationsService.findOne(id, userId);
   }
 
@@ -97,8 +115,7 @@ export class NotificationsController {
     @Body() updateNotificationDto: UpdateNotificationDto,
     @Request() req: any,
   ): Promise<NotificationResponse> {
-    // TODO: Extract user ID from JWT token when auth is implemented
-    const userId = req.user?.id || 1; // Temporary fallback
+    const userId = req.user?.sub || req.user?.userId;
     return this.notificationsService.update(id, userId, updateNotificationDto);
   }
 
@@ -108,8 +125,9 @@ export class NotificationsController {
     @Body() body: { user_id?: string | number },
     @Request() req: any,
   ): Promise<NotificationResponse> {
-    // Use user_id from body, fallback to JWT token, then fallback to 1
-    const targetUserId = body.user_id ? (typeof body.user_id === 'string' ? parseInt(body.user_id, 10) : body.user_id) : (req.user?.id || 1);
+    // ✅ Use user_id from body if provided, otherwise from JWT
+    const jwtUserId = req.user?.sub || req.user?.userId;
+    const targetUserId = body.user_id ? (typeof body.user_id === 'string' ? parseInt(body.user_id, 10) : body.user_id) : jwtUserId;
     console.log('🔔 [Controller] Marking notification as read:', { id, targetUserId });
     return this.notificationsService.markAsRead(id, targetUserId);
   }
@@ -120,8 +138,7 @@ export class NotificationsController {
     @Param('id', ParseIntPipe) id: number,
     @Request() req: any,
   ): Promise<void> {
-    // TODO: Extract user ID from JWT token when auth is implemented
-    const userId = req.user?.id || 1; // Temporary fallback
+    const userId = req.user?.sub || req.user?.userId;
     return this.notificationsService.remove(id, userId);
   }
 

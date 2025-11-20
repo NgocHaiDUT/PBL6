@@ -1,5 +1,7 @@
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
+// Import S3 config instead of local file config
+import { s3BrandConfig, STORAGE_TYPE, generateBrandImageUrl, USE_S3 } from './config/product.config';
 import { Controller, Body, Post, Get, UploadedFile, Query, UseInterceptors, BadRequestException, Param, ParseIntPipe, Put, Delete, UseGuards, Req } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
@@ -7,6 +9,7 @@ import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 // Import local file config for local testing
 // import { s3BrandConfig } from './config/s3-product.config';
 import { brandMulterConfig, productMediaMulterConfig } from './config/product-multer.config';
+
 @Controller('product')
 export class ProductController {
     constructor(private readonly productservice: ProductService) {}
@@ -23,6 +26,39 @@ export class ProductController {
     {
         console.log('Controller - getallcategories called');
         return this.productservice.getallcategories();
+    }
+
+    @Get('all-products')
+    async getallproducts(
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('category') category?: string,
+        @Query('brand') brand?: string,
+        @Query('minPrice') minPrice?: string,
+        @Query('maxPrice') maxPrice?: string,
+        @Query('minRating') minRating?: string,
+        @Query('search') search?: string,
+    )
+    {
+        return this.productservice.getAllProducts({
+            page: page ? parseInt(page) : 1,
+            limit: limit ? parseInt(limit) : 20,
+            category,
+            brand,
+            minPrice: minPrice ? parseFloat(minPrice) : undefined,
+            maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+            minRating: minRating ? parseFloat(minRating) : undefined,
+            search,
+        });
+    }
+
+    @Get('product/:id')
+    async getproductbyid(@Param('id') id: string)
+    {
+        if (!id) {
+            throw new BadRequestException('Thiếu ID sản phẩm');
+        }
+        return this.productservice.getProductById(Number(id));
     }
 
     @Post('add-brand')
@@ -141,7 +177,6 @@ export class ProductController {
         const categoryIds = body.category_ids
             ? body.category_ids.map(id => Number(id))
             : undefined;
-
         const userId = req.user.userId;
         return this.productservice.addproducts(
             userId,
@@ -311,37 +346,8 @@ export class ProductController {
         );
     }
 
-    @Put('edit-product-media/:id')
-    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-    @RequirePermissions('edit_product')
-    async editProductMedia(
-        @Param('id', ParseIntPipe) id: number,
-        @Body() body: {
-            type?: string;
-            sort_order?: string;
-        },
-        @Req() req: any
-    ) {
-        const userId = req.user.userId;
-        return this.productservice.editProductMedia(
-            id,
-            userId,
-            body.type,
-            body.sort_order ? Number(body.sort_order) : undefined
-        );
-    }
-
-    @Delete('delete-product-media/:id')
-    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-    @RequirePermissions('delete_product')
-    async deleteProductMedia(
-        @Param('id', ParseIntPipe) id: number,
-        @Req() req: any
-    ) {
-        const userId = req.user.userId;
-        return this.productservice.deleteProductMedia(id, userId);
-    }
-
+    // TODO: The following endpoints need to be implemented in ProductService
+    /*
     @Get('shop/:shopId/products')
     async getShopProducts(
         @Param('shopId', ParseIntPipe) shopId: number,
@@ -459,4 +465,5 @@ export class ProductController {
     async removeFromCart(@Param('itemId') itemId: string) {
         return this.productservice.removeFromCart(Number(itemId));
     }
+    */
 }

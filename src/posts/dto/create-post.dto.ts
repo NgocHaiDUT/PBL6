@@ -3,6 +3,10 @@ import { IsString, IsOptional, IsArray, IsEnum, IsInt, IsBoolean } from 'class-v
 export class CreatePostDto {
   @IsOptional()
   @IsInt()
+  user_id?: number;
+
+  @IsOptional()
+  @IsInt()
   shop_id?: number;
 
   @IsOptional()
