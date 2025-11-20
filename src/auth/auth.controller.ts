@@ -150,7 +150,7 @@ export class AuthController {
         
         return result;
     }
-
+    
 
   @Get('google')
   @UseGuards(AuthGuard('google'))

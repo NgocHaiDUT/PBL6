@@ -60,7 +60,7 @@ export class AuthService {
         const user = await this.PrismaService.users.findUnique({
             where: { email },
             include: {
-                role_relation: {
+                role: {
                     select: {
                         name: true,
                     },
@@ -130,7 +130,7 @@ export class AuthService {
         return await this.PrismaService.users.findUnique({ 
             where: { email },
             include: {
-                role_relation: {
+                role: {
                     select: {
                         name: true,
                     },

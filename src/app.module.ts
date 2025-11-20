@@ -25,6 +25,9 @@ import { ShopModule } from './shop/shop.module';
 import { OrderModule } from './order/order.module';
 import { AddressModule } from './address/address.module';
 import { ShopAddressModule } from './shop-address/shop-address.module';
+import { GhnModule } from './ghn/ghn.module';
+import { DeliveryModule } from './delivery/delivery.module';
+import { UsersModule } from './users/users.module';
 import { RangeRequestMiddleware } from './middleware/range-request.middleware';
 import { SearchModule } from './search/search.module';
 import { ReviewsModule } from './reviews/reviews.module'; // ✅ Add ReviewsModule
@@ -79,6 +82,7 @@ import { ReviewsModule } from './reviews/reviews.module'; // ✅ Add ReviewsModu
     DataInitModule,
     AddressModule,
     ShopAddressModule,
+    GhnModule,
     SearchModule, // ✅ Add SearchModule
     ReviewsModule, // ✅ Add ReviewsModule
 
@@ -90,6 +94,8 @@ import { ReviewsModule } from './reviews/reviews.module'; // ✅ Add ReviewsModu
     ProductModule,
     DataInitModule,
     ShopModule,
+    DeliveryModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

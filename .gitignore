@@ -19,6 +19,13 @@ lerna-debug.log*
 /coverage
 /.nyc_output
 
+# Test reports and history (exclude from Git due to large file sizes)
+src/shop/__test-reports__/test-run-*/
+src/shop/__test-reports__/*.xlsx
+src/shop/__test-reports__/*.json
+src/shop/__test-reports__/*.txt
+src/shop/__test-reports__/screenshots/
+
 # IDEs and editors
 /.idea
 .project
@@ -59,6 +66,8 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /uploads
 
+/mdfile
+
 /api_docs
 
-/mdfile
+/ghn 

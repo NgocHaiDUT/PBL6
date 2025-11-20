@@ -1,0 +1,259 @@
+{
+    "addstaff" : [
+        {
+            "testCaseId" : "TC_AS_01",
+            "testCaseDescription" : "Thêm nhân viên thành công",
+            "input" : {
+                "userid" : 1,
+                "staffemail" : "nguyenhai842003@gmail.com",
+                "shopid" : 2,
+                "is_manager" : false
+            },
+            "expectedResult" : {
+                "success" : true,
+                "message" : "Thêm nhân viên thành công"
+            },
+            "mockSetup": {
+                "permission.findUnique": { "id": 1 },
+                "userpermission.findFirst": { "user_id": 1 },
+                "users.findUnique": { "id": 3, "email": "nguyenhai842003@gmail.com" },
+                "shops.findUnique": { "owner_id": 1 },
+                "shop_staffs.findFirst": [null, null],
+                "role.findUnique": {
+                    "id": 2,
+                    "name": "staff",
+                    "rolePermissions": [{ "permission_id": 10 }, { "permission_id": 11 }]
+                },
+                "$transaction": true
+            }
+        },
+        {
+            "testCaseId" : "TC_AS_02",
+            "testCaseDescription" : "Thêm nhân viên thất bại nếu người thêm không có quyền manage_shop_staff",
+            "input" : {
+                "userid" : 1,
+                "staffemail" : "nguyenhai842003@gmail.com",
+                "shopid" : 2,
+                "is_manager" : false
+            },
+            "expectedResult" : {
+                "success" : false,
+                "message" : "Bạn không có quyền thêm nhân viên"
+            },
+            "mockSetup": {
+                "permission.findUnique": { "id": 1 },
+                "users.findUnique" : {"id" : 3, "email" : "nguyenhai842003@gmail.com"},
+                "userpermission.findFirst": null
+            }
+        },
+        {
+            "testCaseId" : "TC_AS_03",
+            "testCaseDescription" : "Thêm nhân viên thất bại nếu hệ thống không có quyền manage_shop_staff",
+            "input" : {
+                "userid" : 1,
+                "staffemail" : "nguyenhai842003@gmail.com",
+                "shopid" : 2,
+                "is_manager" : false
+            },
+            "expectedResult" : {
+                "success" : false,
+                "message" : "Lỗi hệ thống, quyền manage_shop_staff không tồn tại"
+            },
+            "mockSetup": {
+                "permission.findUnique": null
+            }
+        },
+        {
+            "testCaseId" : "TC_AS_04",
+            "testCaseDescription" : "Thêm nhân viên thất bại nếu shop không tồn tại",
+            "input" : {
+                "userid" : 1,
+                "staffemail" : "nguyenhai842003@gmail.com",
+                "shopid" : 999,
+                "is_manager" : false
+            },
+            "expectedResult" : {
+                "success" : false,
+                "message" : "Cửa hàng không tồn tại"
+            },
+            "mockSetup": {
+                "permission.findUnique": { "id": 1 },
+                "userpermission.findFirst": { "user_id": 1 },
+                "users.findUnique": { "id": 3, "email": "nguyenhai842003@gmail.com" },
+                "shops.findUnique": null
+            }
+        },
+        {
+            "testCaseId" : "TC_AS_05",
+            "testCaseDescription" : "Thêm nhân viên thất bại nhân viên không tồn tại",
+            "input" : {
+                "userid" : 1,
+                "staffemail" : "nguyenhaiabc123@gmail.com",
+                "shopid" : 2,
+                "is_manager" : false
+            },
+            "expectedResult" : {
+                "success" : false,
+                "message" : "Nhân viên không tồn tại"
+            },
+            "mockSetup": {
+                "permission.findUnique": { "id": 1 },
+                "userpermission.findFirst": { "user_id": 1 },
+                "users.findUnique": null,
+                "shops.findUnique": { "owner_id": 1 },
+                "shop_staffs.findFirst": null
+            }
+        },
+        {
+            "testCaseId" : "TC_AS_06",
+            "testCaseDescription" : "Thêm nhân viên thất bại nhân viên đã có trong shop",
+            "input" : {
+                "userid" : 1,
+                "staffemail" : "nguyenhai842003@gmail.com",
+                "shopid" : 2,
+                "is_manager" : false
+            },
+            "expectedResult" : {
+                "success" : false,
+                "message" : "Người này đã là nhân viên của cửa hàng"
+            },
+            "mockSetup": {
+                "permission.findUnique": { "id": 1 },
+                "userpermission.findFirst": { "user_id": 1 },
+                "users.findUnique": { "id": 3, "email": "nguyenhai842003@gmail.com" },
+                "shops.findUnique": { "owner_id": 1 },
+                "shop_staffs.findFirst": [null, { "id": 1 }]
+            }
+        },
+        {
+            "testCaseId" : "TC_AS_07",
+            "testCaseDescription" : "Thêm nhân viên thất bại khi user không phải owner của shop",
+            "input" : {
+                "userid" : 1,
+                "staffemail" : "nguyenhai842003@gmail.com",
+                "shopid" : 2,
+                "is_manager" : false
+            },
+            "expectedResult" : {
+                "success" : false,
+                "message" : "Bạn không có quyền quản lý cửa hàng này"
+            },
+            "mockSetup": {
+                "permission.findUnique": { "id": 1 },
+                "userpermission.findFirst": { "user_id": 1 },
+                "users.findUnique": { "id": 3, "email": "nguyenhai842003@gmail.com" },
+                "shops.findUnique": null
+            }
+        }
+    ],
+    "removestaff" : [
+        {
+            "testCaseId": "TC_DEL_01",
+            "testCaseDescription": "Xóa nhân viên thành công",
+            "input": {
+                "userid": 1,
+                "staffemail": "nguyenhai842003@gmail.com",
+                "shopid": 1
+            },
+            "expectedResult": {
+                "success": true,
+                "message": "Xóa nhân viên thành công"
+            },
+            "mockSetup": {
+                "permission.findUnique": { "id": 1 },
+                "userpermission.findFirst": { "user_id": 1 },
+                "shops.findUnique": { "id": 1, "owner_id": 1 },
+                "users.findUnique": { "id": 2, "email": "staff@example.com" },
+                "$transaction": {
+                    "shop_staffs.deleteMany": { "count": 1 },
+                    "shop_staffs.findFirst": null,
+                    "role.findUnique": {
+                        "id": 2,
+                        "name": "user",
+                        "rolePermissions": [
+                            { "permission_id": 10 }
+                        ]
+                    },
+                    "users.update": { "id": 2, "role_id": 2 },
+                    "userpermission.deleteMany": { "count": 5 },
+                    "userpermission.createMany": { "count": 1 }
+                }
+            }
+        },
+        {
+            "testCaseId": "TC_DEL_02",
+            "testCaseDescription": "Xóa nhân viên thất bại - không có quyền",
+            "input": {
+                "userid": 999,
+                "staffemail": "nguyenhai842003@gmail.com",
+                "shopid": 1
+            },
+            "expectedResult": {
+                "success": false,
+                "message": "Bạn không có quyền xóa nhân viên"
+            },
+            "mockSetup": {
+                "permission.findUnique": { "id": 1 },
+                "userpermission.findFirst": null
+            }
+        },
+        {
+            "testCaseId": "TC_DEL_03",
+            "testCaseDescription": "Xóa nhân viên thất bại - cố xóa owner",
+            "input": {
+                "userid": 1,
+                "staffemail": "nguyenhai742004@gmail.com",
+                "shopid": 1
+            },
+            "expectedResult": {
+                "success": false,
+                "message": "Không thể xóa chủ cửa hàng"
+            },
+            "mockSetup": {
+                "permission.findUnique": { "id": 1 },
+                "userpermission.findFirst": { "user_id": 1 },
+                "shops.findUnique": { "id": 1, "owner_id": 5 },
+                "users.findUnique": { "id": 5, "email": "owner@example.com" }
+            }
+        },
+        {
+            "testCaseId": "TC_DEL_04",
+            "testCaseDescription": "Xóa nhân viên thất bại - nhân viên không tồn tại",
+            "input": {
+                "userid": 1,
+                "staffemail": "nguyenhaiabc123@gmail.com",
+                "shopid": 1
+            },
+            "expectedResult": {
+                "success": false,
+                "message": "Nhân viên không tồn tại"
+            },
+            "mockSetup": {
+                "permission.findUnique": { "id": 1 },
+                "userpermission.findFirst": { "user_id": 1 },
+                "shops.findUnique": { "id": 1, "owner_id": 1 },
+                "users.findUnique": null
+            }
+        },
+        {
+            "testCaseId": "TC_DEL_05",
+            "testCaseDescription": "Xóa nhân viên thất bại - nhân viên không thuộc cửa hàng",
+            "input": {
+                "userid": 1,
+                "staffemail": "staff2@example.com",
+                "shopid": 1
+            },
+            "expectedResult": {
+                "success": false,
+                "message": "Nhân viên không thuộc cửa hàng này"
+            },
+            "mockSetup": {
+                "permission.findUnique": { "id": 1 },
+                "userpermission.findFirst": { "user_id": 1 },
+                "shops.findUnique": { "id": 1, "owner_id": 1 },
+                "users.findUnique": { "id": 4, "email": "staff2@example.com" },
+                "shop_staffs.findFirst": null
+            }
+        }
+    ]
+}

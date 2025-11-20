@@ -1,0 +1,388 @@
+[
+  {
+    "user_id": 4,
+    "shop_id": 2,
+    "status": "delivered",
+    "payment_status": "paid",
+    "subtotal_amount": 730000,
+    "discount_amount": 50000,
+    "shipping_fee": 30000,
+    "total_amount": 710000,
+    "shipping_address_id": 1,
+    "pickup_address_id": 1,
+    "note": "Giao hàng giờ hành chính",
+    "created_at": "2025-10-15T10:30:00Z",
+    "updated_at": "2025-10-20T15:45:00Z",
+    "order_items": [
+      {
+        "product_id": 1,
+        "variant_id": 1,
+        "name_snapshot": "Kem Chống Nắng SPF 50+",
+        "variant_snapshot": "50ml",
+        "unit_price": 250000,
+        "quantity": 2,
+        "line_total": 500000
+      },
+      {
+        "product_id": 2,
+        "variant_id": 3,
+        "name_snapshot": "Serum Vitamin C",
+        "variant_snapshot": "30ml",
+        "unit_price": 180000,
+        "quantity": 1,
+        "line_total": 180000
+      },
+      {
+        "product_id": 6,
+        "variant_id": 11,
+        "name_snapshot": "Sữa Rửa Mặt Dịu Nhẹ",
+        "variant_snapshot": "150ml",
+        "unit_price": 85000,
+        "quantity": 1,
+        "line_total": 85000
+      }
+    ],
+    "payment": {
+      "provider": "VNPAY",
+      "amount": 710000,
+      "status": "paid",
+      "transaction_id": "VNP20251015103045",
+      "created_at": "2025-10-15T10:35:00Z"
+    },
+    "shipment": {
+      "status": "delivered",
+      "carrier": "Giao Hàng Nhanh",
+      "tracking_number": "GHN123456789",
+      "shipped_at": "2025-10-16T08:00:00Z",
+      "delivered_at": "2025-10-20T15:30:00Z",
+      "address_snapshot": "123 Nguyễn Văn Linh, Quận 7, TP.HCM"
+    }
+  },
+  {
+    "user_id": 4,
+    "shop_id": 2,
+    "status": "shipped",
+    "payment_status": "paid",
+    "subtotal_amount": 520000,
+    "discount_amount": 0,
+    "shipping_fee": 25000,
+    "total_amount": 545000,
+    "shipping_address_id": 2,
+    "pickup_address_id": 1,
+    "note": null,
+    "created_at": "2025-11-01T14:20:00Z",
+    "updated_at": "2025-11-05T09:15:00Z",
+    "order_items": [
+      {
+        "product_id": 1,
+        "variant_id": 2,
+        "name_snapshot": "Kem Chống Nắng SPF 50+",
+        "variant_snapshot": "100ml",
+        "unit_price": 450000,
+        "quantity": 1,
+        "line_total": 450000
+      },
+      {
+        "product_id": 3,
+        "variant_id": 4,
+        "name_snapshot": "Toner Cân Bằng Da",
+        "variant_snapshot": "200ml",
+        "unit_price": 120000,
+        "quantity": 1,
+        "line_total": 120000
+      }
+    ],
+    "payment": {
+      "provider": "MOMO",
+      "amount": 545000,
+      "status": "paid",
+      "transaction_id": "MOMO20251101142230",
+      "created_at": "2025-11-01T14:25:00Z"
+    },
+    "shipment": {
+      "status": "in_transit",
+      "carrier": "Viettel Post",
+      "tracking_number": "VTP987654321",
+      "shipped_at": "2025-11-02T10:00:00Z",
+      "delivered_at": null,
+      "address_snapshot": "456 Lê Văn Việt, Quận 9, TP.HCM"
+    }
+  },
+  {
+    "user_id": 4,
+    "shop_id": 2,
+    "status": "processing",
+    "payment_status": "paid",
+    "subtotal_amount": 945000,
+    "discount_amount": 45000,
+    "shipping_fee": 30000,
+    "total_amount": 930000,
+    "shipping_address_id": 3,
+    "pickup_address_id": 1,
+    "note": "Gọi trước khi giao",
+    "created_at": "2025-11-08T09:00:00Z",
+    "updated_at": "2025-11-09T11:30:00Z",
+    "order_items": [
+      {
+        "product_id": 4,
+        "variant_id": 6,
+        "name_snapshot": "Kem Dưỡng Ẩm Ban Đêm",
+        "variant_snapshot": "50ml",
+        "unit_price": 320000,
+        "quantity": 1,
+        "line_total": 320000
+      },
+      {
+        "product_id": 8,
+        "variant_id": 15,
+        "name_snapshot": "Kem Mắt Chống Lão Hóa",
+        "variant_snapshot": "15ml",
+        "unit_price": 450000,
+        "quantity": 1,
+        "line_total": 450000
+      },
+      {
+        "product_id": 5,
+        "variant_id": 7,
+        "name_snapshot": "Mặt Nạ Đất Sét",
+        "variant_snapshot": "100g",
+        "unit_price": 95000,
+        "quantity": 2,
+        "line_total": 190000
+      }
+    ],
+    "payment": {
+      "provider": "COD",
+      "amount": 930000,
+      "status": "pending",
+      "transaction_id": null,
+      "created_at": "2025-11-08T09:05:00Z"
+    },
+    "shipment": {
+      "status": "packing",
+      "carrier": "Giao Hàng Tiết Kiệm",
+      "tracking_number": "GHTK456789123",
+      "shipped_at": null,
+      "delivered_at": null,
+      "address_snapshot": "789 Võ Văn Ngân, Thủ Đức, TP.HCM"
+    }
+  },
+  {
+    "user_id": 4,
+    "shop_id": 2,
+    "status": "confirmed",
+    "payment_status": "paid",
+    "subtotal_amount": 640000,
+    "discount_amount": 40000,
+    "shipping_fee": 25000,
+    "total_amount": 625000,
+    "shipping_address_id": 4,
+    "pickup_address_id": 1,
+    "note": null,
+    "created_at": "2025-11-10T16:45:00Z",
+    "updated_at": "2025-11-10T17:00:00Z",
+    "order_items": [
+      {
+        "product_id": 3,
+        "variant_id": 5,
+        "name_snapshot": "Toner Cân Bằng Da",
+        "variant_snapshot": "400ml",
+        "unit_price": 200000,
+        "quantity": 1,
+        "line_total": 200000
+      },
+      {
+        "product_id": 7,
+        "variant_id": 13,
+        "name_snapshot": "Essence Tinh Chất",
+        "variant_snapshot": "150ml",
+        "unit_price": 280000,
+        "quantity": 1,
+        "line_total": 280000
+      },
+      {
+        "product_id": 5,
+        "variant_id": 8,
+        "name_snapshot": "Mặt Nạ Đất Sét",
+        "variant_snapshot": "200g",
+        "unit_price": 160000,
+        "quantity": 1,
+        "line_total": 160000
+      }
+    ],
+    "payment": {
+      "provider": "ZALOPAY",
+      "amount": 625000,
+      "status": "paid",
+      "transaction_id": "ZALO20251110164755",
+      "created_at": "2025-11-10T16:50:00Z"
+    },
+    "shipment": {
+      "status": "pending",
+      "carrier": null,
+      "tracking_number": null,
+      "shipped_at": null,
+      "delivered_at": null,
+      "address_snapshot": "321 Phan Văn Trị, Gò Vấp, TP.HCM"
+    }
+  },
+  {
+    "user_id": 4,
+    "shop_id": 2,
+    "status": "pending",
+    "payment_status": "unpaid",
+    "subtotal_amount": 365000,
+    "discount_amount": 0,
+    "shipping_fee": 30000,
+    "total_amount": 395000,
+    "shipping_address_id": 5,
+    "pickup_address_id": 1,
+    "note": "Giao sau 18h",
+    "created_at": "2025-11-11T08:15:00Z",
+    "updated_at": "2025-11-11T08:15:00Z",
+    "order_items": [
+      {
+        "product_id": 2,
+        "variant_id": 3,
+        "name_snapshot": "Serum Vitamin C",
+        "variant_snapshot": "30ml",
+        "unit_price": 180000,
+        "quantity": 1,
+        "line_total": 180000
+      },
+      {
+        "product_id": 6,
+        "variant_id": 11,
+        "name_snapshot": "Sữa Rửa Mặt Dịu Nhẹ",
+        "variant_snapshot": "150ml",
+        "unit_price": 85000,
+        "quantity": 1,
+        "line_total": 85000
+      },
+      {
+        "product_id": 5,
+        "variant_id": 7,
+        "name_snapshot": "Mặt Nạ Đất Sét",
+        "variant_snapshot": "100g",
+        "unit_price": 95000,
+        "quantity": 1,
+        "line_total": 95000
+      }
+    ],
+    "payment": {
+      "provider": "COD",
+      "amount": 395000,
+      "status": "unpaid",
+      "transaction_id": null,
+      "created_at": "2025-11-11T08:16:00Z"
+    },
+    "shipment": {
+      "status": "pending",
+      "carrier": null,
+      "tracking_number": null,
+      "shipped_at": null,
+      "delivered_at": null,
+      "address_snapshot": "654 Lý Thái Tổ, Quận 10, TP.HCM"
+    }
+  },
+  {
+    "user_id": 4,
+    "shop_id": 2,
+    "status": "delivered",
+    "payment_status": "paid",
+    "subtotal_amount": 730000,
+    "discount_amount": 100000,
+    "shipping_fee": 0,
+    "total_amount": 630000,
+    "shipping_address_id": 1,
+    "pickup_address_id": 1,
+    "note": "Khách quen - freeship",
+    "created_at": "2025-10-25T11:20:00Z",
+    "updated_at": "2025-10-28T14:30:00Z",
+    "order_items": [
+      {
+        "product_id": 6,
+        "variant_id": 12,
+        "name_snapshot": "Sữa Rửa Mặt Dịu Nhẹ",
+        "variant_snapshot": "300ml",
+        "unit_price": 150000,
+        "quantity": 2,
+        "line_total": 300000
+      },
+      {
+        "product_id": 4,
+        "variant_id": 6,
+        "name_snapshot": "Kem Dưỡng Ẩm Ban Đêm",
+        "variant_snapshot": "50ml",
+        "unit_price": 320000,
+        "quantity": 1,
+        "line_total": 320000
+      },
+      {
+        "product_id": 3,
+        "variant_id": 4,
+        "name_snapshot": "Toner Cân Bằng Da",
+        "variant_snapshot": "200ml",
+        "unit_price": 120000,
+        "quantity": 1,
+        "line_total": 120000
+      }
+    ],
+    "payment": {
+      "provider": "BANKING",
+      "amount": 630000,
+      "status": "paid",
+      "transaction_id": "BANK20251025112345",
+      "created_at": "2025-10-25T11:25:00Z"
+    },
+    "shipment": {
+      "status": "delivered",
+      "carrier": "Giao Hàng Nhanh",
+      "tracking_number": "GHN789456123",
+      "shipped_at": "2025-10-26T09:00:00Z",
+      "delivered_at": "2025-10-28T14:15:00Z",
+      "address_snapshot": "123 Nguyễn Văn Linh, Quận 7, TP.HCM"
+    }
+  },
+  {
+    "user_id": 4,
+    "shop_id": 2,
+    "status": "cancelled",
+    "payment_status": "refunded",
+    "subtotal_amount": 450000,
+    "discount_amount": 0,
+    "shipping_fee": 25000,
+    "total_amount": 475000,
+    "shipping_address_id": 6,
+    "pickup_address_id": 1,
+    "note": "Khách hủy - hết hàng",
+    "created_at": "2025-11-05T13:30:00Z",
+    "updated_at": "2025-11-06T10:00:00Z",
+    "order_items": [
+      {
+        "product_id": 8,
+        "variant_id": 15,
+        "name_snapshot": "Kem Mắt Chống Lão Hóa",
+        "variant_snapshot": "15ml",
+        "unit_price": 450000,
+        "quantity": 1,
+        "line_total": 450000
+      }
+    ],
+    "payment": {
+      "provider": "VNPAY",
+      "amount": 475000,
+      "status": "refunded",
+      "transaction_id": "VNP20251105133245",
+      "created_at": "2025-11-05T13:35:00Z"
+    },
+    "shipment": {
+      "status": "failed",
+      "carrier": null,
+      "tracking_number": null,
+      "shipped_at": null,
+      "delivered_at": null,
+      "address_snapshot": "987 Quang Trung, Gò Vấp, TP.HCM"
+    }
+  }
+]

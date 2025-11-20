@@ -18,6 +18,13 @@ export class ProfileController {
         return this.profileService.getProfile(req.user.userId);
     }
 
+    @UseGuards(AuthGuard('jwt'))
+    @Get('me')
+    getMyProfile(@Req() req: any) {
+        // Alias for /profile, commonly expected by frontend
+        return this.profileService.getProfile(req.user.userId);
+    }
+
     @Get('permission')
     @UseGuards(AuthGuard('jwt'))
     async getpermission(@Req() req: any){
@@ -163,8 +170,7 @@ export class ProfileController {
     }
 
     @Post('create-shop')
-    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-    @RequirePermissions('create_shop')
+    @UseGuards(AuthGuard('jwt'))
     @UseInterceptors(
         FileFieldsInterceptor([
             { name: 'logo', maxCount: 1 },
@@ -201,7 +207,7 @@ export class ProfileController {
             bannerUrl = (files.banner[0] as any).location || `/uploads/shops/${(files.banner[0] as any).filename}`;
         }
 
-        return this.profileService.createshop(
+        return this.profileService.createshop_temp(
             userId, 
             body.shop_name, 
             body.slug, 

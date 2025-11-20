@@ -27,7 +27,7 @@ async function main() {
   // --- 1. Dọn dẹp DB (Tùy chọn) ---
   // Cẩn thận: Xóa toàn bộ dữ liệu cũ
   // Xóa theo thứ tự từ bảng con đến bảng cha để tránh lỗi foreign key constraint
-  
+
   // Xóa các bảng liên quan đến messages và chat
   await prisma.message_media.deleteMany({});
   await prisma.message_reactions.deleteMany({});
@@ -35,7 +35,7 @@ async function main() {
   await prisma.messages.deleteMany({});
   await prisma.conversation_participants.deleteMany({});
   await prisma.conversations.deleteMany({});
-  
+
   // Xóa các bảng liên quan đến community
   await prisma.post_tags.deleteMany({});
   await prisma.tags.deleteMany({});
@@ -45,7 +45,7 @@ async function main() {
   await prisma.comments.deleteMany({});
   await prisma.likes.deleteMany({});
   await prisma.follows.deleteMany({});
-  
+
   // Xóa các bảng liên quan đến orders
   await prisma.order_coupons.deleteMany({});
   await prisma.shipments.deleteMany({});
@@ -53,11 +53,11 @@ async function main() {
   await prisma.order_items.deleteMany({});
   await prisma.orders.deleteMany({});
   await prisma.coupons.deleteMany({});
-  
+
   // Xóa các bảng liên quan đến cart
   await prisma.cart_items.deleteMany({});
   await prisma.carts.deleteMany({});
-  
+
   // Xóa các bảng liên quan đến products
   await prisma.wishlists.deleteMany({});
   await prisma.reviews.deleteMany({});
@@ -66,35 +66,35 @@ async function main() {
   await prisma.product_media.deleteMany({});
   await prisma.product_variants.deleteMany({});
   await prisma.products.deleteMany({});
-  
+
   // Xóa các bảng liên quan đến AI
   await prisma.recommendations.deleteMany({});
   await prisma.tryon_sessions.deleteMany({});
   await prisma.skin_analyses.deleteMany({});
-  
+
   // Xóa các bảng admin
   await prisma.audit_logs.deleteMany({});
   await prisma.notifications.deleteMany({});
   await prisma.moderation_logs.deleteMany({});
-  
+
   // Xóa categories và brands
   await prisma.categories.deleteMany({});
   await prisma.brands.deleteMany({});
-  
+
   // Xóa shop staffs trước khi xóa shops
   await prisma.shop_staffs.deleteMany({});
   await prisma.shops.deleteMany({});
-  
+
   // Xóa addresses và auth_identities trước khi xóa users
   await prisma.addresses.deleteMany({});
   await prisma.auth_identities.deleteMany({});
-  
+
   // Xóa permissions
   await prisma.userpermission.deleteMany({});
   await prisma.rolepermission.deleteMany({});
   await prisma.permission.deleteMany({});
   await prisma.role.deleteMany({});
-  
+
   // Cuối cùng xóa users
   await prisma.users.deleteMany({});
 
@@ -106,7 +106,9 @@ async function main() {
       email: 'seller1@shop.com',
       password_hash: 'hashed_password',
       full_name: 'Chủ Shop 1',
-      role: 'seller',
+      role: {
+        connect: { name: 'seller' }
+      }
     },
   });
 
@@ -115,7 +117,9 @@ async function main() {
       email: 'seller2@shop.com',
       password_hash: 'hashed_password',
       full_name: 'Chủ Shop 2',
-      role: 'seller',
+      role: {
+        connect: { name: 'seller' }
+      }
     },
   });
 
