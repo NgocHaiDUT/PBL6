@@ -18,6 +18,21 @@ import { CalculateCartShippingDto } from './dto/calculate-shipping.dto';
 import { PaymentFactory } from 'src/payment/payment.factory';
 import { CreatePaymentUrlDto } from 'src/payment/dto/payment.dto';
 
+interface ProductVariant {
+    id: number;
+    name: string | null;
+    product_id: number;
+    sku: string;
+    shade_hex: string | null;
+    size_label: string | null;
+    price: any;
+    compare_at_price: any;
+    stock: number;
+    is_active: boolean;
+    created_at: Date;
+    updated_at: Date;
+}
+
 @Injectable()
 export class OrderService {
   constructor(
@@ -1406,7 +1421,7 @@ async createOrdersFromItems(
     return this.deliveryService.previewShippingOrder(data);
   }
 
-  async getLeadtime(data: GetLeadtimeDto, shopId: number) {
-    return this.deliveryService.getLeadtime(data, shopId);
-  }
+    async getLeadtime(data: GetLeadtimeDto, shopId: number) {
+        return this.deliveryService.getLeadtime(data, shopId);
+    }
 }

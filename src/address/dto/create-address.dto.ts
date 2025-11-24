@@ -1,15 +1,7 @@
-import {
-  IsBoolean,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsNumber,
-} from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString , IsNumber} from 'class-validator';
 
 export class CreateAddressDto {
-  @IsNotEmpty()
-  @IsNumber()
-  userid: number;
+  // ✅ Removed userid - will be taken from JWT token in controller
 
   @IsOptional()
   @IsString()

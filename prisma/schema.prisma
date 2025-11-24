@@ -88,9 +88,12 @@ model users {
   full_name                 String?
   avatar_url                String?
   phone                     String?
+  story                     String?
   role_id                   Int?
   firstlogin                Boolean?                    @default(true)
   is_active                 Boolean                     @default(true)
+  is_deleted                Boolean                     @default(false)
+  deleted_at                DateTime?
   created_at                DateTime                    @default(now())
   updated_at                DateTime                    @default(now())
   auth_identities           auth_identities[]
@@ -100,7 +103,7 @@ model users {
   wishlists                 wishlists[]
   follows_follower          follows[]                   @relation("follower")
   follows_following         follows[]                   @relation("following")
-  role                      role?                       @relation(fields: [role_id], references: [id])
+  role           role?                       @relation(fields: [role_id], references: [id])
   userPermissions           userpermission[]
   posts                     posts[]
   likes                     likes[]
@@ -116,6 +119,7 @@ model users {
   message_reads             message_reads[]
   carts                     carts?
   orders                    orders[]
+  refresh_tokens            refresh_tokens[]
   shop_staffs               shop_staffs[]
 }
 
@@ -130,6 +134,20 @@ model auth_identities {
   user             users         @relation(fields: [user_id], references: [id])
 
   @@unique([provider, provider_user_id])
+}
+
+// ✅ Refresh Tokens Table - Lưu trữ refresh token để tự động gia hạn access token
+model refresh_tokens {
+  id            Int      @id @default(autoincrement())
+  user_id       Int
+  token         String   @unique
+  expires_at    DateTime
+  created_at    DateTime @default(now())
+  is_revoked    Boolean  @default(false)
+  user          users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([token])
 }
 
 model addresses {
@@ -487,8 +505,6 @@ model posts {
   post_type         String            @default("post")
   title             String?
   content_md        String
-  cover_url         String?
-  video_url         String?
   moderation_status moderation_status @default(pending)
   visibility        String            @default("public")
   view_count        Int               @default(0)
@@ -702,11 +718,21 @@ model messages {
   sender_id       Int
   type            message_type  @default(TEXT)
   content         String?
+  post_id         Int?                 // Shared post ID
+  is_edited       Boolean              @default(false)
+  edited_at       DateTime?
+  is_deleted      Boolean              @default(false)
+  deleted_at      DateTime?
+  reply_to_id     Int?                 // ID of message being replied to
+  created_at      DateTime             @default(now())
+  conversation    conversations        @relation(fields: [conversation_id], references: [id])
+  sender          users                @relation(fields: [sender_id], references: [id])
   payload         Json?
-  created_at      DateTime      @default(now())
-  conversation    conversations   @relation(fields: [conversation_id], references: [id])
-  sender          users           @relation(fields: [sender_id], references: [id])
   message_reads   message_reads[]
+  message_reactions message_reactions[]
+  message_media   message_media[]
+  replies         messages[]           @relation("MessageReplies")
+  reply_to        messages?            @relation("MessageReplies", fields: [reply_to_id], references: [id])
 }
 
 model message_reads {
@@ -717,4 +743,28 @@ model message_reads {
   user       users    @relation(fields: [user_id], references: [id])
 
   @@id([message_id, user_id])
+}
+
+model message_reactions {
+  id         Int      @id @default(autoincrement())
+  message_id Int
+  user_id    Int
+  emoji      String   // Emoji reaction (👍, ❤️, 😂, 😮, 😢, 😡)
+  created_at DateTime @default(now())
+  message    messages @relation(fields: [message_id], references: [id], onDelete: Cascade)
+
+  @@unique([message_id, user_id])
+}
+
+model message_media {
+  id          Int      @id @default(autoincrement())
+  message_id  Int
+  media_url   String
+  media_type  String   // image, video, file
+  file_name   String?
+  file_size   Int?
+  duration    Int?     // For videos (in seconds)
+  thumbnail_url String? // For videos
+  created_at  DateTime @default(now())
+  message     messages @relation(fields: [message_id], references: [id], onDelete: Cascade)
 }

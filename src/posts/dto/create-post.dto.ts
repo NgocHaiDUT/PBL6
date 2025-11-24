@@ -10,6 +10,10 @@ import {
 export class CreatePostDto {
   @IsOptional()
   @IsInt()
+  user_id?: number;
+
+  @IsOptional()
+  @IsInt()
   shop_id?: number;
 
   @IsOptional()

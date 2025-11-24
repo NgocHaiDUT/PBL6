@@ -1,55 +1,47 @@
 import { Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private readonly PrismaService: PrismaService,
-    private jwtService: JwtService,
-  ) {}
-  async register(
-    email: string,
-    full_name: string,
-    phone: string,
-    password: string,
-  ) {
-    const existingUser = await this.PrismaService.users.findUnique({
-      where: { email },
-    });
-    if (existingUser) {
-      return { success: false, message: 'Email đã được sử dụng' };
-    }
-    const roleuserid = await this.PrismaService.role.findUnique({
-      where: { name: 'user' },
-      include: {
-        rolePermissions: {
-          select: {
-            permission_id: true,
-          },
-        },
-      },
-    });
+    constructor(
+        private readonly PrismaService: PrismaService,
+        private jwtService: JwtService
+    ) {}
+    async register(email: string, full_name: string,phone: string,password : string) {
+        
+        const existingUser = await this.PrismaService.users.findUnique({ where: { email } });
+        if (existingUser) {
+            return {success:false, message: 'Email đã được sử dụng' };
+        }
+        const roleuserid = await this.PrismaService.role.findUnique ({
+            where : {name : "user"},
+            include: {
+                rolePermissions: {
+                    select: {
+                        permission_id: true
+                    }
+                }
+            }
+        });
 
-    if (!roleuserid) {
-      return {
-        success: false,
-        message: 'Lỗi hệ thống: Không tìm thấy role user',
-      };
-    }
 
-    const newUser = await this.PrismaService.users.create({
-      data: {
-        email: email,
-        full_name: full_name,
-        phone: phone,
-        password_hash: password,
-        avatar_url: '',
-        role_id: roleuserid.id,
-        firstlogin: true,
-      },
-    });
+        if (!roleuserid) {
+        return { success: false, message: 'Lỗi hệ thống: Không tìm thấy role user' };
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = await this.PrismaService.users.create({
+            data: { 
+                email : email, 
+                full_name : full_name,
+                phone  : phone,
+                password_hash : hashedPassword,
+                avatar_url : "",
+                role_id : roleuserid.id,
+                firstlogin : true
+                },
+        });
 
     if (roleuserid.rolePermissions && roleuserid.rolePermissions.length > 0) {
       const userPermissionsData = roleuserid.rolePermissions.map((rp) => ({
@@ -146,9 +138,22 @@ export class AuthService {
     return { success: true, message: 'Đổi mật khẩu thành công' };
   }
 
-  async getUserById(id: number) {
-    return await this.PrismaService.users.findUnique({ where: { id } });
-  }
+    async getUserById(id: number) {
+        return await this.PrismaService.users.findUnique({ where: { id } });
+    }
+
+    async getUserByEmail(email: string) {
+        return await this.PrismaService.users.findUnique({ 
+            where: { email },
+            include: {
+                role: {
+                    select: {
+                        name: true,
+                    },
+                },
+            },
+        });
+    }
 
   async changePasswordFirstTime(userId: number, newPassword: string) {
     const user = await this.PrismaService.users.findUnique({

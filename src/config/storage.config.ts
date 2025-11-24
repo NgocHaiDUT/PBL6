@@ -25,7 +25,7 @@ const createUploadDir = (dir: string) => {
   }
 };
 
-const getStorage = (directory: string) => {
+const getStorage = (directory: string, dynamicPath: boolean = false) => {
   if (storageDriver === 's3') {
     return multerS3({
       s3: s3,
@@ -36,15 +36,25 @@ const getStorage = (directory: string) => {
       key: function (req, file, cb) {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         const extension = extname(file.originalname);
-        cb(null, `${directory}/${uniqueSuffix}${extension}`);
-      },
+        // ✅ Phân chia video/image cho S3
+        const actualDirectory = dynamicPath && file.mimetype.startsWith('video/') 
+          ? 'videos' 
+          : directory;
+        cb(null, `${actualDirectory}/${uniqueSuffix}${extension}`);
+      }
     });
   } else {
     // local storage
-    const localDirectory = `uploads/${directory}`;
-    createUploadDir(localDirectory);
     return diskStorage({
       destination: (req, file, cb) => {
+        // ✅ Phân chia video vào uploads/videos, image vào uploads/postimages
+        let localDirectory;
+        if (dynamicPath && file.mimetype.startsWith('video/')) {
+          localDirectory = 'uploads/videos';
+        } else {
+          localDirectory = `uploads/${directory}`;
+        }
+        createUploadDir(localDirectory);
         cb(null, localDirectory);
       },
       filename: (req, file, cb) => {
@@ -118,8 +128,12 @@ export const getMulterOptions = (
   if (!validator) {
     throw new Error(`Invalid type specified for getMulterOptions: ${type}`);
   }
+  
+  // ✅ Sử dụng dynamicPath=true cho type='media' để phân chia video/image
+  const useDynamicPath = type === 'media';
+  
   return {
-    storage: getStorage(directory),
+    storage: getStorage(directory, useDynamicPath),
     fileFilter: validator.filter,
     limits: {
       fileSize: validator.limit,

@@ -226,14 +226,60 @@ export class MessagesService {
 
   // Gửi tin nhắn
   async sendMessage(userId: number, createMessageDto: CreateMessageDto) {
-    const { conversation_id, content, type, payload } = createMessageDto;
+    const { conversation_id, sender_id, receiver_id, content, postId, messageType } = createMessageDto;
+    
+    let finalConversationId = conversation_id;
+    
+    // If conversation_id not provided, find or create conversation using sender_id and receiver_id
+    if (!finalConversationId && sender_id && receiver_id) {
+      const conversations = await this.prisma.conversations.findMany({
+        where: {
+          type: 'private'
+        },
+        include: {
+          participants: true
+        }
+      });
+
+      let conversation = conversations.find(conv => {
+        const userIds = conv.participants.map(p => p.user_id).sort();
+        const targetIds = [sender_id, receiver_id].sort();
+        return userIds.length === 2 && 
+               userIds[0] === targetIds[0] && 
+               userIds[1] === targetIds[1];
+      });
+
+      if (!conversation) {
+        // Create new conversation
+        conversation = await this.prisma.conversations.create({
+          data: {
+            type: 'private',
+            participants: {
+              create: [
+                { user_id: sender_id },
+                { user_id: receiver_id }
+              ]
+            }
+          },
+          include: {
+            participants: true
+          }
+        });
+      }
+      
+      finalConversationId = conversation.id;
+    }
+
+    if (!finalConversationId) {
+      throw new BadRequestException('Either conversation_id or both sender_id and receiver_id must be provided');
+    }
 
     // Kiểm tra user có quyền gửi tin nhắn trong conversation này không
     const participant = await this.prisma.conversation_participants.findFirst({
       where: {
-        conversation_id,
-        user_id: userId,
-      },
+        conversation_id: finalConversationId,
+        user_id: sender_id || userId
+      }
     });
 
     if (!participant) {
@@ -245,11 +291,11 @@ export class MessagesService {
     // Tạo tin nhắn
     const message = await this.prisma.messages.create({
       data: {
-        conversation_id,
-        sender_id: userId,
+        conversation_id: finalConversationId,
+        sender_id: sender_id || userId,
         content,
-        type: type || 'TEXT',
-        payload,
+        post_id: postId, // ✅ Include postId
+        type: messageType, // ✅ Include messageType as enum
       },
       include: {
         sender: {
@@ -266,8 +312,8 @@ export class MessagesService {
     await this.prisma.message_reads.create({
       data: {
         message_id: message.id,
-        user_id: userId,
-      },
+        user_id: sender_id || userId
+      }
     });
 
     return message;
@@ -454,8 +500,10 @@ export class MessagesService {
     return this.prisma.messages.count({
       where: {
         conversation_id: conversationId,
+        sender_id: {
+          not: userId // Không đếm tin nhắn của chính mình
+        },
         NOT: {
-          sender_id: userId, // Không đếm tin nhắn của chính mình
           message_reads: {
             some: {
               user_id: userId,
@@ -468,47 +516,63 @@ export class MessagesService {
 
   // Tìm kiếm cuộc hội thoại với user khác
   async findOrCreateConversation(userId: number, otherUserId: number) {
+    console.log(`🔍 [findOrCreateConversation] Finding conversation between users ${userId} and ${otherUserId}`);
+    
     if (userId === otherUserId) {
       throw new BadRequestException('Cannot create conversation with yourself');
     }
 
-    // Tìm conversation private đã tồn tại
-    const existingConversation = await this.prisma.conversations.findFirst({
-      where: {
-        type: 'private',
-        participants: {
-          every: {
-            user_id: { in: [userId, otherUserId] },
-          },
+    try {
+      // Tìm tất cả conversations private của userId
+      const userConversations = await this.prisma.conversations.findMany({
+        where: {
+          type: 'private',
+          participants: {
+            some: {
+              user_id: userId
+            }
+          }
         },
-      },
-      include: {
-        participants: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                full_name: true,
-                avatar_url: true,
-              },
-            },
-          },
-        },
-      },
-    });
+        include: {
+          participants: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  full_name: true,
+                  avatar_url: true,
+                }
+              }
+            }
+          }
+        }
+      });
 
-    if (
-      existingConversation &&
-      existingConversation.participants.length === 2
-    ) {
-      return existingConversation;
+      console.log(`📋 [findOrCreateConversation] Found ${userConversations.length} conversations for user ${userId}`);
+
+      // Tìm conversation có đúng 2 participants: userId và otherUserId
+      const existingConversation = userConversations.find(conv => {
+        if (conv.participants.length !== 2) return false;
+        const participantIds = conv.participants.map(p => p.user_id).sort();
+        const targetIds = [userId, otherUserId].sort();
+        return participantIds[0] === targetIds[0] && participantIds[1] === targetIds[1];
+      });
+
+      if (existingConversation) {
+        console.log(`✅ [findOrCreateConversation] Found existing conversation:`, existingConversation.id);
+        return existingConversation;
+      }
+
+      // Tạo conversation mới
+      console.log(`➕ [findOrCreateConversation] Creating new conversation`);
+      return this.createConversation(userId, {
+        participant_ids: [otherUserId],
+        type: 'private'
+      });
+    } catch (error) {
+      console.error('❌ [findOrCreateConversation] Error:', error);
+      throw error;
     }
-
-    // Tạo conversation mới
-    return this.createConversation(userId, {
-      participant_ids: [otherUserId],
-      type: 'private',
-    });
   }
 
   // Xóa tin nhắn (chỉ người gửi mới có thể xóa)

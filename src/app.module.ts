@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -18,13 +18,19 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ChatModule } from './chat/chat.module';
 import { HttpModule } from '@nestjs/axios';
 import { ProductModule } from './product/product.module';
+import { CartModule } from './cart/cart.module';
 import { DataInitModule } from './data-init/data-init.module';
+import { join } from 'path';
 import { ShopModule } from './shop/shop.module';
-
 import { OrderModule } from './order/order.module';
 import { AddressModule } from './address/address.module';
 import { ShopAddressModule } from './shop-address/shop-address.module';
 import { DeliveryModule } from './delivery/delivery.module';
+import { UsersModule } from './users/users.module';
+import { RangeRequestMiddleware } from './middleware/range-request.middleware';
+import { SearchModule } from './search/search.module';
+import { ReviewsModule } from './reviews/reviews.module'; // ✅ Add ReviewsModule
+
 import { PaymentController } from './payment/payment.controller';
 import { PaymentModule } from './payment/payment.module';
 @Module({
@@ -66,16 +72,21 @@ import { PaymentModule } from './payment/payment.module';
     ProfileModule,
     MessagesModule,
     MakeupModule,
-    CommentsModule,
-    LikesModule,
-    FollowsModule,
-    NotificationsModule,
-    ChatModule,
-    ProductModule,
+    CommentsModule, // ✅ Add CommentsModule
+    LikesModule, // ✅ Add LikesModule
+    FollowsModule, // ✅ Add FollowsModule
+    NotificationsModule, // ✅ Add NotificationsModule
+    ChatModule, // ✅ Add ChatModule
+    ProductModule, // ✅ Add ProductModule
+    CartModule, // ✅ Add CartModule
+    DataInitModule, // ✅ Add DataInitModule
     OrderModule,
     DataInitModule,
     AddressModule,
     ShopAddressModule,
+    SearchModule, // ✅ Add SearchModule
+    ReviewsModule, // ✅ Add ReviewsModule
+
     HttpModule.register({
       timeout: 30000,
       maxContentLength: 50 * 1024 * 1024, // 50MB
@@ -85,9 +96,17 @@ import { PaymentModule } from './payment/payment.module';
     DataInitModule,
     ShopModule,
     DeliveryModule,
+    UsersModule,
     PaymentModule,
   ],
   controllers: [AppController, PaymentController],
   providers: [AppService, PrismaService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // Apply RangeRequestMiddleware to all /uploads/* routes
+    consumer
+      .apply(RangeRequestMiddleware)
+      .forRoutes('uploads/*');
+  }
+}

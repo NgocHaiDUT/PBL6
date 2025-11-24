@@ -2,16 +2,28 @@ import { IsString, IsInt, IsOptional, IsIn, IsObject } from 'class-validator';
 import { message_type } from '@prisma/client';
 
 export class CreateMessageDto {
+  @IsOptional()
   @IsInt()
-  conversation_id: number;
+  conversation_id?: number;
+
+  @IsOptional()
+  @IsInt()
+  sender_id?: number;
+
+  @IsOptional()
+  @IsInt()
+  receiver_id?: number;
 
   @IsOptional()
   @IsString()
-  content?: string;
+  content: string;
 
   @IsOptional()
-  @IsIn(Object.values(message_type))
-  type?: message_type;
+  @IsInt()
+  postId?: number;
+
+  @IsOptional()
+  messageType?: message_type;
 
   @IsOptional()
   @IsObject()

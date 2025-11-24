@@ -17,8 +17,8 @@ import { NotificationHelperService } from '../notifications/notification-helper.
 export class LikesService {
   constructor(
     private prisma: PrismaService,
-    private notificationHelper: NotificationHelperService,
-  ) {}
+    private notificationHelper: NotificationHelperService
+  ) { }
 
   async create(
     createLikeDto: CreateLikeDto,
@@ -68,6 +68,26 @@ export class LikesService {
     }
 
     return like;
+  }
+
+  async getTotalLikesByUser(userId: number): Promise<{ total_likes: number }> {
+    // 1. Lấy tất cả post của user
+    const userPosts = await this.prisma.posts.findMany({
+      where: { user_id: userId },
+      select: { id: true }
+    });
+
+    // 2. Đếm like trên các post đó
+    const postLikeCount = await this.prisma.likes.count({
+      where: {
+        target_type: 'post',
+        target_id: { in: userPosts.map(p => p.id) }
+      }
+    });
+
+    const total_likes = postLikeCount;
+
+    return { total_likes };
   }
 
   async findAll(queryDto: QueryLikesDto): Promise<PaginatedLikesResponse> {
