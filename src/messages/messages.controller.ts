@@ -30,7 +30,10 @@ export class MessagesController {
   ) {
     // const userId = req.user.id; // Lấy từ JWT token
     const userId = 1; // Mock user ID for now
-    return this.messagesService.createConversation(userId, createConversationDto);
+    return this.messagesService.createConversation(
+      userId,
+      createConversationDto,
+    );
   }
 
   // Lấy danh sách cuộc hội thoại của user
@@ -48,10 +51,7 @@ export class MessagesController {
   // Lấy chi tiết cuộc hội thoại
   @Get('conversations/:id')
   // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
-  getConversation(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
-  ) {
+  getConversation(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     // const userId = req.user.id; // Lấy từ JWT token
     const userId = 1; // Mock user ID for now
     return this.messagesService.getConversationById(id, userId);

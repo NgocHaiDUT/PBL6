@@ -3,8 +3,8 @@ import { ProductController } from './product.controller';
 import { ProductService } from './product.service';
 import { PrismaModule } from 'src/prisma/prisma.module';
 @Module({
-  imports : [PrismaModule],
+  imports: [PrismaModule],
   controllers: [ProductController],
-  providers: [ProductService]
+  providers: [ProductService],
 })
 export class ProductModule {}

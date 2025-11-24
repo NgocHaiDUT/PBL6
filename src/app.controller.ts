@@ -1,4 +1,4 @@
-import { Controller, Get, Query,Param } from '@nestjs/common';
+import { Controller, Get, Query, Param } from '@nestjs/common';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma/prisma.service';
 
@@ -6,7 +6,7 @@ import { PrismaService } from './prisma/prisma.service';
 export class AppController {
   constructor(
     private readonly appService: AppService,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
   ) {}
 
   @Get()
@@ -41,7 +41,7 @@ export class AppController {
   @Get('users/:id')
   async getUserById(@Param('id') id: string) {
     const userId = parseInt(id);
-    
+
     const user = await this.prisma.users.findUnique({
       where: { id: userId },
       select: {

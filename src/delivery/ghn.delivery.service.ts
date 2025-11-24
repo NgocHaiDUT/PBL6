@@ -12,7 +12,6 @@ import {
   GetLeadtimeDto,
 } from './dto/ghn-order.dto';
 
-
 @Injectable()
 export class GHNDeliveryService extends DeliveryService {
   private readonly token: string;
@@ -247,7 +246,12 @@ export class GHNDeliveryService extends DeliveryService {
       Token: this.token,
       ShopId: shopId.toString(),
     };
-    return this.makeRequest('v2/shipping-order/leadtime', 'post', data, headers);
+    return this.makeRequest(
+      'v2/shipping-order/leadtime',
+      'post',
+      data,
+      headers,
+    );
   }
 
   async getPrintToken(orderCodes: string[]) {
@@ -256,4 +260,3 @@ export class GHNDeliveryService extends DeliveryService {
     });
   }
 }
-

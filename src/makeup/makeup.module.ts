@@ -6,6 +6,6 @@ import { MakeupController } from './makeup.controller';
 @Module({
   imports: [HttpModule],
   providers: [MakeupService],
-  controllers: [MakeupController]
+  controllers: [MakeupController],
 })
 export class MakeupModule {}

@@ -30,9 +30,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException();
     }
 
-    const permissions = user.userPermissions.map(
-      (up) => up.permission.name,
-    );
+    const permissions = user.userPermissions.map((up) => up.permission.name);
 
     // The object returned here will be attached to the request object as `req.user`.
     return {

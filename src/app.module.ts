@@ -24,40 +24,42 @@ import { ShopModule } from './shop/shop.module';
 import { OrderModule } from './order/order.module';
 import { AddressModule } from './address/address.module';
 import { ShopAddressModule } from './shop-address/shop-address.module';
-import { GhnModule } from './ghn/ghn.module';
 import { DeliveryModule } from './delivery/delivery.module';
+import { PaymentController } from './payment/payment.controller';
+import { PaymentModule } from './payment/payment.module';
 @Module({
   imports: [
     AuthModule,
     MailerModule.forRootAsync({
-      imports: [ConfigModule.forRoot({
-      isGlobal: true,        
-      envFilePath: '.env',  
-      }),],
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+          envFilePath: '.env',
+        }),
+      ],
       useFactory: async (ConfigService: ConfigService) => ({
         transport: {
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: {
-          user: ConfigService.get<string>('EMAIL_USER'),
-          pass: ConfigService.get<string>('EMAIL_PASS'),
+          host: 'smtp.gmail.com',
+          port: 465,
+          secure: true,
+          auth: {
+            user: ConfigService.get<string>('EMAIL_USER'),
+            pass: ConfigService.get<string>('EMAIL_PASS'),
+          },
         },
-      },
-      defaults: {
-        from: '"No Reply" <no-reply@localhost>',
-      },
-      preview: true,
-      template: {
-        dir: process.cwd() + '/template/',
-        adapter: new HandlebarsAdapter(), 
-        options: {
-          strict: true,
+        defaults: {
+          from: '"No Reply" <no-reply@localhost>',
         },
-      },
+        preview: true,
+        template: {
+          dir: process.cwd() + '/template/',
+          adapter: new HandlebarsAdapter(),
+          options: {
+            strict: true,
+          },
+        },
       }),
       inject: [ConfigService],
-      
     }),
     PrismaModule,
     PostsModule,
@@ -74,7 +76,6 @@ import { DeliveryModule } from './delivery/delivery.module';
     DataInitModule,
     AddressModule,
     ShopAddressModule,
-    GhnModule,
     HttpModule.register({
       timeout: 30000,
       maxContentLength: 50 * 1024 * 1024, // 50MB
@@ -84,8 +85,9 @@ import { DeliveryModule } from './delivery/delivery.module';
     DataInitModule,
     ShopModule,
     DeliveryModule,
+    PaymentModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, PaymentController],
   providers: [AppService, PrismaService],
 })
 export class AppModule {}

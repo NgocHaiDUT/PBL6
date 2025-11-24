@@ -1,4 +1,10 @@
-import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsNumber } from 'class-validator';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsNumber,
+} from 'class-validator';
 
 export class UpdateAddressDto {
   @IsNotEmpty()

@@ -91,7 +91,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       };
 
       // 4. Send message to both users in the conversation
-      conversation.participants.forEach(participant => {
+      conversation.participants.forEach((participant) => {
         this.server
           .to(`${participant.user_id}`)
           .emit('newMessage', formattedMessage);
@@ -117,34 +117,43 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      this.logger.log(`User ${data.userId} attempting to delete message ${data.messageId}`);
-      
+      this.logger.log(
+        `User ${data.userId} attempting to delete message ${data.messageId}`,
+      );
+
       // Use the service to delete the message
-      const result = await this.messagesService.deleteMessage(data.messageId, data.userId);
+      const result = await this.messagesService.deleteMessage(
+        data.messageId,
+        data.userId,
+      );
 
       // Find conversation to notify participants
       const message = await this.messagesService.getMessageById(data.messageId); // You might need to create this service method
       if (message) {
-        const conversation = await this.messagesService.getConversationById(message.conversation_id, data.userId);
+        const conversation = await this.messagesService.getConversationById(
+          message.conversation_id,
+          data.userId,
+        );
         if (conversation) {
           // Notify all participants about the deletion
-          conversation.participants.forEach(p => {
-            this.server.to(`${p.user_id}`).emit('messageDeleted', { 
-              messageId: data.messageId, 
-              conversationId: conversation.id 
+          conversation.participants.forEach((p) => {
+            this.server.to(`${p.user_id}`).emit('messageDeleted', {
+              messageId: data.messageId,
+              conversationId: conversation.id,
             });
           });
         }
       }
 
       client.emit('messageDeletionResult', { success: true, ...result });
-
     } catch (error) {
       this.logger.error(`Failed to delete message ${data.messageId}:`, error);
-      client.emit('messageDeletionResult', { success: false, error: error.message });
+      client.emit('messageDeletionResult', {
+        success: false,
+        error: error.message,
+      });
     }
   }
-
 
   @SubscribeMessage('openChat')
   async handleOpenChat(
@@ -154,7 +163,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       if (!data || !data.openerId || !data.targetId) return;
 
-      this.logger.log(`User ${data.openerId} opening chat with ${data.targetId}`);
+      this.logger.log(
+        `User ${data.openerId} opening chat with ${data.targetId}`,
+      );
 
       // 1. Find or create conversation
       const conversation = await this.messagesService.findOrCreateConversation(
@@ -171,7 +182,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // 3. Get target user info from conversation participants
       const targetUserParticipant = conversation.participants.find(
-        p => p.user_id === data.targetId,
+        (p) => p.user_id === data.targetId,
       );
 
       if (!targetUserParticipant) {
@@ -180,11 +191,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const targetUser = targetUserParticipant.user;
 
       // 4. Format messages for frontend
-      const formattedMessages = messageHistory.data.map(msg => ({
+      const formattedMessages = messageHistory.data.map((msg) => ({
         id: msg.id,
         conversationId: msg.conversation_id,
         senderId: msg.sender_id,
-        receiverId: data.targetId === msg.sender_id ? data.openerId : data.targetId,
+        receiverId:
+          data.targetId === msg.sender_id ? data.openerId : data.targetId,
         content: msg.content,
         type: msg.type,
         payload: msg.payload,
@@ -236,8 +248,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       );
 
       // Notify other participants that messages have been read
-      const conversation = await this.messagesService.getConversationById(data.conversationId, data.userId);
-      const partner = conversation.participants.find(p => p.user_id !== data.userId);
+      const conversation = await this.messagesService.getConversationById(
+        data.conversationId,
+        data.userId,
+      );
+      const partner = conversation.participants.find(
+        (p) => p.user_id !== data.userId,
+      );
       if (partner) {
         this.server.to(`${partner.user_id}`).emit('conversationMarkedRead', {
           conversationId: data.conversationId,

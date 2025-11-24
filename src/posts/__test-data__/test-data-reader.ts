@@ -6,17 +6,16 @@ export interface TestCase {
   testCaseDescription: string;
   input: any;
   expectedResult: any;
-  mockSetup?: Record<string, any>; 
+  mockSetup?: Record<string, any>;
 }
 
 export interface TestDataCollection {
   createPost?: TestCase[];
-  deletePost? : TestCase[];
+  deletePost?: TestCase[];
   [key: string]: TestCase[] | undefined;
 }
 
 export class TestDataReader {
- 
   static readFromJSON(fileName: string): TestDataCollection {
     try {
       const filePath = path.join(__dirname, fileName);
@@ -28,7 +27,10 @@ export class TestDataReader {
     }
   }
 
-  static getTestCasesForFunction(fileName: string, functionName: string): TestCase[] {
+  static getTestCasesForFunction(
+    fileName: string,
+    functionName: string,
+  ): TestCase[] {
     const allTestData = this.readFromJSON(fileName);
     return allTestData[functionName] || [];
   }
