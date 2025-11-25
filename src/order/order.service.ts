@@ -228,481 +228,615 @@ export class OrderService {
     };
   }
 
-async createOrdersFromItems(
-  userId: number,
-  shippingAddressId: number,
-  items: { variant_id: number; quantity: number }[],
-  note?: string,
-  paymentMethod?: string,
-  req?: any,
-) {
-  try {
-    if (!items || items.length === 0) {
-      return { success: false, message: 'No items provided for checkout.' };
-    }
+  async createOrdersFromItems(
+    userId: number,
+    shippingAddressId: number,
+    items: { variant_id: number; quantity: number }[],
+    note?: string,
+    paymentMethod?: string,
+    req?: any,
+  ) {
+    try {
+      if (!items || items.length === 0) {
+        return { success: false, message: 'No items provided for checkout.' };
+      }
 
-    const normalizedPaymentMethod: 'cod' | 'vnpay' =
-      paymentMethod && paymentMethod.toLowerCase() === 'vnpay'
-        ? 'vnpay'
-        : 'cod';
+      const normalizedPaymentMethod: 'cod' | 'vnpay' =
+        paymentMethod && paymentMethod.toLowerCase() === 'vnpay'
+          ? 'vnpay'
+          : 'cod';
 
-    // 1. Fetch all product/variant/shop details
-    const variantIds = items.map((item) => item.variant_id);
-    const variants = await this.prisma.product_variants.findMany({
-      where: { id: { in: variantIds } },
-      include: {
-        product: {
-          include: {
-            shop: true,
-            product_variants: true,
-          },
-        },
-      },
-    });
-
-    const variantMap = new Map(variants.map((v) => [v.id, v]));
-    const cartItems = items.map((item) => {
-      const variant = variantMap.get(item.variant_id);
-      if (!variant)
-        throw new NotFoundException(
-          `Variant with ID ${item.variant_id} not found.`,
-        );
-      return {
-        ...item,
-        product: variant.product,
-        variant: variant,
-      };
-    });
-
-    // 2. Validate shipping address
-    const shippingAddress = await this.prisma.addresses.findFirst({
-      where: { id: shippingAddressId, user_id: userId },
-    });
-
-    if (
-      !shippingAddress ||
-      !shippingAddress.ghn_province_id ||
-      !shippingAddress.ghn_district_id ||
-      !shippingAddress.ghn_ward_code
-    ) {
-      return {
-        success: false,
-        message: 'Địa chỉ giao hàng không hợp lệ hoặc thiếu thông tin GHN',
-      };
-    }
-
-    // 3. Group items by shop
-    const itemsByShop = cartItems.reduce<Record<number, typeof cartItems>>(
-      (acc, item) => {
-        const shopId = item.product.shop_id;
-        if (!acc[shopId]) acc[shopId] = [];
-        acc[shopId].push(item);
-        return acc;
-      },
-      {},
-    );
-
-    const createdOrders: any[] = [];
-
-    // Create orders per shop
-    for (const [shopId, items] of Object.entries(itemsByShop)) {
-      const newOrder = await this.prisma.$transaction(async (tx) => {
-        let subtotal = 0;
-        const orderItems: any[] = [];
-
-        const shop = await tx.shops.findUnique({
-          where: { id: Number(shopId) },
-          include: {
-            addresses: {
-              where: { is_default: true },
-              take: 1,
+      // 1. Fetch all product/variant/shop details
+      const variantIds = items.map((item) => item.variant_id);
+      const variants = await this.prisma.product_variants.findMany({
+        where: { id: { in: variantIds } },
+        include: {
+          product: {
+            include: {
+              shop: true,
+              product_variants: true,
             },
           },
-        });
+        },
+      });
 
-        if (
-          !shop ||
-          !shop.addresses[0] ||
-          !shop.ghn_shop_id ||
-          !shop.addresses[0].ghn_district_id ||
-          !shop.addresses[0].ghn_ward_code
-        ) {
-          throw new BadRequestException(
-            `Shop ${shop?.name || shopId} không có địa chỉ lấy hàng mặc định hoặc chưa đăng ký GHN.`,
+      const variantMap = new Map(variants.map((v) => [v.id, v]));
+      const cartItems = items.map((item) => {
+        const variant = variantMap.get(item.variant_id);
+        if (!variant)
+          throw new NotFoundException(
+            `Variant with ID ${item.variant_id} not found.`,
           );
-        }
+        return {
+          ...item,
+          product: variant.product,
+          variant: variant,
+        };
+      });
 
-        const pickupAddress = shop.addresses[0];
-        const ghnItems: CreateOrderItemDto[] = [];
-        const productNames: string[] = [];
+      // 2. Validate shipping address
+      const shippingAddress = await this.prisma.addresses.findFirst({
+        where: { id: shippingAddressId, user_id: userId },
+      });
 
-        for (const cartItem of items) {
-          const variant =
-            cartItem.variant || cartItem.product.product_variants[0];
+      if (
+        !shippingAddress ||
+        !shippingAddress.ghn_province_id ||
+        !shippingAddress.ghn_district_id ||
+        !shippingAddress.ghn_ward_code
+      ) {
+        return {
+          success: false,
+          message: 'Địa chỉ giao hàng không hợp lệ hoặc thiếu thông tin GHN',
+        };
+      }
 
-          const quantity = cartItem.quantity;
-          const unitPrice = Number(variant?.price || 0);
-          const lineTotal = unitPrice * quantity;
+      // 3. Group items by shop
+      const itemsByShop = cartItems.reduce<Record<number, typeof cartItems>>(
+        (acc, item) => {
+          const shopId = item.product.shop_id;
+          if (!acc[shopId]) acc[shopId] = [];
+          acc[shopId].push(item);
+          return acc;
+        },
+        {},
+      );
 
-          subtotal += lineTotal;
-          productNames.push(
-            `${cartItem.product.name} (${variant?.name || 'N/A'}) x${quantity}`,
-          );
+      const createdOrders: any[] = [];
 
-          orderItems.push({
-            product_id: cartItem.product.id,
-            variant_id: cartItem.variant_id,
-            name_snapshot: cartItem.product.name,
-            variant_snapshot: variant?.name || '',
-            unit_price: unitPrice,
-            quantity: quantity,
-            line_total: lineTotal,
+      // Create orders per shop
+      for (const [shopId, items] of Object.entries(itemsByShop)) {
+        const newOrder = await this.prisma.$transaction(async (tx) => {
+          let subtotal = 0;
+          const orderItems: any[] = [];
+
+          const shop = await tx.shops.findUnique({
+            where: { id: Number(shopId) },
+            include: {
+              addresses: {
+                where: { is_default: true },
+                take: 1,
+              },
+            },
           });
 
-          ghnItems.push({
-            name: cartItem.product.name,
-            code: variant?.sku || cartItem.product.id.toString(),
-            quantity: quantity,
-            price: Math.round(unitPrice),
-            length: variant?.length ?? undefined,
-            width: variant?.width ?? undefined,
-            height: variant?.height ?? undefined,
-            weight: variant?.weight ?? undefined,
-          });
-        }
-
-        // Calculate shipping fee
-        let shippingFee = 0;
-        let expectedDeliveryTime: Date | undefined;
-        let cheapestService: {
-          service_id: number;
-          service_type_id: number;
-          fee: number;
-        } | null = null;
-
-        try {
-          const availableServices =
-            await this.deliveryService.getAvailableServices({
-              from_district: pickupAddress.ghn_district_id!,
-              to_district: shippingAddress.ghn_district_id!,
-              shop_id: shop.ghn_shop_id,
-            });
-
-          if (!availableServices || availableServices.length === 0) {
-            throw new Error('Không có dịch vụ vận chuyển nào từ GHN.');
+          if (
+            !shop ||
+            !shop.addresses[0] ||
+            !shop.ghn_shop_id ||
+            !shop.addresses[0].ghn_district_id ||
+            !shop.addresses[0].ghn_ward_code
+          ) {
+            throw new BadRequestException(
+              `Shop ${shop?.name || shopId} không có địa chỉ lấy hàng mặc định hoặc chưa đăng ký GHN.`,
+            );
           }
 
-          const allItemsHaveDimensions = ghnItems.every(
-            (item) => item.length && item.width && item.height && item.weight,
-          );
+          const pickupAddress = shop.addresses[0];
+          const ghnItems: CreateOrderItemDto[] = [];
+          const productNames: string[] = [];
 
-          const feePromises = availableServices.map(async (service) => {
-            if (service.service_type_id === 5 && !allItemsHaveDimensions) {
-              return null;
+          for (const cartItem of items) {
+            const variant =
+              cartItem.variant || cartItem.product.product_variants[0];
+
+            const quantity = cartItem.quantity;
+            const unitPrice = Number(variant?.price || 0);
+            const lineTotal = unitPrice * quantity;
+
+            subtotal += lineTotal;
+            productNames.push(
+              `${cartItem.product.name} (${variant?.name || 'N/A'}) x${quantity}`,
+            );
+
+            orderItems.push({
+              product_id: cartItem.product.id,
+              variant_id: cartItem.variant_id,
+              name_snapshot: cartItem.product.name,
+              variant_snapshot: variant?.name || '',
+              unit_price: unitPrice,
+              quantity: quantity,
+              line_total: lineTotal,
+            });
+
+            ghnItems.push({
+              name: cartItem.product.name,
+              code: variant?.sku || cartItem.product.id.toString(),
+              quantity: quantity,
+              price: Math.round(unitPrice),
+              length: variant?.length ?? undefined,
+              width: variant?.width ?? undefined,
+              height: variant?.height ?? undefined,
+              weight: variant?.weight ?? undefined,
+            });
+          }
+
+          // Calculate shipping fee
+          let shippingFee = 0;
+          let expectedDeliveryTime: Date | undefined;
+          let cheapestService: {
+            service_id: number;
+            service_type_id: number;
+            fee: number;
+          } | null = null;
+
+          try {
+            const availableServices =
+              await this.deliveryService.getAvailableServices({
+                from_district: pickupAddress.ghn_district_id!,
+                to_district: shippingAddress.ghn_district_id!,
+                shop_id: shop.ghn_shop_id,
+              });
+
+            if (!availableServices || availableServices.length === 0) {
+              throw new Error('Không có dịch vụ vận chuyển nào từ GHN.');
             }
 
-            try {
-              const feeDto: CalculateFeeDto = {
+            const allItemsHaveDimensions = ghnItems.every(
+              (item) => item.length && item.width && item.height && item.weight,
+            );
+
+            const feePromises = availableServices.map(async (service) => {
+              if (service.service_type_id === 5 && !allItemsHaveDimensions) {
+                return null;
+              }
+
+              try {
+                const feeDto: CalculateFeeDto = {
+                  from_district_id: pickupAddress.ghn_district_id!,
+                  from_ward_code: pickupAddress.ghn_ward_code!,
+                  to_district_id: shippingAddress.ghn_district_id!,
+                  to_ward_code: shippingAddress.ghn_ward_code!,
+                  service_id: service.service_id,
+                  service_type_id: service.service_type_id,
+                  insurance_value: Math.round(subtotal),
+                  cod_amount:
+                    normalizedPaymentMethod === 'cod'
+                      ? Math.round(subtotal)
+                      : 0,
+                  height: ghnItems.reduce(
+                    (sum, item) => sum + (item.height || 0) * item.quantity,
+                    0,
+                  ),
+                  length: Math.max(...ghnItems.map((item) => item.length || 0)),
+                  width: Math.max(...ghnItems.map((item) => item.width || 0)),
+                  weight: ghnItems.reduce(
+                    (sum, item) => sum + (item.weight || 0) * item.quantity,
+                    0,
+                  ),
+                  items: ghnItems,
+                };
+
+                const feeResponse =
+                  await this.deliveryService.calculateShippingFee(feeDto);
+
+                return {
+                  service_id: service.service_id,
+                  service_type_id: service.service_type_id,
+                  fee: feeResponse.total,
+                };
+              } catch {
+                return null;
+              }
+            });
+
+            const feeResults = (await Promise.all(feePromises)).filter(
+              (r): r is { service_id: number; service_type_id: number; fee: number } =>
+                r !== null,
+            );
+
+            if (feeResults.length === 0) {
+              throw new Error(
+                'Không thể tính phí vận chuyển cho dịch vụ nào.',
+              );
+            }
+
+            cheapestService = feeResults.reduce((p, c) =>
+              p.fee < c.fee ? p : c,
+            );
+            shippingFee = cheapestService.fee;
+
+            // Leadtime
+            const leadtimeResponse = await this.deliveryService.getLeadtime(
+              {
                 from_district_id: pickupAddress.ghn_district_id!,
                 from_ward_code: pickupAddress.ghn_ward_code!,
                 to_district_id: shippingAddress.ghn_district_id!,
                 to_ward_code: shippingAddress.ghn_ward_code!,
-                service_id: service.service_id,
-                service_type_id: service.service_type_id,
-                insurance_value: Math.round(subtotal),
-                cod_amount:
-                  normalizedPaymentMethod === 'cod'
-                    ? Math.round(subtotal)
-                    : 0,
-                height: ghnItems.reduce(
-                  (sum, item) => sum + (item.height || 0) * item.quantity,
-                  0,
-                ),
-                length: Math.max(...ghnItems.map((item) => item.length || 0)),
-                width: Math.max(...ghnItems.map((item) => item.width || 0)),
-                weight: ghnItems.reduce(
-                  (sum, item) => sum + (item.weight || 0) * item.quantity,
-                  0,
-                ),
-                items: ghnItems,
-              };
-
-              const feeResponse =
-                await this.deliveryService.calculateShippingFee(feeDto);
-
-              return {
-                service_id: service.service_id,
-                service_type_id: service.service_type_id,
-                fee: feeResponse.total,
-              };
-            } catch {
-              return null;
-            }
-          });
-
-          const feeResults = (await Promise.all(feePromises)).filter(
-            (r): r is { service_id: number; service_type_id: number; fee: number } =>
-              r !== null,
-          );
-
-          if (feeResults.length === 0) {
-            throw new Error(
-              'Không thể tính phí vận chuyển cho dịch vụ nào.',
-            );
-          }
-
-          cheapestService = feeResults.reduce((p, c) =>
-            p.fee < c.fee ? p : c,
-          );
-          shippingFee = cheapestService.fee;
-
-          // Leadtime
-          const leadtimeResponse = await this.deliveryService.getLeadtime(
-            {
-              from_district_id: pickupAddress.ghn_district_id!,
-              from_ward_code: pickupAddress.ghn_ward_code!,
-              to_district_id: shippingAddress.ghn_district_id!,
-              to_ward_code: shippingAddress.ghn_ward_code!,
-              service_id: cheapestService.service_id,
-            },
-            shop.ghn_shop_id,
-          );
-
-          if (leadtimeResponse.leadtime) {
-            expectedDeliveryTime = new Date(
-              leadtimeResponse.leadtime * 1000,
-            );
-          }
-        } catch (ghnError) {
-          throw new BadRequestException(
-            ghnError.message || 'Lỗi khi tính phí vận chuyển.',
-          );
-        }
-
-        if (!cheapestService) {
-          throw new BadRequestException(
-            'Không tìm thấy dịch vụ vận chuyển phù hợp.',
-          );
-        }
-
-        const totalAmount = subtotal + shippingFee;
-
-        const order = await tx.orders.create({
-          data: {
-            user_id: userId,
-            shop_id: Number(shopId),
-            shipping_address_id: shippingAddressId,
-            pickup_address_id: pickupAddress.id,
-            status: 'pending',
-            payment_status: 'unpaid',
-            subtotal_amount: subtotal,
-            discount_amount: 0,
-            shipping_fee: shippingFee,
-            total_amount: totalAmount,
-            note: note,
-            ghn_expected_delivery_time: expectedDeliveryTime,
-            shipping_payer:
-              normalizedPaymentMethod === 'cod' ? 'BUYER' : 'SELLER',
-          },
-        });
-
-        for (const orderItem of orderItems) {
-          await tx.order_items.create({
-            data: {
-              order_id: order.id,
-              ...orderItem,
-            },
-          });
-        }
-
-        await tx.payments.create({
-          data: {
-            order_id: order.id,
-            provider: normalizedPaymentMethod,
-            amount: totalAmount,
-            status: 'unpaid',
-          },
-        });
-
-        const shipment = await tx.shipments.create({
-          data: {
-            order_id: order.id,
-            status: 'pending',
-            address_snapshot: `${shippingAddress.street}, ${shippingAddress.ward}, ${shippingAddress.district}, ${shippingAddress.province}`,
-          },
-        });
-
-        // GHN Order Creation
-        try {
-          const provinces = await this.deliveryService.getProvinces();
-          const toProvince = provinces.find(
-            (p) => p.ProvinceID === shippingAddress.ghn_province_id,
-          );
-          if (!toProvince) throw new Error('Province not found');
-
-          const districts = await this.deliveryService.getDistricts(
-            shippingAddress.ghn_province_id!,
-          );
-          const toDistrict = districts.find(
-            (d) => d.DistrictID === shippingAddress.ghn_district_id,
-          );
-          if (!toDistrict) throw new Error('District not found');
-
-          const wards = await this.deliveryService.getWards(
-            shippingAddress.ghn_district_id!,
-          );
-          const toWard = wards.find(
-            (w) => w.WardCode === shippingAddress.ghn_ward_code,
-          );
-          if (!toWard) throw new Error('Ward not found');
-
-          const ghnCreateOrderData: CreateOrderDto = {
-            from_district_id: pickupAddress.ghn_district_id!,
-            to_district_id: shippingAddress.ghn_district_id!,
-            payment_type_id: normalizedPaymentMethod === 'cod' ? 2 : 1,
-            note: note || '',
-            required_note: 'KHONGCHOXEMHANG',
-
-            from_name: shop.name,
-            from_phone: shop.phone || pickupAddress.phone,
-            from_address: pickupAddress.street,
-            from_ward_name: pickupAddress.ward,
-            from_district_name: pickupAddress.district,
-            from_province_name: pickupAddress.province,
-
-            to_name: shippingAddress.recipient,
-            to_phone: shippingAddress.phone,
-            to_address: shippingAddress.street,
-            to_ward_name: toWard.WardName,
-            to_district_name: toDistrict.DistrictName,
-            to_province_name: toProvince.ProvinceName,
-
-            cod_amount:
-              normalizedPaymentMethod === 'cod'
-                ? Math.round(totalAmount)
-                : 0,
-            content: productNames.join(', ').substring(0, 2000),
-            insurance_value: Math.round(subtotal),
-            items: ghnItems,
-            service_id: cheapestService.service_id,
-            service_type_id: cheapestService.service_type_id,
-
-            weight: ghnItems.reduce(
-              (sum, item) => sum + (item.weight || 0) * item.quantity,
-              0,
-            ),
-            length: Math.max(...ghnItems.map((i) => i.length || 0)),
-            width: Math.max(...ghnItems.map((i) => i.width || 0)),
-            height: ghnItems.reduce(
-              (sum, item) => sum + (item.height || 0) * item.quantity,
-              0,
-            ),
-          };
-
-          const ghnOrderResponse =
-            await this.deliveryService.createShippingOrder(
-              ghnCreateOrderData,
+                service_id: cheapestService.service_id,
+              },
               shop.ghn_shop_id,
             );
 
-          const ghnOrderCode = ghnOrderResponse.order_code;
+            if (leadtimeResponse.leadtime) {
+              expectedDeliveryTime = new Date(
+                leadtimeResponse.leadtime * 1000,
+              );
+            }
+          } catch (ghnError) {
+            throw new BadRequestException(
+              ghnError.message || 'Lỗi khi tính phí vận chuyển.',
+            );
+          }
 
-          await tx.orders.update({
-            where: { id: order.id },
-            data: { ghn_order_code: ghnOrderCode },
-          });
+          if (!cheapestService) {
+            throw new BadRequestException(
+              'Không tìm thấy dịch vụ vận chuyển phù hợp.',
+            );
+          }
 
-          await tx.shipment_logs.create({
+          const totalAmount = subtotal + shippingFee;
+
+          const order = await tx.orders.create({
             data: {
-              shipment_id: shipment.id,
-              status: 'GHN_CREATED',
-              location_description: 'Đơn hàng GHN đã được tạo',
+              user_id: userId,
+              shop_id: Number(shopId),
+              shipping_address_id: shippingAddressId,
+              pickup_address_id: pickupAddress.id,
+              status: 'pending',
+              payment_status: 'unpaid',
+              subtotal_amount: subtotal,
+              discount_amount: 0,
+              shipping_fee: shippingFee,
+              total_amount: totalAmount,
+              note: note,
+              ghn_expected_delivery_time: expectedDeliveryTime,
+              shipping_payer:
+                normalizedPaymentMethod === 'cod' ? 'BUYER' : 'SELLER',
             },
           });
-        } catch (ghnError) {
-          await tx.orders.update({
-            where: { id: order.id },
-            data: {
-              status: 'processing',
-              note: (order.note || '') + ' (Lỗi tạo đơn GHN)',
-            },
-          });
-          throw ghnError;
-        }
 
-        return order;
-      });
-
-      const detailedOrder = await this.prisma.orders.findUnique({
-        where: { id: newOrder.id },
-        select: {
-          id: true,
-          shop_id: true,
-          total_amount: true,
-          ghn_order_code: true,
-          order_items: {
-            select: {
-              quantity: true,
-              variant: {
-                select: { id: true, name: true },
+          for (const orderItem of orderItems) {
+            await tx.order_items.create({
+              data: {
+                order_id: order.id,
+                ...orderItem,
               },
-              product: {
-                select: { name: true },
+            });
+          }
+
+          await tx.payments.create({
+            data: {
+              order_id: order.id,
+              provider: normalizedPaymentMethod,
+              amount: totalAmount,
+              status: 'unpaid',
+            },
+          });
+
+          const shipment = await tx.shipments.create({
+            data: {
+              order_id: order.id,
+              status: 'pending',
+              address_snapshot: `${shippingAddress.street}, ${shippingAddress.ward}, ${shippingAddress.district}, ${shippingAddress.province}`,
+            },
+          });
+
+          // GHN Order Creation
+          try {
+            const provinces = await this.deliveryService.getProvinces();
+            const toProvince = provinces.find(
+              (p) => p.ProvinceID === shippingAddress.ghn_province_id,
+            );
+            if (!toProvince) throw new Error('Province not found');
+
+            const districts = await this.deliveryService.getDistricts(
+              shippingAddress.ghn_province_id!,
+            );
+            const toDistrict = districts.find(
+              (d) => d.DistrictID === shippingAddress.ghn_district_id,
+            );
+            if (!toDistrict) throw new Error('District not found');
+
+            const wards = await this.deliveryService.getWards(
+              shippingAddress.ghn_district_id!,
+            );
+            const toWard = wards.find(
+              (w) => w.WardCode === shippingAddress.ghn_ward_code,
+            );
+            if (!toWard) throw new Error('Ward not found');
+
+            const ghnCreateOrderData: CreateOrderDto = {
+              from_district_id: pickupAddress.ghn_district_id!,
+              to_district_id: shippingAddress.ghn_district_id!,
+              payment_type_id: normalizedPaymentMethod === 'cod' ? 2 : 1,
+              note: note || '',
+              required_note: 'KHONGCHOXEMHANG',
+
+              from_name: shop.name,
+              from_phone: shop.phone || pickupAddress.phone,
+              from_address: pickupAddress.street,
+              from_ward_name: pickupAddress.ward,
+              from_district_name: pickupAddress.district,
+              from_province_name: pickupAddress.province,
+
+              to_name: shippingAddress.recipient,
+              to_phone: shippingAddress.phone,
+              to_address: shippingAddress.street,
+              to_ward_name: toWard.WardName,
+              to_district_name: toDistrict.DistrictName,
+              to_province_name: toProvince.ProvinceName,
+
+              cod_amount:
+                normalizedPaymentMethod === 'cod'
+                  ? Math.round(totalAmount)
+                  : 0,
+              content: productNames.join(', ').substring(0, 2000),
+              insurance_value: Math.round(subtotal),
+              items: ghnItems,
+              service_id: cheapestService.service_id,
+              service_type_id: cheapestService.service_type_id,
+
+              weight: ghnItems.reduce(
+                (sum, item) => sum + (item.weight || 0) * item.quantity,
+                0,
+              ),
+              length: Math.max(...ghnItems.map((i) => i.length || 0)),
+              width: Math.max(...ghnItems.map((i) => i.width || 0)),
+              height: ghnItems.reduce(
+                (sum, item) => sum + (item.height || 0) * item.quantity,
+                0,
+              ),
+            };
+
+            const ghnOrderResponse =
+              await this.deliveryService.createShippingOrder(
+                ghnCreateOrderData,
+                shop.ghn_shop_id,
+              );
+
+            const ghnOrderCode = ghnOrderResponse.order_code;
+
+            await tx.orders.update({
+              where: { id: order.id },
+              data: { ghn_order_code: ghnOrderCode },
+            });
+
+            await tx.shipment_logs.create({
+              data: {
+                shipment_id: shipment.id,
+                status: 'GHN_CREATED',
+                location_description: 'Đơn hàng GHN đã được tạo',
+              },
+            });
+          } catch (ghnError) {
+            await tx.orders.update({
+              where: { id: order.id },
+              data: {
+                status: 'processing',
+                note: (order.note || '') + ' (Lỗi tạo đơn GHN)',
+              },
+            });
+            throw ghnError;
+          }
+
+          return order;
+        });
+
+        const detailedOrder = await this.prisma.orders.findUnique({
+          where: { id: newOrder.id },
+          select: {
+            id: true,
+            shop_id: true,
+            total_amount: true,
+            ghn_order_code: true,
+            order_items: {
+              select: {
+                quantity: true,
+                variant: {
+                  select: { id: true, name: true },
+                },
+                product: {
+                  select: { name: true },
+                },
               },
             },
           },
-        },
-      });
+        });
 
-      createdOrders.push(detailedOrder);
-    }
-
-    const cart = await this.prisma.carts.findUnique({
-      where: { user_id: userId },
-    });
-
-    if (cart) {
-      await this.prisma.cart_items.deleteMany({
-        where: { cart_id: cart.id, variant_id: { in: variantIds } },
-      });
-    }
-
-    let paymentUrl: string | null = null;
-    if (normalizedPaymentMethod === 'vnpay') {
-      if (createdOrders.length > 1) {
-        throw new BadRequestException(
-          'VNPAY checkout chỉ hỗ trợ một shop trong mỗi đơn.',
-        );
+        createdOrders.push(detailedOrder);
       }
 
-      if (createdOrders.length === 1) {
-        const order = createdOrders[0];
-        const paymentService = this.paymentFactory.getService('vnpay');
-        const ipAddr =
-          req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+      const cart = await this.prisma.carts.findUnique({
+        where: { user_id: userId },
+      });
 
-        const paymentDto: CreatePaymentUrlDto = {
-          orderId: order.id,
-          amount: order.total_amount,
-          orderInfo: `Thanh toan don hang ${order.id}`,
-          ipAddr: ipAddr,
-        };
-        paymentUrl = await paymentService.createPaymentUrl(paymentDto);
+      if (cart) {
+        await this.prisma.cart_items.deleteMany({
+          where: { cart_id: cart.id, variant_id: { in: variantIds } },
+        });
       }
-    }
 
-    return {
-      success: true,
-      message: 'Đặt hàng thành công',
-      orders: createdOrders,
-      paymentUrl: paymentUrl,
-    };
-  } catch (error) {
-    console.error('Error creating order:', error);
-    return { success: false, message: 'Lỗi khi tạo đơn hàng' };
+      let paymentUrl: string | null = null;
+      if (normalizedPaymentMethod === 'vnpay') {
+        if (createdOrders.length > 1) {
+          throw new BadRequestException(
+            'VNPAY checkout chỉ hỗ trợ một shop trong mỗi đơn.',
+          );
+        }
+
+        if (createdOrders.length === 1) {
+          const order = createdOrders[0];
+          const paymentService = this.paymentFactory.getService('vnpay');
+          const ipAddr =
+            req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+
+          const paymentDto: CreatePaymentUrlDto = {
+            orderId: order.id,
+            amount: order.total_amount,
+            orderInfo: `Thanh toan don hang ${order.id}`,
+            ipAddr: ipAddr,
+          };
+          paymentUrl = await paymentService.createPaymentUrl(paymentDto);
+        }
+      }
+
+      return {
+        success: true,
+        message: 'Đặt hàng thành công',
+        orders: createdOrders,
+        paymentUrl: paymentUrl,
+      };
+    } catch (error) {
+      console.error('Error creating order:', error);
+      return { success: false, message: 'Lỗi khi tạo đơn hàng' };
+    }
   }
-}
+// Create order directly from product (Buy Now functionality)
+// Create order directly from product (Buy Now functionality)
+  async createOrderFromProduct(userId: number, productId: number, variantId: number | null, quantity: number, shippingAddressId: number, note?: string, paymentMethod?: string) {
+        try {
+            // Validate shipping address
+            const address = await this.prisma.addresses.findFirst({
+                where: {
+                    id: shippingAddressId,
+                    user_id: userId
+                }
+            });
 
+            if (!address) {
+                return { success: false, message: 'Địa chỉ giao hàng không hợp lệ' };
+            }
+
+            // Get product info
+            const product = await this.prisma.products.findFirst({
+                where: { id: productId },
+                include: {
+                    shop: true,
+                    product_variants: true,
+                    brand: true
+                }
+            });
+
+            if (!product) {
+                return { success: false, message: 'Sản phẩm không tồn tại' };
+            }
+
+            // Get variant or use default
+            let variant: ProductVariant | null = null;
+            if (variantId) {
+                variant = await this.prisma.product_variants.findFirst({
+                    where: { 
+                        id: variantId,
+                        product_id: productId
+                    }
+                }) as ProductVariant | null;
+                if (!variant) {
+                    return { success: false, message: 'Phiên bản sản phẩm không tồn tại' };
+                }
+            } else if (product.product_variants.length > 0) {
+                variant = product.product_variants[0] as ProductVariant; // Use first variant as default
+            }
+
+            if (!variant) {
+                return { success: false, message: 'Sản phẩm không có phiên bản hợp lệ' };
+            }
+
+            // Check stock
+            if (variant.stock < quantity) {
+                return { success: false, message: 'Không đủ hàng trong kho' };
+            }
+
+            // Calculate amounts
+            const unitPrice = Number(variant.price);
+            const subtotal = unitPrice * quantity;
+            const shippingFee = subtotal >= 500000 ? 0 : 30000; // Free shipping for orders > 500k
+            const tax = 0; // No tax for direct orders
+            const totalAmount = subtotal + shippingFee + tax;
+
+            // Create order using transaction
+            const orderData = await this.prisma.$transaction(async (tx) => {
+                // Create order
+                const order = await tx.orders.create({
+                    data: {
+                        user_id: userId,
+                        shop_id: product.shop_id,
+                        shipping_address_id: shippingAddressId,
+                        status: 'pending' as any,
+                        payment_status: 'unpaid' as any,
+                        subtotal_amount: subtotal,
+                        discount_amount: 0,
+                        shipping_fee: shippingFee,
+                        total_amount: totalAmount,
+                        note: note
+                    }
+                });
+
+                // Create order item
+                await tx.order_items.create({
+                    data: {
+                        order_id: order.id,
+                        product_id: productId,
+                        variant_id: variantId,
+                        name_snapshot: product.name,
+                        variant_snapshot: variant.name || '',
+                        unit_price: unitPrice,
+                        quantity: quantity,
+                        line_total: subtotal
+                    }
+                });
+
+                // Create payment record
+                await tx.payments.create({
+                    data: {
+                        order_id: order.id,
+                        provider: paymentMethod || 'cod',
+                        amount: totalAmount,
+                        status: 'unpaid' as any
+                    }
+                });
+
+                // Create shipment record
+                await tx.shipments.create({
+                    data: {
+                        order_id: order.id,
+                        status: 'pending',
+                        address_snapshot: `${address.street}, ${address.ward}, ${address.district}, ${address.province}`
+                    }
+                });
+
+                // Update product variant stock
+                await tx.product_variants.update({
+                    where: { id: variant.id },
+                    data: {
+                        stock: variant.stock - quantity
+                    }
+                });
+
+                return order;
+            });
+
+            return {
+                success: true,
+                message: 'Đặt hàng thành công',
+                orders: [orderData]
+            };
+
+        } catch (error) {
+            console.error('Error creating order from product:', error);
+            return { success: false, message: 'Lỗi khi tạo đơn hàng' };
+        }
+    }
   async getMyOrders(userId: number, query?: any) {
     try {
       const { page = 1, limit = 10, status } = query || {};
