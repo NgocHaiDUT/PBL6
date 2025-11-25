@@ -3,39 +3,49 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { QueryNotificationsDto } from './dto/query-notifications.dto';
-import { 
-  NotificationResponse, 
-  NotificationStatsResponse, 
+import {
+  NotificationResponse,
+  NotificationStatsResponse,
   PaginatedNotificationsResponse,
-  CreateNotificationData 
+  CreateNotificationData,
 } from './interfaces/notification.interface';
 
 @Injectable()
 export class NotificationsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createNotificationData: CreateNotificationData): Promise<NotificationResponse> {
+  async create(
+    createNotificationData: CreateNotificationData,
+  ): Promise<NotificationResponse> {
     const notification = await this.prisma.notifications.create({
       data: {
         user_id: createNotificationData.user_id,
         type: createNotificationData.type,
         title: createNotificationData.title,
         body: createNotificationData.body,
-        meta_json: createNotificationData.meta_json ? JSON.stringify(createNotificationData.meta_json) : null,
-      }
+        meta_json: createNotificationData.meta_json
+          ? JSON.stringify(createNotificationData.meta_json)
+          : null,
+      },
     });
 
     return notification;
   }
 
-  async createForUser(userId: number, createNotificationDto: CreateNotificationDto): Promise<NotificationResponse> {
+  async createForUser(
+    userId: number,
+    createNotificationDto: CreateNotificationDto,
+  ): Promise<NotificationResponse> {
     return this.create({
       user_id: userId,
       ...createNotificationDto,
     });
   }
 
-  async findAllForUser(userId: number, queryDto: QueryNotificationsDto): Promise<PaginatedNotificationsResponse> {
+  async findAllForUser(
+    userId: number,
+    queryDto: QueryNotificationsDto,
+  ): Promise<PaginatedNotificationsResponse> {
     const { type, is_read, page = 1, limit = 20 } = queryDto;
     const skip = (page - 1) * limit;
 
@@ -69,7 +79,7 @@ export class NotificationsService {
       where: {
         id,
         user_id: userId,
-      }
+      },
     });
 
     if (!notification) {
@@ -79,21 +89,34 @@ export class NotificationsService {
     return notification;
   }
 
-  async update(id: number, userId: number, updateNotificationDto: UpdateNotificationDto): Promise<NotificationResponse> {
-    console.log('🔔 [Service] Updating notification:', { id, userId, updateData: updateNotificationDto });
-    
+  async update(
+    id: number,
+    userId: number,
+    updateNotificationDto: UpdateNotificationDto,
+  ): Promise<NotificationResponse> {
+    console.log('🔔 [Service] Updating notification:', {
+      id,
+      userId,
+      updateData: updateNotificationDto,
+    });
+
     const existingNotification = await this.prisma.notifications.findFirst({
       where: {
         id,
         user_id: userId,
-      }
+      },
     });
 
-    console.log('🔔 [Service] Found existing notification:', existingNotification ? 'YES' : 'NO');
-    
+    console.log(
+      '🔔 [Service] Found existing notification:',
+      existingNotification ? 'YES' : 'NO',
+    );
+
     if (!existingNotification) {
       console.error('🔔 [Service] Notification not found for:', { id, userId });
-      throw new NotFoundException(`Notification not found for user ${userId} with ID ${id}`);
+      throw new NotFoundException(
+        `Notification not found for user ${userId} with ID ${id}`,
+      );
     }
 
     const updatedNotification = await this.prisma.notifications.update({
@@ -109,7 +132,7 @@ export class NotificationsService {
       where: {
         id,
         user_id: userId,
-      }
+      },
     });
 
     if (!existingNotification) {
@@ -117,7 +140,7 @@ export class NotificationsService {
     }
 
     await this.prisma.notifications.delete({
-      where: { id }
+      where: { id },
     });
   }
 
@@ -141,7 +164,7 @@ export class NotificationsService {
       },
       data: {
         is_read: true,
-      }
+      },
     });
 
     return { updated: result.count };
@@ -150,14 +173,14 @@ export class NotificationsService {
   async getStats(userId: number): Promise<NotificationStatsResponse> {
     const [total, unread] = await Promise.all([
       this.prisma.notifications.count({
-        where: { user_id: userId }
+        where: { user_id: userId },
       }),
       this.prisma.notifications.count({
-        where: { 
+        where: {
           user_id: userId,
-          is_read: false 
-        }
-      })
+          is_read: false,
+        },
+      }),
     ]);
 
     return {
@@ -172,14 +195,19 @@ export class NotificationsService {
       where: {
         user_id: userId,
         is_read: true,
-      }
+      },
     });
 
     return { deleted: result.count };
   }
 
   // Helper methods for creating specific notification types
-  async createLikeNotification(targetUserId: number, likerName: string, targetType: string, targetId: number): Promise<NotificationResponse> {
+  async createLikeNotification(
+    targetUserId: number,
+    likerName: string,
+    targetType: string,
+    targetId: number,
+  ): Promise<NotificationResponse> {
     return this.create({
       user_id: targetUserId,
       type: 'like',
@@ -188,12 +216,17 @@ export class NotificationsService {
       meta_json: {
         target_type: targetType,
         target_id: targetId,
-        action: 'like'
-      }
+        action: 'like',
+      },
     });
   }
 
-  async createCommentNotification(targetUserId: number, commenterName: string, targetType: string, targetId: number): Promise<NotificationResponse> {
+  async createCommentNotification(
+    targetUserId: number,
+    commenterName: string,
+    targetType: string,
+    targetId: number,
+  ): Promise<NotificationResponse> {
     return this.create({
       user_id: targetUserId,
       type: 'comment',
@@ -202,24 +235,31 @@ export class NotificationsService {
       meta_json: {
         target_type: targetType,
         target_id: targetId,
-        action: 'comment'
-      }
+        action: 'comment',
+      },
     });
   }
 
-  async createFollowNotification(targetUserId: number, followerName: string): Promise<NotificationResponse> {
+  async createFollowNotification(
+    targetUserId: number,
+    followerName: string,
+  ): Promise<NotificationResponse> {
     return this.create({
       user_id: targetUserId,
       type: 'follow',
       title: 'New Follower',
       body: `${followerName} started following you`,
       meta_json: {
-        action: 'follow'
-      }
+        action: 'follow',
+      },
     });
   }
 
-  async createOrderNotification(userId: number, orderId: number, status: string): Promise<NotificationResponse> {
+  async createOrderNotification(
+    userId: number,
+    orderId: number,
+    status: string,
+  ): Promise<NotificationResponse> {
     const statusMessages = {
       confirmed: 'Your order has been confirmed',
       shipped: 'Your order has been shipped',
@@ -235,8 +275,8 @@ export class NotificationsService {
       meta_json: {
         order_id: orderId,
         status,
-        action: 'order_update'
-      }
+        action: 'order_update',
+      },
     });
   }
 }

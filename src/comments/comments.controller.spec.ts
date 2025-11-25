@@ -102,9 +102,17 @@ describe('CommentsController', () => {
 
       mockCommentsService.update.mockResolvedValue(expectedResult);
 
-      const result = await controller.update(commentId, updateCommentDto, mockRequest);
+      const result = await controller.update(
+        commentId,
+        updateCommentDto,
+        mockRequest,
+      );
 
-      expect(service.update).toHaveBeenCalledWith(commentId, updateCommentDto, 1);
+      expect(service.update).toHaveBeenCalledWith(
+        commentId,
+        updateCommentDto,
+        1,
+      );
       expect(result).toEqual(expectedResult);
     });
   });
@@ -125,7 +133,9 @@ describe('CommentsController', () => {
   describe('getReplies', () => {
     it('should return replies for a comment', async () => {
       const commentId = 1;
-      const expectedReplies = [{ id: 2, parent_id: commentId, content: 'Reply' }];
+      const expectedReplies = [
+        { id: 2, parent_id: commentId, content: 'Reply' },
+      ];
 
       mockCommentsService.getReplies.mockResolvedValue(expectedReplies);
 

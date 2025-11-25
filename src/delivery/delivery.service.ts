@@ -6,7 +6,7 @@ import {
   GetServicesDto,
   UpdateOrderDto,
 } from './dto/ghn-order.dto';
-import { RegisterShopDto } from '../ghn/dto/register-shop.dto';
+import { RegisterShopDto } from './dto/register-shop.dto';
 
 @Injectable()
 export abstract class DeliveryService {
@@ -41,4 +41,3 @@ export abstract class DeliveryService {
   abstract getLeadtime(data: GetLeadtimeDto, shopId: number): Promise<any>;
   abstract getPrintToken(orderCodes: string[]): Promise<any>;
 }
-

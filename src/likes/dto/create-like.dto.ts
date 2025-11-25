@@ -3,7 +3,9 @@ import { Transform } from 'class-transformer';
 
 export class CreateLikeDto {
   @IsString()
-  @IsIn(['post', 'product', 'comment'], { message: 'Target type must be either "post", "product", or "comment"' })
+  @IsIn(['post', 'product', 'comment'], {
+    message: 'Target type must be either "post", "product", or "comment"',
+  })
   target_type: string;
 
   @Transform(({ value }) => {

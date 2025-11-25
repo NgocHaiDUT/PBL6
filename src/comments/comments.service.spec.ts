@@ -61,7 +61,12 @@ describe('CommentsService', () => {
         user_id: userId,
         created_at: new Date(),
         parent_id: null,
-        user: { id: 1, full_name: 'Test User', email: 'test@test.com', avatar_url: null },
+        user: {
+          id: 1,
+          full_name: 'Test User',
+          email: 'test@test.com',
+          avatar_url: null,
+        },
       };
 
       mockPrismaService.posts.findUnique.mockResolvedValue(mockPost);
@@ -70,15 +75,20 @@ describe('CommentsService', () => {
       const result = await service.create(createCommentDto, userId);
 
       expect(prismaService.posts.findUnique).toHaveBeenCalledWith({
-        where: { id: createCommentDto.target_id }
+        where: { id: createCommentDto.target_id },
       });
       expect(prismaService.comments.create).toHaveBeenCalledWith({
         data: { ...createCommentDto, user_id: userId },
         include: {
           user: {
-            select: { id: true, full_name: true, email: true, avatar_url: true }
-          }
-        }
+            select: {
+              id: true,
+              full_name: true,
+              email: true,
+              avatar_url: true,
+            },
+          },
+        },
       });
       expect(result).toEqual(mockComment);
     });
@@ -86,20 +96,27 @@ describe('CommentsService', () => {
     it('should throw NotFoundException when target post does not exist', async () => {
       mockPrismaService.posts.findUnique.mockResolvedValue(null);
 
-      await expect(service.create(createCommentDto, userId)).rejects.toThrow(NotFoundException);
+      await expect(service.create(createCommentDto, userId)).rejects.toThrow(
+        NotFoundException,
+      );
       expect(prismaService.posts.findUnique).toHaveBeenCalledWith({
-        where: { id: createCommentDto.target_id }
+        where: { id: createCommentDto.target_id },
       });
     });
 
     it('should throw NotFoundException when parent comment does not exist', async () => {
-      const createCommentWithParentDto = { ...createCommentDto, parent_id: 999 };
+      const createCommentWithParentDto = {
+        ...createCommentDto,
+        parent_id: 999,
+      };
       const mockPost = { id: 1, title: 'Test Post' };
 
       mockPrismaService.posts.findUnique.mockResolvedValue(mockPost);
       mockPrismaService.comments.findUnique.mockResolvedValue(null);
 
-      await expect(service.create(createCommentWithParentDto, userId)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.create(createCommentWithParentDto, userId),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -121,7 +138,12 @@ describe('CommentsService', () => {
           user_id: 1,
           parent_id: null,
           created_at: new Date(),
-          user: { id: 1, full_name: 'Test User', email: 'test@test.com', avatar_url: null },
+          user: {
+            id: 1,
+            full_name: 'Test User',
+            email: 'test@test.com',
+            avatar_url: null,
+          },
         },
       ];
       const totalCount = 1;
@@ -154,14 +176,24 @@ describe('CommentsService', () => {
       const mockComment = {
         id: commentId,
         content: 'Test comment',
-        user: { id: 1, full_name: 'Test User', email: 'test@test.com', avatar_url: null },
+        user: {
+          id: 1,
+          full_name: 'Test User',
+          email: 'test@test.com',
+          avatar_url: null,
+        },
       };
       const mockReplies = [
         {
           id: 2,
           parent_id: commentId,
           content: 'Test reply',
-          user: { id: 2, full_name: 'Another User', email: 'test2@test.com', avatar_url: null },
+          user: {
+            id: 2,
+            full_name: 'Another User',
+            email: 'test2@test.com',
+            avatar_url: null,
+          },
         },
       ];
 
@@ -180,7 +212,9 @@ describe('CommentsService', () => {
       const commentId = 999;
       mockPrismaService.comments.findUnique.mockResolvedValue(null);
 
-      await expect(service.findOne(commentId)).rejects.toThrow(NotFoundException);
+      await expect(service.findOne(commentId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -190,7 +224,11 @@ describe('CommentsService', () => {
     const userId = 1;
 
     it('should update a comment successfully', async () => {
-      const existingComment = { id: commentId, user_id: userId, content: 'Original content' };
+      const existingComment = {
+        id: commentId,
+        user_id: userId,
+        content: 'Original content',
+      };
       const updatedComment = { ...existingComment, ...updateCommentDto };
 
       mockPrismaService.comments.findUnique.mockResolvedValue(existingComment);
@@ -204,14 +242,22 @@ describe('CommentsService', () => {
     it('should throw NotFoundException when comment does not exist', async () => {
       mockPrismaService.comments.findUnique.mockResolvedValue(null);
 
-      await expect(service.update(commentId, updateCommentDto, userId)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.update(commentId, updateCommentDto, userId),
+      ).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ForbiddenException when user tries to update someone else\'s comment', async () => {
-      const existingComment = { id: commentId, user_id: 2, content: 'Original content' };
+    it("should throw ForbiddenException when user tries to update someone else's comment", async () => {
+      const existingComment = {
+        id: commentId,
+        user_id: 2,
+        content: 'Original content',
+      };
       mockPrismaService.comments.findUnique.mockResolvedValue(existingComment);
 
-      await expect(service.update(commentId, updateCommentDto, userId)).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.update(commentId, updateCommentDto, userId),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -229,24 +275,28 @@ describe('CommentsService', () => {
       await service.remove(commentId, userId);
 
       expect(prismaService.comments.deleteMany).toHaveBeenCalledWith({
-        where: { parent_id: commentId }
+        where: { parent_id: commentId },
       });
       expect(prismaService.comments.delete).toHaveBeenCalledWith({
-        where: { id: commentId }
+        where: { id: commentId },
       });
     });
 
     it('should throw NotFoundException when comment does not exist', async () => {
       mockPrismaService.comments.findUnique.mockResolvedValue(null);
 
-      await expect(service.remove(commentId, userId)).rejects.toThrow(NotFoundException);
+      await expect(service.remove(commentId, userId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
-    it('should throw ForbiddenException when user tries to delete someone else\'s comment', async () => {
+    it("should throw ForbiddenException when user tries to delete someone else's comment", async () => {
       const existingComment = { id: commentId, user_id: 2 };
       mockPrismaService.comments.findUnique.mockResolvedValue(existingComment);
 
-      await expect(service.remove(commentId, userId)).rejects.toThrow(ForbiddenException);
+      await expect(service.remove(commentId, userId)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -259,13 +309,23 @@ describe('CommentsService', () => {
           id: 2,
           parent_id: commentId,
           content: 'Reply 1',
-          user: { id: 1, full_name: 'User 1', email: 'user1@test.com', avatar_url: null },
+          user: {
+            id: 1,
+            full_name: 'User 1',
+            email: 'user1@test.com',
+            avatar_url: null,
+          },
         },
         {
           id: 3,
           parent_id: commentId,
           content: 'Reply 2',
-          user: { id: 2, full_name: 'User 2', email: 'user2@test.com', avatar_url: null },
+          user: {
+            id: 2,
+            full_name: 'User 2',
+            email: 'user2@test.com',
+            avatar_url: null,
+          },
         },
       ];
 
@@ -281,7 +341,9 @@ describe('CommentsService', () => {
       const commentId = 999;
       mockPrismaService.comments.findUnique.mockResolvedValue(null);
 
-      await expect(service.getReplies(commentId)).rejects.toThrow(NotFoundException);
+      await expect(service.getReplies(commentId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

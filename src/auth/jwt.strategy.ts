@@ -32,9 +32,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException();
     }
 
-    const permissions = user.userPermissions.map(
-      (up) => up.permission.name,
-    );
+    const permissions = user.userPermissions.map((up) => up.permission.name);
 
     console.log('🔍 [JWT Strategy] User ID:', user.id);
     console.log('🔍 [JWT Strategy] User permissions:', permissions);

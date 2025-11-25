@@ -9,7 +9,10 @@ describe('MessagesController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [MessagesController],
       providers: [
-        { provide: MessagesService, useValue: { createConversation: jest.fn() } },
+        {
+          provide: MessagesService,
+          useValue: { createConversation: jest.fn() },
+        },
       ],
     }).compile();
 

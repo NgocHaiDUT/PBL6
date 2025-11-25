@@ -18,10 +18,10 @@ import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { QueryNotificationsDto } from './dto/query-notifications.dto';
-import { 
-  NotificationResponse, 
-  NotificationStatsResponse, 
-  PaginatedNotificationsResponse 
+import {
+  NotificationResponse,
+  NotificationStatsResponse,
+  PaginatedNotificationsResponse,
 } from './interfaces/notification.interface';
 
 @Controller('notifications')
@@ -54,7 +54,7 @@ export class NotificationsController {
   @Get('stats')
   async getStats(
     @Request() req: any,
-    @Query('userId') userId?: string
+    @Query('userId') userId?: string,
   ): Promise<NotificationStatsResponse> {
     // ✅ Use userId from query if provided, otherwise from JWT
     const jwtUserId = req.user?.sub || req.user?.userId;
@@ -66,7 +66,7 @@ export class NotificationsController {
   @Post('mark-all-read')
   async markAllAsRead(
     @Body() body: { user_id?: string | number },
-    @Request() req: any
+    @Request() req: any,
   ): Promise<{ updated: number }> {
     // ✅ Use user_id from body if provided, otherwise from JWT
     const jwtUserId = req.user?.sub || req.user?.userId;
@@ -78,7 +78,7 @@ export class NotificationsController {
   @Delete('read')
   async deleteAllRead(
     @Body() body: { user_id?: string | number },
-    @Request() req: any
+    @Request() req: any,
   ): Promise<{ deleted: number }> {
     // ✅ Use user_id from body if provided, otherwise from JWT
     const jwtUserId = req.user?.sub || req.user?.userId;
@@ -147,8 +147,11 @@ export class NotificationsController {
   async createSampleNotifications(
     @Param('userId', ParseIntPipe) userId: number,
   ): Promise<{ success: boolean; message: string; created: number }> {
-    console.log('🔔 [Controller] Creating sample notifications for user ID:', userId);
-    
+    console.log(
+      '🔔 [Controller] Creating sample notifications for user ID:',
+      userId,
+    );
+
     const sampleNotifications = [
       {
         type: 'post_like',
@@ -157,12 +160,14 @@ export class NotificationsController {
         meta_json: {
           actor_id: 2,
           actor_name: 'Mai Skincare',
-          actor_avatar: 'https://images.unsplash.com/photo-1564864310852-e1e98eb07010?w=400',
+          actor_avatar:
+            'https://images.unsplash.com/photo-1564864310852-e1e98eb07010?w=400',
           actor_verified: false,
           post_id: 1,
           post_title: 'Routine skincare buổi sáng',
-          post_image: 'https://images.unsplash.com/photo-1741896136071-3f8c1d472aa8?w=600'
-        }
+          post_image:
+            'https://images.unsplash.com/photo-1741896136071-3f8c1d472aa8?w=600',
+        },
       },
       {
         type: 'comment_reply',
@@ -171,13 +176,15 @@ export class NotificationsController {
         meta_json: {
           actor_id: 3,
           actor_name: 'Linh Beauty Expert',
-          actor_avatar: 'https://images.unsplash.com/photo-1586297135537-94bc9ba060aa?w=400',
+          actor_avatar:
+            'https://images.unsplash.com/photo-1586297135537-94bc9ba060aa?w=400',
           actor_verified: true,
           parent_comment_id: 4,
           parent_comment_content: 'Cảm ơn bạn đã chia sẻ routine này!',
           reply_id: 5,
-          reply_content: 'Routine này rất hay! Bạn dùng serum vitamin C nào vậy?'
-        }
+          reply_content:
+            'Routine này rất hay! Bạn dùng serum vitamin C nào vậy?',
+        },
       },
       {
         type: 'user_follow',
@@ -186,9 +193,10 @@ export class NotificationsController {
         meta_json: {
           actor_id: 3,
           actor_name: 'Thảo Makeup Artist',
-          actor_avatar: 'https://images.unsplash.com/photo-1586297135537-94bc9ba060aa?w=400',
-          actor_verified: true
-        }
+          actor_avatar:
+            'https://images.unsplash.com/photo-1586297135537-94bc9ba060aa?w=400',
+          actor_verified: true,
+        },
       },
       {
         type: 'post_comment',
@@ -197,14 +205,15 @@ export class NotificationsController {
         meta_json: {
           actor_id: 5,
           actor_name: 'Beauty Lover',
-          actor_avatar: 'https://images.unsplash.com/photo-1494790108755-2616b332c5?w=400',
+          actor_avatar:
+            'https://images.unsplash.com/photo-1494790108755-2616b332c5?w=400',
           actor_verified: false,
           post_id: 2,
           post_title: 'Cách chọn kem chống nắng phù hợp',
           comment_id: 7,
-          comment_content: 'Tips rất hữu ích, cảm ơn bạn!'
-        }
-      }
+          comment_content: 'Tips rất hữu ích, cảm ơn bạn!',
+        },
+      },
     ];
 
     let created = 0;
@@ -220,7 +229,7 @@ export class NotificationsController {
     return {
       success: true,
       message: `Created ${created} sample notifications for user ${userId}`,
-      created
+      created,
     };
   }
 }

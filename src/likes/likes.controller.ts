@@ -14,7 +14,11 @@ import {
 import { LikesService } from './likes.service';
 import { CreateLikeDto } from './dto/create-like.dto';
 import { QueryLikesDto } from './dto/query-likes.dto';
-import { LikeResponse, LikeStatsResponse, PaginatedLikesResponse } from './interfaces/like.interface';
+import {
+  LikeResponse,
+  LikeStatsResponse,
+  PaginatedLikesResponse,
+} from './interfaces/like.interface';
 
 @Controller('likes')
 export class LikesController {
@@ -32,7 +36,9 @@ export class LikesController {
   }
 
   @Get()
-  async findAll(@Query() queryDto: QueryLikesDto): Promise<PaginatedLikesResponse> {
+  async findAll(
+    @Query() queryDto: QueryLikesDto,
+  ): Promise<PaginatedLikesResponse> {
     return this.likesService.findAll(queryDto);
   }
 
@@ -45,7 +51,11 @@ export class LikesController {
   ): Promise<LikeStatsResponse> {
     // Extract user ID from query or JWT token
     const finalUserId = userId || req.user?.id;
-    console.log('📊 [LikesController] Get stats:', { targetType, targetId, userId: finalUserId });
+    console.log('📊 [LikesController] Get stats:', {
+      targetType,
+      targetId,
+      userId: finalUserId,
+    });
     return this.likesService.getStats(targetType, targetId, finalUserId);
   }
 
@@ -65,7 +75,11 @@ export class LikesController {
   ): Promise<{ liked: boolean; total_likes: number }> {
     // Extract user ID from body or JWT token
     const userId = body.userId || req.user?.id || 1;
-    console.log('🔥 [LikesController] Toggle like:', { targetType, targetId, userId });
+    console.log('🔥 [LikesController] Toggle like:', {
+      targetType,
+      targetId,
+      userId,
+    });
     return this.likesService.toggleLike(targetType, targetId, userId);
   }
 

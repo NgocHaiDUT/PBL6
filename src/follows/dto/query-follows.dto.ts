@@ -12,7 +12,9 @@ export class QueryFollowsDto {
   user_id?: number;
 
   @IsOptional()
-  @IsIn(['followers', 'following'], { message: 'Type must be either "followers" or "following"' })
+  @IsIn(['followers', 'following'], {
+    message: 'Type must be either "followers" or "following"',
+  })
   type?: 'followers' | 'following';
 
   @IsOptional()

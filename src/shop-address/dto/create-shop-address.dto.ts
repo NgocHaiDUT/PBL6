@@ -1,4 +1,11 @@
-import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsNumber, IsEmail } from 'class-validator';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsEmail,
+} from 'class-validator';
 
 export class CreateShopAddressDto {
   @IsNotEmpty()

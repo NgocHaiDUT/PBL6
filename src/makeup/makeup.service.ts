@@ -67,7 +67,10 @@ export class MakeupService {
   async callPythonMakeup(fileBuffer: Buffer, filename: string, mimetype: string): Promise<Buffer> {
     const form = new FormData();
     // append buffer — FormData accepts buffer + options
-    form.append('file', fileBuffer, { filename: filename, contentType: mimetype });
+    form.append('file', fileBuffer, {
+      filename: filename,
+      contentType: mimetype,
+    });
 
     const headers = form.getHeaders();
     try {
@@ -79,14 +82,20 @@ export class MakeupService {
 
       const resp = await lastValueFrom(resp$);
       if (resp.status !== 200) {
-        throw new HttpException('Makeup service returned non-200', HttpStatus.BAD_GATEWAY);
+        throw new HttpException(
+          'Makeup service returned non-200',
+          HttpStatus.BAD_GATEWAY,
+        );
       }
 
       // resp.data is ArrayBuffer / Buffer-like — convert to Buffer
       return Buffer.from(resp.data);
     } catch (err) {
       // cải thiện log / lỗi tuỳ bạn
-      throw new HttpException(`Failed to call makeup service: ${err?.message ?? err}`, HttpStatus.BAD_GATEWAY);
+      throw new HttpException(
+        `Failed to call makeup service: ${err?.message ?? err}`,
+        HttpStatus.BAD_GATEWAY,
+      );
     }
   }
 }

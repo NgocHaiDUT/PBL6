@@ -24,8 +24,8 @@ export const brandMulterConfig = {
     }
   },
   limits: {
-    fileSize: 5 * 1024 * 1024, 
-    files: 1, 
+    fileSize: 5 * 1024 * 1024,
+    files: 1,
   },
 };
 

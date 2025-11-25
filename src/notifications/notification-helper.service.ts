@@ -6,20 +6,24 @@ import { PrismaService } from '../prisma/prisma.service';
 export class NotificationHelperService {
   constructor(
     private notificationsService: NotificationsService,
-    private prisma: PrismaService
+    private prisma: PrismaService,
   ) {}
 
   // Like notifications
-  async handlePostLike(postId: number, likerId: number, liked: boolean): Promise<void> {
+  async handlePostLike(
+    postId: number,
+    likerId: number,
+    liked: boolean,
+  ): Promise<void> {
     try {
       // Get post info and owner
       const post = await this.prisma.posts.findUnique({
         where: { id: postId },
         include: {
           user: {
-            select: { id: true, full_name: true }
-          }
-        }
+            select: { id: true, full_name: true },
+          },
+        },
       });
 
       if (!post || !post.user || post.user.id === likerId) {
@@ -29,7 +33,7 @@ export class NotificationHelperService {
       // Get liker info
       const liker = await this.prisma.users.findUnique({
         where: { id: likerId },
-        select: { id: true, full_name: true, avatar_url: true }
+        select: { id: true, full_name: true, avatar_url: true },
       });
 
       if (!liker || !liked) {
@@ -46,31 +50,38 @@ export class NotificationHelperService {
           actor_name: liker.full_name || 'Someone',
           actor_avatar: liker.avatar_url,
           post_id: postId,
-          post_title: post.title
-        }
+          post_title: post.title,
+        },
       });
 
       console.log('🔔 [NotificationHelper] Post like notification sent:', {
         to: post.user.id,
         from: liker.full_name,
         postId,
-        actorId: likerId
+        actorId: likerId,
       });
     } catch (error) {
-      console.error('❌ [NotificationHelper] Error creating post like notification:', error);
+      console.error(
+        '❌ [NotificationHelper] Error creating post like notification:',
+        error,
+      );
     }
   }
 
-  async handleCommentLike(commentId: number, likerId: number, liked: boolean): Promise<void> {
+  async handleCommentLike(
+    commentId: number,
+    likerId: number,
+    liked: boolean,
+  ): Promise<void> {
     try {
       // Get comment info and owner
       const comment = await this.prisma.comments.findUnique({
         where: { id: commentId },
         include: {
           user: {
-            select: { id: true, full_name: true }
-          }
-        }
+            select: { id: true, full_name: true },
+          },
+        },
       });
 
       if (!comment || !comment.user || comment.user.id === likerId) {
@@ -80,7 +91,7 @@ export class NotificationHelperService {
       // Get liker info
       const liker = await this.prisma.users.findUnique({
         where: { id: likerId },
-        select: { id: true, full_name: true, avatar_url: true }
+        select: { id: true, full_name: true, avatar_url: true },
       });
 
       if (!liker || !liked) {
@@ -97,23 +108,32 @@ export class NotificationHelperService {
           actor_name: liker.full_name || 'Someone',
           actor_avatar: liker.avatar_url,
           comment_id: commentId,
-          comment_content: comment.content.substring(0, 50) + (comment.content.length > 50 ? '...' : '')
-        }
+          comment_content:
+            comment.content.substring(0, 50) +
+            (comment.content.length > 50 ? '...' : ''),
+        },
       });
 
       console.log('🔔 [NotificationHelper] Comment like notification sent:', {
         to: comment.user.id,
         from: liker.full_name,
         commentId,
-        actorId: likerId
+        actorId: likerId,
       });
     } catch (error) {
-      console.error('❌ [NotificationHelper] Error creating comment like notification:', error);
+      console.error(
+        '❌ [NotificationHelper] Error creating comment like notification:',
+        error,
+      );
     }
   }
 
   // Follow notifications
-  async handleFollow(followingId: number, followerId: number, following: boolean): Promise<void> {
+  async handleFollow(
+    followingId: number,
+    followerId: number,
+    following: boolean,
+  ): Promise<void> {
     try {
       if (!following || followingId === followerId) {
         return; // Only notify on follow, not unfollow, and don't notify self-follows
@@ -122,7 +142,7 @@ export class NotificationHelperService {
       // Get follower info
       const follower = await this.prisma.users.findUnique({
         where: { id: followerId },
-        select: { id: true, full_name: true, avatar_url: true }
+        select: { id: true, full_name: true, avatar_url: true },
       });
 
       if (!follower) {
@@ -137,17 +157,20 @@ export class NotificationHelperService {
         meta_json: {
           actor_id: followerId,
           actor_name: follower.full_name || 'Someone',
-          actor_avatar: follower.avatar_url
-        }
+          actor_avatar: follower.avatar_url,
+        },
       });
 
       console.log('🔔 [NotificationHelper] Follow notification sent:', {
         to: followingId,
         from: follower.full_name,
-        actorId: followerId
+        actorId: followerId,
       });
     } catch (error) {
-      console.error('❌ [NotificationHelper] Error creating follow notification:', error);
+      console.error(
+        '❌ [NotificationHelper] Error creating follow notification:',
+        error,
+      );
     }
   }
 
@@ -157,7 +180,7 @@ export class NotificationHelperService {
       // Get commenter info
       const commenter = await this.prisma.users.findUnique({
         where: { id: userId },
-        select: { id: true, full_name: true, avatar_url: true }
+        select: { id: true, full_name: true, avatar_url: true },
       });
 
       if (!commenter) {
@@ -170,9 +193,9 @@ export class NotificationHelperService {
           where: { id: commentData.target_id },
           include: {
             user: {
-              select: { id: true, full_name: true }
-            }
-          }
+              select: { id: true, full_name: true },
+            },
+          },
         });
 
         if (post && post.user && post.user.id !== userId) {
@@ -188,16 +211,19 @@ export class NotificationHelperService {
               post_id: commentData.target_id,
               post_title: post.title,
               comment_id: commentData.id || null,
-              comment_content: commentData.content
-            }
+              comment_content: commentData.content,
+            },
           });
 
-          console.log('🔔 [NotificationHelper] Post comment notification sent:', {
-            to: post.user.id,
-            from: commenter.full_name,
-            postId: commentData.target_id,
-            actorId: userId
-          });
+          console.log(
+            '🔔 [NotificationHelper] Post comment notification sent:',
+            {
+              to: post.user.id,
+              from: commenter.full_name,
+              postId: commentData.target_id,
+              actorId: userId,
+            },
+          );
         }
       }
 
@@ -207,12 +233,16 @@ export class NotificationHelperService {
           where: { id: commentData.parent_id },
           include: {
             user: {
-              select: { id: true, full_name: true }
-            }
-          }
+              select: { id: true, full_name: true },
+            },
+          },
         });
 
-        if (parentComment && parentComment.user && parentComment.user.id !== userId) {
+        if (
+          parentComment &&
+          parentComment.user &&
+          parentComment.user.id !== userId
+        ) {
           // Notify parent comment owner with actor_id in meta_json
           await this.notificationsService.createForUser(parentComment.user.id, {
             type: 'comment_reply',
@@ -223,22 +253,30 @@ export class NotificationHelperService {
               actor_name: commenter.full_name || 'Someone',
               actor_avatar: commenter.avatar_url,
               parent_comment_id: commentData.parent_id,
-              parent_comment_content: parentComment.content.substring(0, 50) + (parentComment.content.length > 50 ? '...' : ''),
+              parent_comment_content:
+                parentComment.content.substring(0, 50) +
+                (parentComment.content.length > 50 ? '...' : ''),
               reply_id: commentData.id || null,
-              reply_content: commentData.content
-            }
+              reply_content: commentData.content,
+            },
           });
 
-          console.log('🔔 [NotificationHelper] Comment reply notification sent:', {
-            to: parentComment.user.id,
-            from: commenter.full_name,
-            parentCommentId: commentData.parent_id,
-            actorId: userId
-          });
+          console.log(
+            '🔔 [NotificationHelper] Comment reply notification sent:',
+            {
+              to: parentComment.user.id,
+              from: commenter.full_name,
+              parentCommentId: commentData.parent_id,
+              actorId: userId,
+            },
+          );
         }
       }
     } catch (error) {
-      console.error('❌ [NotificationHelper] Error creating comment notification:', error);
+      console.error(
+        '❌ [NotificationHelper] Error creating comment notification:',
+        error,
+      );
     }
   }
 }
