@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { S3UploadService } from './s3-upload.service';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class DataInitService implements OnModuleInit {
@@ -23,6 +24,7 @@ export class DataInitService implements OnModuleInit {
       await this.seedRoles();
       await this.seedPermissions();
       await this.seedRolePermissions();
+      await this.seedAdminUser();
       await this.seedShops();
       await this.seedProducts(); // Enabled product seeding
 
@@ -262,6 +264,48 @@ export class DataInitService implements OnModuleInit {
     this.logger.log(
       `Đã tạo ${rolePermissionsData.length} liên kết role-permission thành công`,
     );
+  }
+
+  private async seedAdminUser() {
+    try {
+      const adminRole = await this.prisma.role.findFirst({
+        where: { name: 'admin' },
+      });
+
+      if (!adminRole) {
+        this.logger.error('❌ Admin role không tồn tại');
+        return;
+      }
+
+      const existingAdmin = await this.prisma.users.findFirst({
+        where: { email: 'admin@pbl6.com' },
+      });
+
+      if (existingAdmin) {
+        this.logger.log('ℹ️  Admin user đã tồn tại, không tạo mới');
+        return;
+      }
+
+      const hashedPassword = await bcrypt.hash('Admin@123456', 10);
+
+      const adminUser = await this.prisma.users.create({
+        data: {
+          email: 'admin@pbl6.com',
+          password_hash: hashedPassword,
+          full_name: 'System Administrator',
+          phone: '0999999999',
+          role_id: adminRole.id,
+          is_active: true,
+          created_at: new Date(),
+        },
+      });
+
+      this.logger.log('✅ Đã tạo admin user thành công');
+      this.logger.log('📧 Email: admin@pbl6.com');
+      this.logger.log('🔑 Password: Admin@123456');
+    } catch (error) {
+      this.logger.error('❌ Lỗi khi tạo admin user:', error);
+    }
   }
 
   private async seedShops() {
