@@ -251,6 +251,8 @@ export class ProductController {
     }
 
     @Post('add-product-variant')
+    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+    @RequirePermissions('create_product')
     async addProductVariant(@Body() body: {
         product_id: string;
         sku: string;
@@ -260,7 +262,7 @@ export class ProductController {
         shade_hex?: string;
         size_label?: string;
         compare_at_price?: string;
-    }) {
+    }, @Req() req: any) {
         if (!body.product_id || !body.sku || !body.name || !body.price) {
             return { success: false, message: 'Thiếu trường bắt buộc' };
         }
@@ -321,12 +323,15 @@ export class ProductController {
     }
 
     @Post('add-product-media')
+    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+    @RequirePermissions('create_product')
     @UseInterceptors(FileInterceptor('file', productMediaMulterConfig))
     async addProductMedia(
+        @Req() req: any,
         @Query('product_id') product_id: string,   
         @Query('type') type?: string,
         @Query('sort_order') sort_order?: string,
-        @UploadedFile() file?: any,
+        @UploadedFile() file?: any
     ) {
         if (!product_id) {
             return { success: false, message: 'product_id là bắt buộc' };

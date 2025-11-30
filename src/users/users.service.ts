@@ -196,4 +196,270 @@ export class UsersService {
     });
     return this.sanitizeUser(user);
   }
+
+  // ================== ROLE & PERMISSION MANAGEMENT ==================
+
+  /**
+   * Set role for a user
+   */
+  async setUserRole(userId: number, roleId: number): Promise<any> {
+    // Check if user exists
+    await this.getUserOrThrow(userId);
+
+    // Check if role exists
+    const role = await this.prisma.role.findUnique({
+      where: { id: roleId },
+    });
+
+    if (!role) {
+      throw new NotFoundException(`Role with id ${roleId} not found`);
+    }
+
+    // Update user's role
+    const user = await this.prisma.users.update({
+      where: { id: userId },
+      data: { 
+        role_id: roleId,
+        updated_at: new Date(),
+      },
+      include: {
+        role: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: `User role updated to ${role.name}`,
+      data: this.sanitizeUser(user),
+    };
+  }
+
+  /**
+   * Set permissions for a specific user (user-level permissions)
+   */
+  async setUserPermissions(userId: number, permissionIds: number[]): Promise<any> {
+    // Check if user exists
+    await this.getUserOrThrow(userId);
+
+    // Check if all permissions exist
+    const permissions = await this.prisma.permission.findMany({
+      where: { id: { in: permissionIds } },
+    });
+
+    if (permissions.length !== permissionIds.length) {
+      throw new BadRequestException('One or more permissions not found');
+    }
+
+    // Delete existing user permissions
+    await this.prisma.userpermission.deleteMany({
+      where: { user_id: userId },
+    });
+
+    // Create new user permissions
+    const userPermissions = await this.prisma.userpermission.createMany({
+      data: permissionIds.map((permissionId) => ({
+        user_id: userId,
+        permission_id: permissionId,
+      })),
+    });
+
+    // Fetch updated user permissions
+    const updatedPermissions = await this.prisma.userpermission.findMany({
+      where: { user_id: userId },
+      include: {
+        permission: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: 'User permissions updated successfully',
+      data: {
+        user_id: userId,
+        permissions: updatedPermissions.map((up) => up.permission),
+      },
+    };
+  }
+
+  /**
+   * Create a new permission
+   */
+  async createPermission(name: string): Promise<any> {
+    // Check if permission already exists
+    const existingPermission = await this.prisma.permission.findUnique({
+      where: { name },
+    });
+
+    if (existingPermission) {
+      throw new BadRequestException(`Permission '${name}' already exists`);
+    }
+
+    const permission = await this.prisma.permission.create({
+      data: { name },
+    });
+
+    return {
+      success: true,
+      message: 'Permission created successfully',
+      data: permission,
+    };
+  }
+
+  /**
+   * Set permissions for a role
+   */
+  async setRolePermissions(roleId: number, permissionIds: number[]): Promise<any> {
+    // Check if role exists
+    const role = await this.prisma.role.findUnique({
+      where: { id: roleId },
+    });
+
+    if (!role) {
+      throw new NotFoundException(`Role with id ${roleId} not found`);
+    }
+
+    // Check if all permissions exist
+    const permissions = await this.prisma.permission.findMany({
+      where: { id: { in: permissionIds } },
+    });
+
+    if (permissions.length !== permissionIds.length) {
+      throw new BadRequestException('One or more permissions not found');
+    }
+
+    // Delete existing role permissions
+    await this.prisma.rolepermission.deleteMany({
+      where: { role_id: roleId },
+    });
+
+    // Create new role permissions
+    await this.prisma.rolepermission.createMany({
+      data: permissionIds.map((permissionId) => ({
+        role_id: roleId,
+        permission_id: permissionId,
+      })),
+    });
+
+    // Fetch updated role permissions
+    const updatedPermissions = await this.prisma.rolepermission.findMany({
+      where: { role_id: roleId },
+      include: {
+        permission: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: `Permissions updated for role '${role.name}'`,
+      data: {
+        role_id: roleId,
+        role_name: role.name,
+        permissions: updatedPermissions.map((rp) => rp.permission),
+      },
+    };
+  }
+
+  /**
+   * Get all permissions
+   */
+  async getAllPermissions(): Promise<any> {
+    const permissions = await this.prisma.permission.findMany({
+      orderBy: { name: 'asc' },
+    });
+
+    return {
+      success: true,
+      data: permissions,
+    };
+  }
+
+  /**
+   * Get all roles with their permissions
+   */
+  async getAllRoles(): Promise<any> {
+    const roles = await this.prisma.role.findMany({
+      include: {
+        rolePermissions: {
+          include: {
+            permission: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    return {
+      success: true,
+      data: roles.map((role) => ({
+        id: role.id,
+        name: role.name,
+        permissions: role.rolePermissions.map((rp) => rp.permission),
+      })),
+    };
+  }
+
+  /**
+   * Get user's permissions (from role + user-specific permissions)
+   */
+  async getUserPermissions(userId: number): Promise<any> {
+    await this.getUserOrThrow(userId);
+
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      include: {
+        role: {
+          include: {
+            rolePermissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+        userPermissions: {
+          include: {
+            permission: true,
+          },
+        },
+      },
+    });
+
+    const rolePermissions = user?.role?.rolePermissions.map((rp) => rp.permission) || [];
+    const userPermissions = user?.userPermissions.map((up) => up.permission) || [];
+
+    // Merge and deduplicate permissions
+    const allPermissions = [...rolePermissions, ...userPermissions];
+    const uniquePermissions = Array.from(
+      new Map(allPermissions.map((p) => [p.id, p])).values()
+    );
+
+    return {
+      success: true,
+      data: {
+        user_id: userId,
+        role: user?.role ? { id: user.role.id, name: user.role.name } : null,
+        permissions: uniquePermissions,
+      },
+    };
+  }
 }
