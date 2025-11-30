@@ -70,6 +70,15 @@ export class ShopAddressService {
     async updateShopAddress(addressId: number, updateShopAddressDto: UpdateShopAddressDto) {
         const dataToUpdate: any = { ...updateShopAddressDto };
 
+        const currentAddress = await this.prisma.shop_addresses.findUnique({
+            where: { id: addressId },
+            select: { shop_id: true, is_default: true }
+        });
+
+        if (!currentAddress) {
+            throw new BadRequestException('Shop address not found');
+        }
+
         if (dataToUpdate.ghn_province_id && dataToUpdate.ghn_district_id && dataToUpdate.ghn_ward_code) {
             try {
                 const provinces = await this.deliveryService.getProvinces();
@@ -86,6 +95,17 @@ export class ShopAddressService {
             } catch (error) {
                 throw new BadRequestException('Failed to validate shop address with GHN. Please check the provided location IDs.');
             }
+        }
+
+       
+        if (dataToUpdate.is_default === true) {
+            await this.prisma.shop_addresses.updateMany({
+                where: {
+                    shop_id: currentAddress.shop_id,
+                    id: { not: addressId }, 
+                },
+                data: { is_default: false },
+            });
         }
 
         return this.prisma.shop_addresses.update({

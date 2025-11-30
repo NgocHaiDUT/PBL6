@@ -11,21 +11,30 @@ export class MessagesService {
 
   // Tạo cuộc hội thoại mới
   async createConversation(userId: number, createConversationDto: CreateConversationDto) {
-    const { participant_ids, type } = createConversationDto;
+    const { participant_ids, shop_id, type } = createConversationDto;
 
+    // Nếu là chat với shop
+    if (shop_id) {
+      return this.findOrCreateShopConversation(userId, shop_id);
+    }
+
+    // Chat với users
+    const participants = participant_ids || [];
+    
     // Kiểm tra user có trong danh sách participants không
-    if (!participant_ids.includes(userId)) {
-      participant_ids.push(userId);
+    if (!participants.includes(userId)) {
+      participants.push(userId);
     }
 
     // Kiểm tra nếu là conversation private (2 người) đã tồn tại chưa
-    if (type === 'private' && participant_ids.length === 2) {
+    if (type === 'private' && participants.length === 2) {
       const existingConversation = await this.prisma.conversations.findFirst({
         where: {
           type: 'private',
           participants: {
             every: {
-              user_id: { in: participant_ids }
+              user_id: { in: participants },
+              entity_type: 'user'
             }
           }
         },
@@ -69,11 +78,12 @@ export class MessagesService {
       }
     });
 
-    // Thêm participants
+    // Thêm participants (users only)
     await this.prisma.conversation_participants.createMany({
-      data: participant_ids.map(participantId => ({
+      data: participants.map(participantId => ({
         conversation_id: conversation.id,
         user_id: participantId,
+        entity_type: 'user',
         role: participantId === userId ? 'admin' : 'member'
       }))
     });
@@ -92,7 +102,8 @@ export class MessagesService {
         where: {
           participants: {
             some: {
-              user_id: userId
+              user_id: userId,
+              entity_type: 'user'
             }
           }
         },
@@ -108,6 +119,13 @@ export class MessagesService {
                   full_name: true,
                   avatar_url: true,
                 }
+              },
+              shop: {
+                select: {
+                  id: true,
+                  name: true,
+                  logo_url: true,
+                }
               }
             }
           },
@@ -121,6 +139,13 @@ export class MessagesService {
                   full_name: true,
                   avatar_url: true,
                 }
+              },
+              sender_shop: {
+                select: {
+                  id: true,
+                  name: true,
+                  logo_url: true,
+                }
               }
             }
           }
@@ -130,7 +155,8 @@ export class MessagesService {
         where: {
           participants: {
             some: {
-              user_id: userId
+              user_id: userId,
+              entity_type: 'user'
             }
           }
         }
@@ -169,7 +195,8 @@ export class MessagesService {
         id: conversationId,
         participants: {
           some: {
-            user_id: userId
+            user_id: userId,
+            entity_type: 'user'
           }
         }
       },
@@ -182,6 +209,13 @@ export class MessagesService {
                 full_name: true,
                 avatar_url: true,
               }
+            },
+            shop: {
+              select: {
+                id: true,
+                name: true,
+                logo_url: true,
+              }
             }
           }
         }
@@ -193,6 +227,121 @@ export class MessagesService {
     }
 
     return conversation;
+  }
+
+  // Lấy danh sách conversations của shop
+  async getShopConversations(shopId: number, userId: number, queryDto: QueryConversationsDto) {
+    // Kiểm tra user có quyền truy cập shop này không
+    // 1. Kiểm tra xem user có phải là owner của shop không
+    const shop = await this.prisma.shops.findFirst({
+      where: {
+        id: shopId,
+        owner_id: userId,
+      }
+    });
+
+    // 2. Nếu không phải owner, kiểm tra xem có phải là staff không
+    if (!shop) {
+      const shopStaff = await this.prisma.shop_staffs.findFirst({
+        where: {
+          shop_id: shopId,
+          user_id: userId,
+        }
+      });
+
+      if (!shopStaff) {
+        throw new ForbiddenException('You do not have access to this shop');
+      }
+    }
+
+    const { page = 1, limit = 10 } = queryDto;
+    const skip = (page - 1) * limit;
+
+    const [conversations, total] = await Promise.all([
+      this.prisma.conversations.findMany({
+        where: {
+          participants: {
+            some: {
+              shop_id: shopId,
+              entity_type: 'shop'
+            }
+          }
+        },
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' },
+        include: {
+          participants: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  full_name: true,
+                  avatar_url: true,
+                }
+              },
+              shop: {
+                select: {
+                  id: true,
+                  name: true,
+                  logo_url: true,
+                }
+              }
+            }
+          },
+          messages: {
+            take: 1,
+            orderBy: { created_at: 'desc' },
+            include: {
+              sender: {
+                select: {
+                  id: true,
+                  full_name: true,
+                  avatar_url: true,
+                }
+              },
+              sender_shop: {
+                select: {
+                  id: true,
+                  name: true,
+                  logo_url: true,
+                }
+              }
+            }
+          }
+        }
+      }),
+      this.prisma.conversations.count({
+        where: {
+          participants: {
+            some: {
+              shop_id: shopId,
+              entity_type: 'shop'
+            }
+          }
+        }
+      })
+    ]);
+
+    // Thêm thông tin unread count cho mỗi conversation
+    // Note: Shop không có message_reads, chỉ user mới có
+    const conversationsWithInfo = conversations.map(conversation => {
+      return {
+        ...conversation,
+        last_message: conversation.messages[0] || null,
+        messages: undefined // Remove messages array from response
+      };
+    });
+
+    return {
+      data: conversationsWithInfo,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    };
   }
 
   // Lấy chi tiết tin nhắn
@@ -208,15 +357,47 @@ export class MessagesService {
     return message;
   }
 
-  // Gửi tin nhắn
-  async sendMessage(userId: number, createMessageDto: CreateMessageDto) {
+  // Gửi tin nhắn (từ user hoặc shop)
+  async sendMessage(userId: number, createMessageDto: CreateMessageDto, shopId?: number) {
     const { conversation_id, content, type, payload } = createMessageDto;
 
-    // Kiểm tra user có quyền gửi tin nhắn trong conversation này không
+    // Nếu gửi từ shop, kiểm tra user có quyền quản lý shop không
+    if (shopId) {
+      // Kiểm tra user có phải là owner của shop không
+      const shop = await this.prisma.shops.findFirst({
+        where: {
+          id: shopId,
+          owner_id: userId,
+        }
+      });
+
+      // Nếu không phải owner, kiểm tra có phải là staff không
+      if (!shop) {
+        const shopStaff = await this.prisma.shop_staffs.findFirst({
+          where: {
+            shop_id: shopId,
+            user_id: userId,
+          }
+        });
+
+        if (!shopStaff) {
+          throw new ForbiddenException('You do not have permission to send messages as this shop');
+        }
+      }
+    }
+
+    // Xác định sender type và sender id
+    const senderType = shopId ? 'shop' : 'user';
+    const senderId = shopId || userId;
+
+    // Kiểm tra quyền gửi tin nhắn trong conversation này
     const participant = await this.prisma.conversation_participants.findFirst({
       where: {
         conversation_id,
-        user_id: userId
+        ...(shopId 
+          ? { shop_id: shopId, entity_type: 'shop' }
+          : { user_id: userId, entity_type: 'user' }
+        )
       }
     });
 
@@ -228,7 +409,9 @@ export class MessagesService {
     const message = await this.prisma.messages.create({
       data: {
         conversation_id,
-        sender_id: userId,
+        sender_id: shopId ? null : userId,
+        sender_shop_id: shopId || null,
+        sender_type: senderType,
         content,
         type: type || 'TEXT',
         payload
@@ -240,25 +423,33 @@ export class MessagesService {
             full_name: true,
             avatar_url: true,
           }
+        },
+        sender_shop: {
+          select: {
+            id: true,
+            name: true,
+            logo_url: true,
+          }
         }
       }
     });
 
-    // Tự động đánh dấu là đã đọc cho người gửi
-    await this.prisma.message_reads.create({
-      data: {
-        message_id: message.id,
-        user_id: userId
-      }
-    });
+    // Tự động đánh dấu là đã đọc cho người gửi (chỉ với user)
+    if (!shopId) {
+      await this.prisma.message_reads.create({
+        data: {
+          message_id: message.id,
+          user_id: userId
+        }
+      });
+    }
 
     return message;
   }
 
   // Lấy tin nhắn trong cuộc hội thoại
   async getMessages(conversationId: number, userId: number, queryDto: QueryMessagesDto) {
-    const { page = 1, limit = 20 } = queryDto;
-    const skip = (page - 1) * limit;
+    const { page, limit = 30, cursor, before, after } = queryDto;
 
     // Kiểm tra user có quyền xem tin nhắn không
     const participant = await this.prisma.conversation_participants.findFirst({
@@ -272,14 +463,29 @@ export class MessagesService {
       throw new ForbiddenException('You are not a participant in this conversation');
     }
 
-    const [messages, total] = await Promise.all([
-      this.prisma.messages.findMany({
-        where: {
-          conversation_id: conversationId
-        },
-        skip,
-        take: limit,
-        orderBy: { created_at: 'desc' },
+    // Cursor-based pagination (tối ưu cho infinite scroll)
+    if (cursor || before || after) {
+      const whereCondition: any = {
+        conversation_id: conversationId,
+      };
+
+      // Load tin nhắn cũ hơn (scroll lên - load history)
+      if (before) {
+        whereCondition.id = { lt: before };
+      }
+      // Load tin nhắn mới hơn (scroll xuống - load new messages)
+      else if (after) {
+        whereCondition.id = { gt: after };
+      }
+      // Load từ cursor
+      else if (cursor) {
+        whereCondition.id = { lte: cursor };
+      }
+
+      const messages = await this.prisma.messages.findMany({
+        where: whereCondition,
+        take: limit + 1, // Lấy thêm 1 để kiểm tra hasMore
+        orderBy: { id: 'desc' }, // Sử dụng ID thay vì created_at cho consistency
         include: {
           sender: {
             select: {
@@ -288,8 +494,72 @@ export class MessagesService {
               avatar_url: true,
             }
           },
+          sender_shop: {
+            select: {
+              id: true,
+              name: true,
+              logo_url: true,
+            }
+          },
           message_reads: {
-            include: {
+            select: {
+              user_id: true,
+              read_at: true,
+              user: {
+                select: {
+                  id: true,
+                  full_name: true,
+                  avatar_url: true,
+                }
+              }
+            }
+          }
+        }
+      });
+
+      const hasMore = messages.length > limit;
+      const data = hasMore ? messages.slice(0, limit) : messages;
+
+      return {
+        data: data.reverse(), // Reverse để tin nhắn cũ nhất ở đầu, mới nhất ở cuối
+        cursor: {
+          next: hasMore ? data[data.length - 1]?.id : null,
+          previous: data.length > 0 ? data[0]?.id : null,
+          hasMore,
+        },
+      };
+    }
+
+    // Offset-based pagination (fallback hoặc cho phân trang cổ điển)
+    const skip = page ? (page - 1) * limit : 0;
+
+    const [messages, total] = await Promise.all([
+      this.prisma.messages.findMany({
+        where: {
+          conversation_id: conversationId
+        },
+        skip,
+        take: limit,
+        orderBy: { id: 'desc' },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              full_name: true,
+              avatar_url: true,
+            }
+          },
+          sender_shop: {
+            select: {
+              id: true,
+              name: true,
+              logo_url: true,
+            }
+          },
+          message_reads: {
+            select: {
+              user_id: true,
+              read_at: true,
               user: {
                 select: {
                   id: true,
@@ -309,9 +579,9 @@ export class MessagesService {
     ]);
 
     return {
-      data: messages.reverse(), // Reverse để hiển thị tin nhắn mới nhất ở cuối
+      data: messages.reverse(),
       pagination: {
-        page,
+        page: page || 1,
         limit,
         total,
         pages: Math.ceil(total / limit),
@@ -447,7 +717,8 @@ export class MessagesService {
         type: 'private',
         participants: {
           every: {
-            user_id: { in: [userId, otherUserId] }
+            user_id: { in: [userId, otherUserId] },
+            entity_type: 'user'
           }
         }
       },
@@ -474,6 +745,118 @@ export class MessagesService {
     return this.createConversation(userId, {
       participant_ids: [otherUserId],
       type: 'private'
+    });
+  }
+
+  // Tìm hoặc tạo conversation với shop
+  async findOrCreateShopConversation(userId: number, shopId: number) {
+    // Kiểm tra shop có tồn tại không
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopId },
+      select: { id: true, name: true, logo_url: true }
+    });
+
+    if (!shop) {
+      throw new NotFoundException('Shop not found');
+    }
+
+    // Tìm conversation user-shop đã tồn tại
+    const existingConversation = await this.prisma.conversations.findFirst({
+      where: {
+        type: 'user_shop',
+        AND: [
+          {
+            participants: {
+              some: {
+                user_id: userId,
+                entity_type: 'user'
+              }
+            }
+          },
+          {
+            participants: {
+              some: {
+                shop_id: shopId,
+                entity_type: 'shop'
+              }
+            }
+          }
+        ]
+      },
+      include: {
+        participants: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                full_name: true,
+                avatar_url: true,
+              }
+            },
+            shop: {
+              select: {
+                id: true,
+                name: true,
+                logo_url: true,
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (existingConversation) {
+      return existingConversation;
+    }
+
+    // Tạo conversation mới
+    const conversation = await this.prisma.conversations.create({
+      data: {
+        type: 'user_shop',
+      }
+    });
+
+    // Thêm user và shop vào participants
+    await this.prisma.conversation_participants.createMany({
+      data: [
+        {
+          conversation_id: conversation.id,
+          user_id: userId,
+          entity_type: 'user',
+          role: 'member'
+        },
+        {
+          conversation_id: conversation.id,
+          shop_id: shopId,
+          entity_type: 'shop',
+          role: 'member'
+        }
+      ]
+    });
+
+    // Lấy conversation với đầy đủ thông tin
+    return this.prisma.conversations.findUnique({
+      where: { id: conversation.id },
+      include: {
+        participants: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                full_name: true,
+                avatar_url: true,
+              }
+            },
+            shop: {
+              select: {
+                id: true,
+                name: true,
+                logo_url: true,
+              }
+            }
+          }
+        }
+      }
     });
   }
 

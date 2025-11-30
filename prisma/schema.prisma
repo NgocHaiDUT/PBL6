@@ -189,25 +189,27 @@ model userpermission {
 // SELLER / SHOP
 ///////////////////////////////////////////////////////
 model shops {
-  id          Int              @id @default(autoincrement())
-  owner_id    Int              @unique
-  name        String
-  slug        String           @unique
-  logo_url    String?
-  phone       String?
-  email       String?
-  cover_url   String?
-  description String?
-  is_verified Boolean          @default(false)
-  created_at  DateTime         @default(now())
-  updated_at  DateTime         @default(now())
-  owner       users            @relation(fields: [owner_id], references: [id])
-  shop_staffs shop_staffs[]
-  products    products[]
-  orders      orders[]
-  posts       posts[]
-  addresses   shop_addresses[]
-  ghn_shop_id Int?             @unique
+  id                        Int                         @id @default(autoincrement())
+  owner_id                  Int                         @unique
+  name                      String
+  slug                      String                      @unique
+  logo_url                  String?
+  phone                     String?
+  email                     String?
+  cover_url                 String?
+  description               String?
+  is_verified               Boolean                     @default(false)
+  created_at                DateTime                    @default(now())
+  updated_at                DateTime                    @default(now())
+  owner                     users                       @relation(fields: [owner_id], references: [id])
+  shop_staffs               shop_staffs[]
+  products                  products[]
+  orders                    orders[]
+  posts                     posts[]
+  addresses                 shop_addresses[]
+  ghn_shop_id               Int?                        @unique
+  conversation_participants conversation_participants[]
+  messages                  messages[]
 }
 
 model shop_addresses {
@@ -679,34 +681,47 @@ model audit_logs {
 
 model conversations {
   id           Int                         @id @default(autoincrement())
-  type         String                      @default("private")
+  type         String                      @default("private") // private, group, user_shop
   created_at   DateTime                    @default(now())
   participants conversation_participants[]
   messages     messages[]
 }
 
 model conversation_participants {
+  id              Int           @id @default(autoincrement())
   conversation_id Int
-  user_id         Int
+  user_id         Int?          // Nullable khi participant là shop
+  shop_id         Int?          // Nullable khi participant là user
+  entity_type     String        // 'user' hoặc 'shop'
   role            String?
   joined_at       DateTime      @default(now())
-  conversation    conversations @relation(fields: [conversation_id], references: [id])
-  user            users         @relation(fields: [user_id], references: [id])
+  conversation    conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  user            users?        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  shop            shops?        @relation(fields: [shop_id], references: [id], onDelete: Cascade)
 
-  @@id([conversation_id, user_id])
+  @@unique([conversation_id, user_id], name: "unique_user_conversation")
+  @@unique([conversation_id, shop_id], name: "unique_shop_conversation")
+  @@index([user_id])
+  @@index([shop_id])
 }
 
 model messages {
   id              Int           @id @default(autoincrement())
   conversation_id Int
-  sender_id       Int
+  sender_id       Int?          // User ID nếu người gửi là user
+  sender_shop_id  Int?          // Shop ID nếu người gửi là shop
+  sender_type     String        // 'user' hoặc 'shop'
   type            message_type  @default(TEXT)
   content         String?
   payload         Json?
   created_at      DateTime      @default(now())
-  conversation    conversations   @relation(fields: [conversation_id], references: [id])
-  sender          users           @relation(fields: [sender_id], references: [id])
+  conversation    conversations   @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  sender          users?          @relation(fields: [sender_id], references: [id], onDelete: SetNull)
+  sender_shop     shops?          @relation(fields: [sender_shop_id], references: [id], onDelete: SetNull)
   message_reads   message_reads[]
+
+  @@index([sender_id])
+  @@index([sender_shop_id])
 }
 
 model message_reads {

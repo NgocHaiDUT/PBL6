@@ -49,6 +49,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit('joined', { userId, message: 'Successfully joined chat' });
   }
 
+  @SubscribeMessage('joinShop')
+  handleJoinShop(@MessageBody() data: { shopId: number; userId: number }, @ConnectedSocket() client: Socket) {
+    if (!data.shopId || !data.userId) return;
+    // Join shop room for receiving messages
+    client.join(`shop_${data.shopId}`);
+    // Also join user room for personal notifications
+    client.join(`${data.userId}`);
+    this.logger.log(`User ${data.userId} joined shop ${data.shopId} room`);
+    client.emit('joinedShop', { shopId: data.shopId, message: 'Successfully joined shop chat' });
+  }
+
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
     @MessageBody() data: SendMessageDto,
@@ -56,45 +67,78 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     try {
       this.logger.log(
-        `Message from ${data.senderId} to ${data.receiverId}: ${data.content}`,
+        `Message from ${data.senderShopId ? `shop ${data.senderShopId}` : `user ${data.senderId}`} to ${data.receiverId}: ${data.content}`,
       );
 
-      // 1. Find or create conversation using MessagesService
-      const conversation = await this.messagesService.findOrCreateConversation(
-        data.senderId,
-        data.receiverId,
-      );
+      // 1. Determine conversation based on sender type
+      let conversation;
+      
+      if (data.senderShopId) {
+        // Shop sending to user
+        conversation = await this.messagesService.findOrCreateShopConversation(
+          data.receiverId, // receiverId is the user
+          data.senderShopId,
+        );
+      } else {
+        // User sending to user or user sending to shop (handled in findOrCreateConversation)
+        conversation = await this.messagesService.findOrCreateConversation(
+          data.senderId,
+          data.receiverId,
+        );
+      }
+
+      if (!conversation) {
+        throw new Error('Failed to create or find conversation');
+      }
 
       // 2. Create message using MessagesService
-      const message = await this.messagesService.sendMessage(data.senderId, {
-        conversation_id: conversation.id,
-        content: data.content,
-        type: data.type,
-        payload: data.payload,
-      });
+      const message = await this.messagesService.sendMessage(
+        data.senderId, 
+        {
+          conversation_id: conversation.id,
+          content: data.content,
+          type: data.type,
+          payload: data.payload,
+        },
+        data.senderShopId // Pass shopId if sending as shop
+      );
 
       // 3. Format message for frontend
       const formattedMessage = {
         id: message.id,
         conversationId: message.conversation_id,
         senderId: message.sender_id,
-        receiverId: data.receiverId, // Keep receiverId for frontend convenience
+        senderShopId: message.sender_shop_id,
+        senderType: message.sender_type,
+        receiverId: data.receiverId,
         content: message.content,
         type: message.type,
         payload: message.payload,
         createdAt: message.created_at.toISOString(),
-        sender: {
+        sender: message.sender ? {
           id: message.sender.id,
           fullName: message.sender.full_name || 'Unknown User',
           avatarUrl: message.sender.avatar_url,
-        },
+        } : message.sender_shop ? {
+          id: message.sender_shop.id,
+          fullName: message.sender_shop.name,
+          avatarUrl: message.sender_shop.logo_url,
+        } : null,
       };
 
-      // 4. Send message to both users in the conversation
+      // 4. Send message to all participants in the conversation
       conversation.participants.forEach(participant => {
-        this.server
-          .to(`${participant.user_id}`)
-          .emit('newMessage', formattedMessage);
+        if (participant.user_id) {
+          this.server
+            .to(`${participant.user_id}`)
+            .emit('newMessage', formattedMessage);
+        }
+        // También podríamos enviar a shops si implementamos shop rooms
+        if (participant.shop_id) {
+          this.server
+            .to(`shop_${participant.shop_id}`)
+            .emit('newMessage', formattedMessage);
+        }
       });
 
       // 5. Confirm to sender
@@ -129,10 +173,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (conversation) {
           // Notify all participants about the deletion
           conversation.participants.forEach(p => {
-            this.server.to(`${p.user_id}`).emit('messageDeleted', { 
-              messageId: data.messageId, 
-              conversationId: conversation.id 
-            });
+            if (p.user_id) {
+              this.server.to(`${p.user_id}`).emit('messageDeleted', { 
+                messageId: data.messageId, 
+                conversationId: conversation.id 
+              });
+            }
           });
         }
       }
@@ -162,6 +208,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         data.targetId,
       );
 
+      if (!conversation) {
+        throw new Error('Failed to create or find conversation');
+      }
+
       // 2. Get conversation messages
       const messageHistory = await this.messagesService.getMessages(
         conversation.id,
@@ -174,7 +224,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         p => p.user_id === data.targetId,
       );
 
-      if (!targetUserParticipant) {
+      if (!targetUserParticipant || !targetUserParticipant.user) {
         throw new Error('Target user not found in conversation');
       }
       const targetUser = targetUserParticipant.user;
@@ -189,11 +239,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         type: msg.type,
         payload: msg.payload,
         createdAt: msg.created_at.toISOString(),
-        sender: {
+        sender: msg.sender ? {
           id: msg.sender.id,
           fullName: msg.sender.full_name || 'Unknown User',
           avatarUrl: msg.sender.avatar_url,
-        },
+        } : msg.sender_shop ? {
+          id: msg.sender_shop.id,
+          fullName: msg.sender_shop.name,
+          avatarUrl: msg.sender_shop.logo_url,
+        } : null,
       }));
 
       // 5. Send conversation history to opener

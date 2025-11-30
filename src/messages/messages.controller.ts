@@ -11,6 +11,7 @@ import {
   Req,
   Patch,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { MessagesService } from './messages.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { CreateConversationDto } from './dto/create-conversation.dto';
@@ -21,126 +22,127 @@ import { QueryConversationsDto } from './dto/query-conversations.dto';
 export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
 
-  // Tạo cuộc hội thoại mới
   @Post('conversations')
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
+  @UseGuards(AuthGuard('jwt'))
   createConversation(
     @Body() createConversationDto: CreateConversationDto,
     @Req() req: any,
   ) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
-    return this.messagesService.createConversation(userId, createConversationDto);
+    return this.messagesService.createConversation(req.user.userId, createConversationDto);
   }
 
-  // Lấy danh sách cuộc hội thoại của user
   @Get('conversations')
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
+  @UseGuards(AuthGuard('jwt'))
   getUserConversations(
-    @Query() queryDto: QueryConversationsDto & { userId?: string },
+    @Query() queryDto: QueryConversationsDto,
     @Req() req: any,
   ) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = parseInt(queryDto.userId || '1') || 1; // Convert to number or fallback to 1
-    return this.messagesService.getUserConversations(userId, queryDto);
+    return this.messagesService.getUserConversations(req.user.userId, queryDto);
   }
 
-  // Lấy chi tiết cuộc hội thoại
   @Get('conversations/:id')
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
+  @UseGuards(AuthGuard('jwt'))
   getConversation(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: any,
   ) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
-    return this.messagesService.getConversationById(id, userId);
+    return this.messagesService.getConversationById(id, req.user.userId);
   }
 
-  // Tìm hoặc tạo cuộc hội thoại với user khác
   @Post('conversations/find-or-create/:otherUserId')
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
+  @UseGuards(AuthGuard('jwt'))
   findOrCreateConversation(
     @Param('otherUserId', ParseIntPipe) otherUserId: number,
-    @Body() body: { userId?: number },
     @Req() req: any,
   ) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = parseInt(String(body.userId || 1)) || 1; // Convert to number or fallback to 1
-    return this.messagesService.findOrCreateConversation(userId, otherUserId);
+    return this.messagesService.findOrCreateConversation(req.user.userId, otherUserId);
   }
 
-  // Gửi tin nhắn
+  @Post('conversations/shop/:shopId')
+  @UseGuards(AuthGuard('jwt'))
+  findOrCreateShopConversation(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Req() req: any,
+  ) {
+    return this.messagesService.findOrCreateShopConversation(req.user.userId, shopId);
+  }
+
+  // Gửi tin nhắn từ user
   @Post()
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
+  @UseGuards(AuthGuard('jwt'))
   sendMessage(
-    @Body() createMessageDto: CreateMessageDto & { userId?: number },
+    @Body() createMessageDto: CreateMessageDto,
     @Req() req: any,
   ) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = parseInt(String(createMessageDto.userId || 1)) || 1; // Convert to number or fallback to 1
-    return this.messagesService.sendMessage(userId, createMessageDto);
+    return this.messagesService.sendMessage(req.user.userId, createMessageDto);
   }
 
-  // Lấy tin nhắn trong cuộc hội thoại
+  // Gửi tin nhắn từ shop
+  @Post('shop/:shopId')
+  @UseGuards(AuthGuard('jwt'))
+  sendMessageAsShop(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Body() createMessageDto: CreateMessageDto,
+    @Req() req: any,
+  ) {
+    // Kiểm tra user có quyền quản lý shop này không sẽ được xử lý trong service
+    return this.messagesService.sendMessage(req.user.userId, createMessageDto, shopId);
+  }
+
+  // Lấy danh sách conversations của shop
+  @Get('shop/:shopId/conversations')
+  @UseGuards(AuthGuard('jwt'))
+  getShopConversations(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Query() queryDto: QueryConversationsDto,
+    @Req() req: any,
+  ) {
+    return this.messagesService.getShopConversations(shopId, req.user.userId, queryDto);
+  }
+
   @Get('conversations/:conversationId/messages')
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
+  @UseGuards(AuthGuard('jwt'))
   getMessages(
     @Param('conversationId', ParseIntPipe) conversationId: number,
     @Query() queryDto: QueryMessagesDto,
     @Req() req: any,
   ) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
-    return this.messagesService.getMessages(conversationId, userId, queryDto);
+    return this.messagesService.getMessages(conversationId, req.user.userId, queryDto);
   }
 
-  // Đánh dấu tin nhắn là đã đọc
   @Patch(':messageId/read')
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
+  @UseGuards(AuthGuard('jwt'))
   markMessageAsRead(
     @Param('messageId', ParseIntPipe) messageId: number,
     @Req() req: any,
   ) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
-    return this.messagesService.markMessageAsRead(messageId, userId);
+    return this.messagesService.markMessageAsRead(messageId, req.user.userId);
   }
 
-  // Đánh dấu tất cả tin nhắn trong conversation là đã đọc
   @Patch('conversations/:conversationId/read-all')
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
+  @UseGuards(AuthGuard('jwt'))
   markAllMessagesAsRead(
     @Param('conversationId', ParseIntPipe) conversationId: number,
-    @Body() body: { userId?: number },
     @Req() req: any,
   ) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = parseInt(String(body.userId || 1)) || 1; // Convert to number or fallback to 1
-    return this.messagesService.markAllMessagesAsRead(conversationId, userId);
+    return this.messagesService.markAllMessagesAsRead(conversationId, req.user.userId);
   }
 
-  // Đếm số tin nhắn chưa đọc trong conversation
   @Get('conversations/:conversationId/unread-count')
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
+  @UseGuards(AuthGuard('jwt'))
   getUnreadCount(
     @Param('conversationId', ParseIntPipe) conversationId: number,
     @Req() req: any,
   ) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
-    return this.messagesService.getUnreadMessagesCount(conversationId, userId);
+    return this.messagesService.getUnreadMessagesCount(conversationId, req.user.userId);
   }
 
-  // Xóa tin nhắn
   @Delete(':messageId')
-  // @UseGuards(JwtAuthGuard) // Uncomment khi có auth guard
+  @UseGuards(AuthGuard('jwt'))
   deleteMessage(
     @Param('messageId', ParseIntPipe) messageId: number,
     @Req() req: any,
   ) {
-    // const userId = req.user.id; // Lấy từ JWT token
-    const userId = 1; // Mock user ID for now
-    return this.messagesService.deleteMessage(messageId, userId);
+    return this.messagesService.deleteMessage(messageId, req.user.userId);
   }
 }
