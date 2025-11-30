@@ -31,7 +31,9 @@ export class PostsController {
   @Post()
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   @RequirePermissions('create_post')
-  @UseInterceptors(FilesInterceptor('media', 10, getMulterOptions('postimages', 'media')))
+  @UseInterceptors(
+    FilesInterceptor('media', 10, getMulterOptions('postimages', 'media')),
+  )
   create(
     @Body() createPostDto: CreatePostDto,
     @Req() req: any,
@@ -74,7 +76,9 @@ export class PostsController {
   @Post(':id/upload-cover')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   @RequirePermissions('edit_post')
-  @UseInterceptors(FileInterceptor('cover', getMulterOptions('postimages', 'image')))
+  @UseInterceptors(
+    FileInterceptor('cover', getMulterOptions('postimages', 'image')),
+  )
   uploadCoverImage(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile() file: any,
@@ -87,7 +91,9 @@ export class PostsController {
   @Post(':id/upload-video')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   @RequirePermissions('edit_post')
-  @UseInterceptors(FileInterceptor('video', getMulterOptions('videos', 'video')))
+  @UseInterceptors(
+    FileInterceptor('video', getMulterOptions('videos', 'video')),
+  )
   uploadVideo(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile() file: any,
@@ -100,7 +106,9 @@ export class PostsController {
   @Post(':id/upload-media')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   @RequirePermissions('edit_post')
-  @UseInterceptors(FilesInterceptor('media', 10, getMulterOptions('postimages', 'media')))
+  @UseInterceptors(
+    FilesInterceptor('media', 10, getMulterOptions('postimages', 'media')),
+  )
   uploadAdditionalMedia(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFiles() files: any[],

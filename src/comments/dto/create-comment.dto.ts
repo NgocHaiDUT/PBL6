@@ -1,4 +1,10 @@
-import { IsString, IsInt, IsOptional, IsNotEmpty, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  IsOptional,
+  IsNotEmpty,
+  MaxLength,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateCommentDto {
@@ -17,11 +23,11 @@ export class CreateCommentDto {
 
   @IsOptional()
   @IsInt()
-  @Transform(({ value }) => value ? parseInt(value) : null)
+  @Transform(({ value }) => (value ? parseInt(value) : null))
   parent_id?: number; // For nested comments/replies
 
   @IsOptional()
   @IsInt()
-  @Transform(({ value }) => value ? parseInt(value) : null)
+  @Transform(({ value }) => (value ? parseInt(value) : null))
   user_id?: number; // User ID from frontend
 }

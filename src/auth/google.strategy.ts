@@ -85,7 +85,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
     identity = await this.prisma.auth_identities.create({
       data: {
-        user_id: user!.id,
+        user_id: user.id,
         provider,
         provider_user_id: providerUserId,
         access_token: accessToken,

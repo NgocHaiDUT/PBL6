@@ -25,45 +25,47 @@ import { ShopModule } from './shop/shop.module';
 import { OrderModule } from './order/order.module';
 import { AddressModule } from './address/address.module';
 import { ShopAddressModule } from './shop-address/shop-address.module';
-import { GhnModule } from './ghn/ghn.module';
 import { DeliveryModule } from './delivery/delivery.module';
 import { UsersModule } from './users/users.module';
 import { RangeRequestMiddleware } from './middleware/range-request.middleware';
 import { SearchModule } from './search/search.module';
 import { ReviewsModule } from './reviews/reviews.module'; // ✅ Add ReviewsModule
 
+import { PaymentController } from './payment/payment.controller';
+import { PaymentModule } from './payment/payment.module';
 @Module({
   imports: [
     AuthModule,
     MailerModule.forRootAsync({
-      imports: [ConfigModule.forRoot({
-      isGlobal: true,        
-      envFilePath: '.env',  
-      }),],
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+          envFilePath: '.env',
+        }),
+      ],
       useFactory: async (ConfigService: ConfigService) => ({
         transport: {
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: {
-          user: ConfigService.get<string>('EMAIL_USER'),
-          pass: ConfigService.get<string>('EMAIL_PASS'),
+          host: 'smtp.gmail.com',
+          port: 465,
+          secure: true,
+          auth: {
+            user: ConfigService.get<string>('EMAIL_USER'),
+            pass: ConfigService.get<string>('EMAIL_PASS'),
+          },
         },
-      },
-      defaults: {
-        from: '"No Reply" <no-reply@localhost>',
-      },
-      preview: true,
-      template: {
-        dir: process.cwd() + '/template/',
-        adapter: new HandlebarsAdapter(), 
-        options: {
-          strict: true,
+        defaults: {
+          from: '"No Reply" <no-reply@localhost>',
         },
-      },
+        preview: true,
+        template: {
+          dir: process.cwd() + '/template/',
+          adapter: new HandlebarsAdapter(),
+          options: {
+            strict: true,
+          },
+        },
       }),
       inject: [ConfigService],
-      
     }),
     PrismaModule,
     PostsModule,
@@ -82,7 +84,6 @@ import { ReviewsModule } from './reviews/reviews.module'; // ✅ Add ReviewsModu
     DataInitModule,
     AddressModule,
     ShopAddressModule,
-    GhnModule,
     SearchModule, // ✅ Add SearchModule
     ReviewsModule, // ✅ Add ReviewsModule
 
@@ -96,8 +97,9 @@ import { ReviewsModule } from './reviews/reviews.module'; // ✅ Add ReviewsModu
     ShopModule,
     DeliveryModule,
     UsersModule,
+    PaymentModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, PaymentController],
   providers: [AppService, PrismaService],
 })
 export class AppModule implements NestModule {

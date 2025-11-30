@@ -14,7 +14,9 @@ import { getMulterOptions } from '../config/storage.config';
 export class ChatController {
   @Post('upload')
   @UseGuards(AuthGuard('jwt'))
-  @UseInterceptors(FileInterceptor('file', getMulterOptions('chat_media', 'media')))
+  @UseInterceptors(
+    FileInterceptor('file', getMulterOptions('chat_media', 'media')),
+  )
   uploadFile(@UploadedFile() file: any) {
     const fileUrl = file.location || `/uploads/chat_media/${file.filename}`;
     return {

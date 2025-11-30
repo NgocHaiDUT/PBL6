@@ -3,7 +3,9 @@ import { Transform } from 'class-transformer';
 
 export class QueryCommentsDto {
   @IsString()
-  @IsIn(['post', 'product'], { message: 'Target type must be either "post" or "product"' })
+  @IsIn(['post', 'product'], {
+    message: 'Target type must be either "post" or "product"',
+  })
   target_type: string;
 
   @Transform(({ value }) => {

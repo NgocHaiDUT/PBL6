@@ -65,7 +65,21 @@ The checkout process is the most critical workflow in this module.
             }
           ]
         }
-      ]
+      ],
+      "paymentUrl": null
+    }
+    ```
+
+    **Note on VNPAY Payment:**
+    If you set `"payment_method": "vnpay"`, the response will contain a `paymentUrl`. Your frontend application should redirect the user to this URL to complete the payment.
+
+    Example response for VNPAY:
+    ```json
+    {
+      "success": true,
+      "message": "Đặt hàng thành công",
+      "orders": [...],
+      "paymentUrl": "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?vnp_Amount=545000..."
     }
     ```
 
