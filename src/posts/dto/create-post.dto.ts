@@ -1,6 +1,17 @@
-import { IsString, IsOptional, IsArray, IsEnum, IsInt, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsBoolean,
+} from 'class-validator';
 
 export class CreatePostDto {
+  @IsOptional()
+  @IsInt()
+  user_id?: number;
+
   @IsOptional()
   @IsInt()
   shop_id?: number;
@@ -27,8 +38,6 @@ export class CreatePostDto {
   @IsOptional()
   @IsEnum(['public', 'private', 'friends'])
   visibility?: string = 'public';
-
-
 
   @IsOptional()
   @IsArray()

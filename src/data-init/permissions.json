@@ -7,10 +7,11 @@
   { "name": "edit_profile" },
   { "name": "create_shop"},
 
-
   { "name": "create_product" },
   { "name": "edit_product" },
   { "name": "delete_product" },
+  { "name": "update_product" },
+  { "name": "manage_product_categories" },
   { "name": "manage_orders" },
   { "name": "view_shop_dashboard" },
   { "name": "manage_shop_staff" },
@@ -22,7 +23,10 @@
   { "name": "update_order_status" },
   { "name": "moderate_reviews" },
 
-
+  { "name": "view_users" },
+  { "name": "create_user" },
+  { "name": "update_user" },
+  { "name": "delete_user" },
   { "name": "manage_users" },
   { "name": "manage_roles" },
   { "name": "manage_permissions" },

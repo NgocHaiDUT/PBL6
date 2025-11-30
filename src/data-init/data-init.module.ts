@@ -8,6 +8,6 @@ import { PrismaModule } from 'src/prisma/prisma.module';
   imports: [PrismaModule],
   controllers: [DataInitController],
   providers: [DataInitService, S3UploadService],
-  exports: [S3UploadService]
+  exports: [S3UploadService],
 })
 export class DataInitModule {}

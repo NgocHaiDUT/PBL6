@@ -1,13 +1,16 @@
 import { IsOptional, IsInt } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { Type } from 'class-transformer';
 
 export class QueryMessagesDto {
   @IsOptional()
+  @Transform(({ value }) => parseInt(value))
   @Type(() => Number)
   @IsInt()
   page?: number = 1;
 
   @IsOptional()
+  @Transform(({ value }) => parseInt(value))
   @Type(() => Number)
   @IsInt()
   limit?: number = 20;

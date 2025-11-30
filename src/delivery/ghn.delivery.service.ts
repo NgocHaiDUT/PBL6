@@ -12,7 +12,6 @@ import {
   GetLeadtimeDto,
 } from './dto/ghn-order.dto';
 
-
 @Injectable()
 export class GHNDeliveryService extends DeliveryService {
   private readonly token: string;
@@ -27,9 +26,13 @@ export class GHNDeliveryService extends DeliveryService {
     const apiUrl = this.configService.get<string>('GHN_API_URL');
 
     if (!token || !apiUrl) {
-      throw new Error(
-        'GHN_API_TOKEN and GHN_API_URL must be configured in .env file',
+      console.warn(
+        'GHN_API_TOKEN and GHN_API_URL are not configured in .env file. GHN service will not be available.',
       );
+      // Set default values to prevent crashes
+      this.token = '';
+      this.apiUrl = '';
+      return;
     }
 
     this.token = token;
@@ -42,6 +45,13 @@ export class GHNDeliveryService extends DeliveryService {
     data: any = {},
     extraHeaders: any = {},
   ) {
+    if (!this.token || !this.apiUrl) {
+      throw new HttpException(
+        'GHN API is not configured',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
     const url = `${this.apiUrl}/${endpoint}`;
     const headers = {
       'Content-Type': 'application/json',
@@ -247,7 +257,12 @@ export class GHNDeliveryService extends DeliveryService {
       Token: this.token,
       ShopId: shopId.toString(),
     };
-    return this.makeRequest('v2/shipping-order/leadtime', 'post', data, headers);
+    return this.makeRequest(
+      'v2/shipping-order/leadtime',
+      'post',
+      data,
+      headers,
+    );
   }
 
   async getPrintToken(orderCodes: string[]) {
@@ -256,4 +271,3 @@ export class GHNDeliveryService extends DeliveryService {
     });
   }
 }
-

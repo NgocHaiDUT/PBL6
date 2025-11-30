@@ -14,7 +14,11 @@ import {
 import { FollowsService } from './follows.service';
 import { CreateFollowDto } from './dto/create-follow.dto';
 import { QueryFollowsDto } from './dto/query-follows.dto';
-import { FollowResponse, FollowStatsResponse, PaginatedFollowsResponse } from './interfaces/follow.interface';
+import {
+  FollowResponse,
+  FollowStatsResponse,
+  PaginatedFollowsResponse,
+} from './interfaces/follow.interface';
 
 @Controller('follows')
 export class FollowsController {
@@ -28,12 +32,19 @@ export class FollowsController {
   ): Promise<FollowResponse> {
     // Use user_id from request body, fallback to JWT token, then fallback to 1
     const followerId = createFollowDto.user_id || req.user?.id || 1;
-    console.log('👥 [Controller] Creating follow with follower ID:', followerId, 'following:', createFollowDto.following_id);
+    console.log(
+      '👥 [Controller] Creating follow with follower ID:',
+      followerId,
+      'following:',
+      createFollowDto.following_id,
+    );
     return this.followsService.create(createFollowDto, followerId);
   }
 
   @Get()
-  async findAll(@Query() queryDto: QueryFollowsDto): Promise<PaginatedFollowsResponse> {
+  async findAll(
+    @Query() queryDto: QueryFollowsDto,
+  ): Promise<PaginatedFollowsResponse> {
     console.log('👥 [Controller] Getting follows with query:', queryDto);
     return this.followsService.findAll(queryDto);
   }
@@ -43,7 +54,12 @@ export class FollowsController {
     @Param('userId', ParseIntPipe) userId: number,
     @Query('currentUserId') currentUserId?: number,
   ): Promise<FollowStatsResponse> {
-    console.log('👥 [Controller] Getting follow stats for user:', userId, 'current user:', currentUserId);
+    console.log(
+      '👥 [Controller] Getting follow stats for user:',
+      userId,
+      'current user:',
+      currentUserId,
+    );
     return this.followsService.getStats(userId, currentUserId);
   }
 
@@ -53,9 +69,12 @@ export class FollowsController {
     @Body() body: { user_id?: number },
     @Request() req: any,
   ): Promise<{ following: boolean; followers_count: number }> {
-    // Use user_id from request body, fallback to JWT token, then fallback to 1  
+    // Use user_id from request body, fallback to JWT token, then fallback to 1
     const followerId = body.user_id || req.user?.id || 1;
-    console.log('👥 [Controller] Toggling follow:', { followerId, followingId });
+    console.log('👥 [Controller] Toggling follow:', {
+      followerId,
+      followingId,
+    });
     return this.followsService.toggleFollow(followingId, followerId);
   }
 
@@ -68,7 +87,10 @@ export class FollowsController {
   ): Promise<void> {
     // Use user_id from request body, fallback to JWT token, then fallback to 1
     const followerId = body.user_id || req.user?.id || 1;
-    console.log('👥 [Controller] Removing follow:', { followerId, followingId });
+    console.log('👥 [Controller] Removing follow:', {
+      followerId,
+      followingId,
+    });
     return this.followsService.remove(followingId, followerId);
   }
 
@@ -83,7 +105,7 @@ export class FollowsController {
       user_id: userId,
       type: 'followers',
       page: page || 1,
-      limit: limit || 20
+      limit: limit || 20,
     };
     return this.followsService.findAll(queryDto);
   }
@@ -99,7 +121,7 @@ export class FollowsController {
       user_id: userId,
       type: 'following',
       page: page || 1,
-      limit: limit || 20
+      limit: limit || 20,
     };
     return this.followsService.findAll(queryDto);
   }

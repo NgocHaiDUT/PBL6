@@ -71,3 +71,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 /api_docs
 
 /ghn 
+
+/docs
+
+prisma/migrations/

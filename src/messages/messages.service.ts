@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { CreateConversationDto } from './dto/create-conversation.dto';
@@ -10,7 +15,10 @@ export class MessagesService {
   constructor(private prisma: PrismaService) {}
 
   // Tạo cuộc hội thoại mới
-  async createConversation(userId: number, createConversationDto: CreateConversationDto) {
+  async createConversation(
+    userId: number,
+    createConversationDto: CreateConversationDto,
+  ) {
     const { participant_ids, shop_id, type } = createConversationDto;
 
     // Nếu là chat với shop
@@ -34,9 +42,9 @@ export class MessagesService {
           participants: {
             every: {
               user_id: { in: participants },
-              entity_type: 'user'
-            }
-          }
+              entity_type: 'user',
+            },
+          },
         },
         include: {
           participants: {
@@ -46,14 +54,17 @@ export class MessagesService {
                   id: true,
                   full_name: true,
                   avatar_url: true,
-                }
-              }
-            }
-          }
-        }
+                },
+              },
+            },
+          },
+        },
       });
 
-      if (existingConversation && existingConversation.participants.length === 2) {
+      if (
+        existingConversation &&
+        existingConversation.participants.length === 2
+      ) {
         return existingConversation;
       }
     }
@@ -71,21 +82,21 @@ export class MessagesService {
                 id: true,
                 full_name: true,
                 avatar_url: true,
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     });
 
     // Thêm participants (users only)
     await this.prisma.conversation_participants.createMany({
-      data: participants.map(participantId => ({
+      data: participants.map((participantId) => ({
         conversation_id: conversation.id,
         user_id: participantId,
         entity_type: 'user',
-        role: participantId === userId ? 'admin' : 'member'
-      }))
+        role: participantId === userId ? 'admin' : 'member',
+      })),
     });
 
     // Lấy conversation với participants đã được thêm
@@ -103,9 +114,9 @@ export class MessagesService {
           participants: {
             some: {
               user_id: userId,
-              entity_type: 'user'
-            }
-          }
+              entity_type: 'user',
+            },
+          },
         },
         skip,
         take: limit,
@@ -118,7 +129,7 @@ export class MessagesService {
                   id: true,
                   full_name: true,
                   avatar_url: true,
-                }
+                },
               },
               shop: {
                 select: {
@@ -126,8 +137,8 @@ export class MessagesService {
                   name: true,
                   logo_url: true,
                 }
-              }
-            }
+              },
+            },
           },
           messages: {
             take: 1,
@@ -138,7 +149,7 @@ export class MessagesService {
                   id: true,
                   full_name: true,
                   avatar_url: true,
-                }
+                },
               },
               sender_shop: {
                 select: {
@@ -146,35 +157,38 @@ export class MessagesService {
                   name: true,
                   logo_url: true,
                 }
-              }
-            }
-          }
-        }
+              },
+            },
+          },
+        },
       }),
       this.prisma.conversations.count({
         where: {
           participants: {
             some: {
               user_id: userId,
-              entity_type: 'user'
-            }
-          }
-        }
-      })
+              entity_type: 'user',
+            },
+          },
+        },
+      }),
     ]);
 
     // Thêm thông tin unread count cho mỗi conversation
     const conversationsWithUnread = await Promise.all(
       conversations.map(async (conversation) => {
-        const unreadCount = await this.getUnreadMessagesCount(conversation.id, userId);
-        
+        const unreadCount = await this.getUnreadMessagesCount(
+          conversation.id,
+          userId,
+        );
+
         return {
           ...conversation,
           unread_count: unreadCount,
           last_message: conversation.messages[0] || null,
-          messages: undefined // Remove messages array from response
+          messages: undefined, // Remove messages array from response
         };
-      })
+      }),
     );
 
     return {
@@ -196,9 +210,9 @@ export class MessagesService {
         participants: {
           some: {
             user_id: userId,
-            entity_type: 'user'
-          }
-        }
+            entity_type: 'user',
+          },
+        },
       },
       include: {
         participants: {
@@ -208,7 +222,7 @@ export class MessagesService {
                 id: true,
                 full_name: true,
                 avatar_url: true,
-              }
+              },
             },
             shop: {
               select: {
@@ -216,14 +230,16 @@ export class MessagesService {
                 name: true,
                 logo_url: true,
               }
-            }
-          }
-        }
-      }
+            },
+          },
+        },
+      },
     });
 
     if (!conversation) {
-      throw new NotFoundException('Conversation not found or you do not have access');
+      throw new NotFoundException(
+        'Conversation not found or you do not have access',
+      );
     }
 
     return conversation;
@@ -359,7 +375,53 @@ export class MessagesService {
 
   // Gửi tin nhắn (từ user hoặc shop)
   async sendMessage(userId: number, createMessageDto: CreateMessageDto, shopId?: number) {
-    const { conversation_id, content, type, payload } = createMessageDto;
+    const { conversation_id, sender_id, receiver_id, content, postId, messageType } = createMessageDto;
+    
+    let finalConversationId = conversation_id;
+    
+    // If conversation_id not provided, find or create conversation using sender_id and receiver_id
+    if (!finalConversationId && sender_id && receiver_id) {
+      const conversations = await this.prisma.conversations.findMany({
+        where: {
+          type: 'private'
+        },
+        include: {
+          participants: true
+        }
+      });
+
+      let conversation = conversations.find(conv => {
+        const userIds = conv.participants.map(p => p.user_id).sort();
+        const targetIds = [sender_id, receiver_id].sort();
+        return userIds.length === 2 && 
+               userIds[0] === targetIds[0] && 
+               userIds[1] === targetIds[1];
+      });
+
+      if (!conversation) {
+        // Create new conversation
+        conversation = await this.prisma.conversations.create({
+          data: {
+            type: 'private',
+            participants: {
+              create: [
+                { user_id: sender_id, entity_type: 'user' },
+                { user_id: receiver_id, entity_type: 'user' }
+              ]
+            }
+          },
+          include: {
+            participants: true
+          }
+        });
+      }
+      
+      finalConversationId = conversation.id;
+    }
+
+    if (!finalConversationId) {
+      throw new BadRequestException('Either conversation_id or both sender_id and receiver_id must be provided');
+    }
 
     // Nếu gửi từ shop, kiểm tra user có quyền quản lý shop không
     if (shopId) {
@@ -393,28 +455,30 @@ export class MessagesService {
     // Kiểm tra quyền gửi tin nhắn trong conversation này
     const participant = await this.prisma.conversation_participants.findFirst({
       where: {
-        conversation_id,
+        conversation_id: finalConversationId,
         ...(shopId 
           ? { shop_id: shopId, entity_type: 'shop' }
-          : { user_id: userId, entity_type: 'user' }
+          : { user_id: sender_id || userId, entity_type: 'user' }
         )
       }
     });
 
     if (!participant) {
-      throw new ForbiddenException('You are not a participant in this conversation');
+      throw new ForbiddenException(
+        'You are not a participant in this conversation',
+      );
     }
 
     // Tạo tin nhắn
     const message = await this.prisma.messages.create({
       data: {
-        conversation_id,
-        sender_id: shopId ? null : userId,
+        conversation_id: finalConversationId,
+        sender_id: shopId ? null : sender_id || userId,
         sender_shop_id: shopId || null,
         sender_type: senderType,
         content,
-        type: type || 'TEXT',
-        payload
+        post_id: postId, // ✅ Include postId
+        type: messageType, // ✅ Include messageType as enum
       },
       include: {
         sender: {
@@ -422,7 +486,7 @@ export class MessagesService {
             id: true,
             full_name: true,
             avatar_url: true,
-          }
+          },
         },
         sender_shop: {
           select: {
@@ -430,8 +494,8 @@ export class MessagesService {
             name: true,
             logo_url: true,
           }
-        }
-      }
+        },
+      },
     });
 
     // Tự động đánh dấu là đã đọc cho người gửi (chỉ với user)
@@ -439,7 +503,7 @@ export class MessagesService {
       await this.prisma.message_reads.create({
         data: {
           message_id: message.id,
-          user_id: userId
+          user_id: sender_id || userId
         }
       });
     }
@@ -448,19 +512,25 @@ export class MessagesService {
   }
 
   // Lấy tin nhắn trong cuộc hội thoại
-  async getMessages(conversationId: number, userId: number, queryDto: QueryMessagesDto) {
+  async getMessages(
+    conversationId: number,
+    userId: number,
+    queryDto: QueryMessagesDto,
+  ) {
     const { page, limit = 30, cursor, before, after } = queryDto;
 
     // Kiểm tra user có quyền xem tin nhắn không
     const participant = await this.prisma.conversation_participants.findFirst({
       where: {
         conversation_id: conversationId,
-        user_id: userId
-      }
+        user_id: userId,
+      },
     });
 
     if (!participant) {
-      throw new ForbiddenException('You are not a participant in this conversation');
+      throw new ForbiddenException(
+        'You are not a participant in this conversation',
+      );
     }
 
     // Cursor-based pagination (tối ưu cho infinite scroll)
@@ -536,7 +606,7 @@ export class MessagesService {
     const [messages, total] = await Promise.all([
       this.prisma.messages.findMany({
         where: {
-          conversation_id: conversationId
+          conversation_id: conversationId,
         },
         skip,
         take: limit,
@@ -547,7 +617,7 @@ export class MessagesService {
               id: true,
               full_name: true,
               avatar_url: true,
-            }
+            },
           },
           sender_shop: {
             select: {
@@ -565,17 +635,17 @@ export class MessagesService {
                   id: true,
                   full_name: true,
                   avatar_url: true,
-                }
-              }
-            }
-          }
-        }
+                },
+              },
+            },
+          },
+        },
       }),
       this.prisma.messages.count({
         where: {
-          conversation_id: conversationId
-        }
-      })
+          conversation_id: conversationId,
+        },
+      }),
     ]);
 
     return {
@@ -597,10 +667,10 @@ export class MessagesService {
       include: {
         conversation: {
           include: {
-            participants: true
-          }
-        }
-      }
+            participants: true,
+          },
+        },
+      },
     });
 
     if (!message) {
@@ -609,11 +679,13 @@ export class MessagesService {
 
     // Kiểm tra user có quyền đánh dấu đã đọc không
     const isParticipant = message.conversation.participants.some(
-      p => p.user_id === userId
+      (p) => p.user_id === userId,
     );
 
     if (!isParticipant) {
-      throw new ForbiddenException('You are not a participant in this conversation');
+      throw new ForbiddenException(
+        'You are not a participant in this conversation',
+      );
     }
 
     // Kiểm tra đã đánh dấu đọc chưa
@@ -621,9 +693,9 @@ export class MessagesService {
       where: {
         message_id_user_id: {
           message_id: messageId,
-          user_id: userId
-        }
-      }
+          user_id: userId,
+        },
+      },
     });
 
     if (existingRead) {
@@ -634,25 +706,27 @@ export class MessagesService {
     await this.prisma.message_reads.create({
       data: {
         message_id: messageId,
-        user_id: userId
-      }
+        user_id: userId,
+      },
     });
 
     return { message: 'Message marked as read' };
   }
 
-  // Đánh dấu tất cả tin nhắn trong conversation là đã đọc  
+  // Đánh dấu tất cả tin nhắn trong conversation là đã đọc
   async markAllMessagesAsRead(conversationId: number, userId: number) {
     // Kiểm tra user có quyền không
     const participant = await this.prisma.conversation_participants.findFirst({
       where: {
         conversation_id: conversationId,
-        user_id: userId
-      }
+        user_id: userId,
+      },
     });
 
     if (!participant) {
-      throw new ForbiddenException('You are not a participant in this conversation');
+      throw new ForbiddenException(
+        'You are not a participant in this conversation',
+      );
     }
 
     // Lấy tất cả tin nhắn chưa đọc
@@ -662,12 +736,12 @@ export class MessagesService {
         NOT: {
           message_reads: {
             some: {
-              user_id: userId
-            }
-          }
-        }
+              user_id: userId,
+            },
+          },
+        },
       },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (unreadMessages.length === 0) {
@@ -676,37 +750,44 @@ export class MessagesService {
 
     // Đánh dấu tất cả là đã đọc
     await this.prisma.message_reads.createMany({
-      data: unreadMessages.map(message => ({
+      data: unreadMessages.map((message) => ({
         message_id: message.id,
-        user_id: userId
-      }))
+        user_id: userId,
+      })),
     });
 
-    return { 
+    return {
       message: 'All messages marked as read',
-      marked_count: unreadMessages.length 
+      marked_count: unreadMessages.length,
     };
   }
 
   // Đếm số tin nhắn chưa đọc trong conversation
-  async getUnreadMessagesCount(conversationId: number, userId: number): Promise<number> {
+  async getUnreadMessagesCount(
+    conversationId: number,
+    userId: number,
+  ): Promise<number> {
     return this.prisma.messages.count({
       where: {
         conversation_id: conversationId,
+        sender_id: {
+          not: userId // Không đếm tin nhắn của chính mình
+        },
         NOT: {
-          sender_id: userId, // Không đếm tin nhắn của chính mình
           message_reads: {
             some: {
-              user_id: userId
-            }
-          }
-        }
-      }
+              user_id: userId,
+            },
+          },
+        },
+      },
     });
   }
 
   // Tìm kiếm cuộc hội thoại với user khác
   async findOrCreateConversation(userId: number, otherUserId: number) {
+    console.log(`🔍 [findOrCreateConversation] Finding conversation between users ${userId} and ${otherUserId}`);
+    
     if (userId === otherUserId) {
       throw new BadRequestException('Cannot create conversation with yourself');
     }
@@ -736,16 +817,57 @@ export class MessagesService {
         }
       }
     });
+    try {
+      // Tìm tất cả conversations private của userId
+      const userConversations = await this.prisma.conversations.findMany({
+        where: {
+          type: 'private',
+          participants: {
+            some: {
+              user_id: userId
+            }
+          }
+        },
+        include: {
+          participants: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  full_name: true,
+                  avatar_url: true,
+                }
+              }
+            }
+          }
+        }
+      });
 
-    if (existingConversation && existingConversation.participants.length === 2) {
-      return existingConversation;
+      console.log(`📋 [findOrCreateConversation] Found ${userConversations.length} conversations for user ${userId}`);
+
+      // Tìm conversation có đúng 2 participants: userId và otherUserId
+      const existingConversation = userConversations.find(conv => {
+        if (conv.participants.length !== 2) return false;
+        const participantIds = conv.participants.map(p => p.user_id).sort();
+        const targetIds = [userId, otherUserId].sort();
+        return participantIds[0] === targetIds[0] && participantIds[1] === targetIds[1];
+      });
+
+      if (existingConversation) {
+        console.log(`✅ [findOrCreateConversation] Found existing conversation:`, existingConversation.id);
+        return existingConversation;
+      }
+
+      // Tạo conversation mới
+      console.log(`➕ [findOrCreateConversation] Creating new conversation`);
+      return this.createConversation(userId, {
+        participant_ids: [otherUserId],
+        type: 'private'
+      });
+    } catch (error) {
+      console.error('❌ [findOrCreateConversation] Error:', error);
+      throw error;
     }
-
-    // Tạo conversation mới
-    return this.createConversation(userId, {
-      participant_ids: [otherUserId],
-      type: 'private'
-    });
   }
 
   // Tìm hoặc tạo conversation với shop
@@ -863,7 +985,7 @@ export class MessagesService {
   // Xóa tin nhắn (chỉ người gửi mới có thể xóa)
   async deleteMessage(messageId: number, userId: number) {
     const message = await this.prisma.messages.findUnique({
-      where: { id: messageId }
+      where: { id: messageId },
     });
 
     if (!message) {
@@ -876,12 +998,12 @@ export class MessagesService {
 
     // Xóa message reads trước
     await this.prisma.message_reads.deleteMany({
-      where: { message_id: messageId }
+      where: { message_id: messageId },
     });
 
     // Xóa message
     await this.prisma.messages.delete({
-      where: { id: messageId }
+      where: { id: messageId },
     });
 
     return { message: 'Message deleted successfully' };

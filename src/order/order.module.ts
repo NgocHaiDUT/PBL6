@@ -3,13 +3,13 @@ import { OrderController } from './order.controller';
 import { OrderService } from './order.service';
 import { AddressModule } from '../address/address.module';
 import { PrismaModule } from '../prisma/prisma.module';
-import { GhnModule } from '../ghn/ghn.module';
+import { PaymentModule } from 'src/payment/payment.module';
 import { DeliveryModule } from 'src/delivery/delivery.module';
 
 @Module({
-  imports: [AddressModule, PrismaModule, DeliveryModule],
+  imports: [AddressModule, PrismaModule, DeliveryModule, PaymentModule],
   controllers: [OrderController],
-  providers: [OrderService,],
-  exports: [OrderService]
+  providers: [OrderService],
+  exports: [OrderService],
 })
 export class OrderModule {}

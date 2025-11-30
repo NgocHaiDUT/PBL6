@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -23,29 +27,39 @@ export class PostsService {
   // Helper function to normalize post object URLs
   private normalizePostUrls(post: any): any {
     // Process post_media and extract cover/video URLs
-    const processedMedia = post.post_media ? post.post_media.map((media: any) => ({
-      ...media,
-      media_url: this.normalizeUrl(media.media_url)
-    })) : [];
+    const processedMedia = post.post_media
+      ? post.post_media.map((media: any) => ({
+          ...media,
+          media_url: this.normalizeUrl(media.media_url),
+        }))
+      : [];
 
     // Find cover image (sort_order: 0) and first video
-    const coverImage = processedMedia.find(media => media.sort_order === 0 && media.media_type === 'image');
-    const firstVideo = processedMedia.find(media => media.media_type === 'video');
+    const coverImage = processedMedia.find(
+      (media) => media.sort_order === 0 && media.media_type === 'image',
+    );
+    const firstVideo = processedMedia.find(
+      (media) => media.media_type === 'video',
+    );
 
     return {
       ...post,
       // Provide backward compatibility fields
       cover_url: coverImage ? coverImage.media_url : null,
       video_url: firstVideo ? firstVideo.media_url : null,
-      user: post.user ? {
-        ...post.user,
-        avatar_url: this.normalizeUrl(post.user.avatar_url)
-      } : null,
-      shop: post.shop ? {
-        ...post.shop,
-        logo_url: this.normalizeUrl(post.shop.logo_url)
-      } : null,
-      post_media: processedMedia
+      user: post.user
+        ? {
+            ...post.user,
+            avatar_url: this.normalizeUrl(post.user.avatar_url),
+          }
+        : null,
+      shop: post.shop
+        ? {
+            ...post.shop,
+            logo_url: this.normalizeUrl(post.shop.logo_url),
+          }
+        : null,
+      post_media: processedMedia,
     };
   }
 
@@ -68,7 +82,7 @@ export class PostsService {
         post_type: (postData as any)?.post_type ?? 'post',
         visibility: (postData as any)?.visibility ?? 'public',
         content_md: trimmedMd,
-      }).filter(([, v]) => v !== undefined)
+      }).filter(([, v]) => v !== undefined),
     );
 
     // 1. Create the post record
@@ -85,9 +99,12 @@ export class PostsService {
     // 2. Process and create media records from uploaded files
     if (files && files.length > 0) {
       const mediaData = files.map((file, index) => {
-        const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
+        const mediaType = file.mimetype.startsWith('video/')
+          ? 'video'
+          : 'image';
         const directory = mediaType === 'video' ? 'videos' : 'postimages';
-        const mediaUrl = file.location || `/uploads/${directory}/${file.filename}`;
+        const mediaUrl =
+          file.location || `/uploads/${directory}/${file.filename}`;
         return {
           post_id: post.id,
           media_url: mediaUrl,
@@ -104,7 +121,7 @@ export class PostsService {
     // Thêm products nếu có
     if (product_ids && product_ids.length > 0) {
       await this.prisma.post_products.createMany({
-        data: product_ids.map(productId => ({
+        data: product_ids.map((productId) => ({
           post_id: post.id,
           product_id: productId,
         })),
@@ -139,12 +156,20 @@ export class PostsService {
     return {
       success: true,
       message: 'Post created successfully',
-      data: createdPost.data
+      data: createdPost.data,
     };
   }
 
   async getPosts(queryDto: QueryPostsDto) {
-    const { page = 1, limit = 10, user_id, shop_id, post_type, visibility, search } = queryDto;
+    const {
+      page = 1,
+      limit = 10,
+      user_id,
+      shop_id,
+      post_type,
+      visibility,
+      search,
+    } = queryDto;
     const skip = (page - 1) * limit;
 
     const where: any = {
@@ -236,11 +261,13 @@ export class PostsService {
           like_count: likeCount,
           comment_count: commentCount,
         };
-      })
+      }),
     );
 
     // Normalize post URLs
-    const normalizedPosts = postsWithCounts.map(post => this.normalizePostUrls(post));
+    const normalizedPosts = postsWithCounts.map((post) =>
+      this.normalizePostUrls(post),
+    );
 
     return {
       success: true,
@@ -297,7 +324,6 @@ export class PostsService {
             },
           },
         },
-
       },
     });
 
@@ -315,7 +341,7 @@ export class PostsService {
 
     return {
       success: true,
-      data: normalizedPost
+      data: normalizedPost,
     };
   }
 
@@ -356,7 +382,8 @@ export class PostsService {
           data: media_urls.map((url, index) => ({
             post_id: id,
             media_url: url,
-            media_type: url.includes('.mp4') || url.includes('.mov') ? 'video' : 'image',
+            media_type:
+              url.includes('.mp4') || url.includes('.mov') ? 'video' : 'image',
             sort_order: index,
           })),
         });
@@ -373,7 +400,7 @@ export class PostsService {
       // Thêm products mới
       if (product_ids.length > 0) {
         await this.prisma.post_products.createMany({
-          data: product_ids.map(productId => ({
+          data: product_ids.map((productId) => ({
             post_id: id,
             product_id: productId,
           })),
@@ -418,9 +445,9 @@ export class PostsService {
   async deletePost(id: number, userId: number) {
     const post = await this.prisma.posts.findUnique({
       where: { id },
-      select : {user_id : true}
+      select: { user_id: true },
     });
-    
+
     if (!post) {
       throw new NotFoundException('Post not found');
     }
@@ -434,8 +461,12 @@ export class PostsService {
       this.prisma.post_media.deleteMany({ where: { post_id: id } }),
       this.prisma.post_products.deleteMany({ where: { post_id: id } }),
       this.prisma.post_tags.deleteMany({ where: { post_id: id } }),
-      this.prisma.likes.deleteMany({ where: { target_type: 'post', target_id: id } }),
-      this.prisma.comments.deleteMany({ where: { target_type: 'post', target_id: id } }),
+      this.prisma.likes.deleteMany({
+        where: { target_type: 'post', target_id: id },
+      }),
+      this.prisma.comments.deleteMany({
+        where: { target_type: 'post', target_id: id },
+      }),
     ]);
 
     // Xóa post
@@ -445,8 +476,6 @@ export class PostsService {
 
     return { message: 'Post deleted successfully' };
   }
-
-
 
   // Upload cover image for post
   async uploadCoverImage(postId: number, userId: number, file: any) {
@@ -464,12 +493,12 @@ export class PostsService {
     }
 
     const coverUrl = file.location || `/uploads/postimages/${file.filename}`;
-    
+
     // Create or update cover image in post_media table
     const existingCover = await this.prisma.post_media.findFirst({
-      where: { 
+      where: {
         post_id: postId,
-        sort_order: 0
+        sort_order: 0,
       },
     });
 
@@ -477,9 +506,9 @@ export class PostsService {
       // Update existing cover
       await this.prisma.post_media.update({
         where: { id: existingCover.id },
-        data: { 
+        data: {
           media_url: coverUrl,
-          media_type: 'image'
+          media_type: 'image',
         },
       });
     } else {
@@ -517,7 +546,7 @@ export class PostsService {
     }
 
     const videoUrl = file.location || `/uploads/videos/${file.filename}`;
-    
+
     // Get current max sort_order for this post
     const maxSortOrder = await this.prisma.post_media.findFirst({
       where: { post_id: postId },
@@ -526,7 +555,7 @@ export class PostsService {
     });
 
     const nextOrder = (maxSortOrder?.sort_order || -1) + 1;
-    
+
     // Create video media record
     await this.prisma.post_media.create({
       data: {
@@ -572,8 +601,9 @@ export class PostsService {
     const mediaData = files.map((file, index) => {
       const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
       const directory = mediaType === 'video' ? 'videos' : 'postimages';
-      const mediaUrl = file.location || `/uploads/${directory}/${file.filename}`;
-      
+      const mediaUrl =
+        file.location || `/uploads/${directory}/${file.filename}`;
+
       return {
         post_id: postId,
         media_url: mediaUrl,
@@ -610,7 +640,9 @@ export class PostsService {
     }
 
     if (media.post.user_id !== userId) {
-      throw new ForbiddenException('You can only delete media from your own posts');
+      throw new ForbiddenException(
+        'You can only delete media from your own posts',
+      );
     }
 
     // Delete media record

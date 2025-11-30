@@ -1,8 +1,16 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateLikeDto } from './dto/create-like.dto';
 import { QueryLikesDto } from './dto/query-likes.dto';
-import { LikeResponse, LikeStatsResponse, PaginatedLikesResponse } from './interfaces/like.interface';
+import {
+  LikeResponse,
+  LikeStatsResponse,
+  PaginatedLikesResponse,
+} from './interfaces/like.interface';
 import { NotificationHelperService } from '../notifications/notification-helper.service';
 
 @Injectable()
@@ -10,11 +18,17 @@ export class LikesService {
   constructor(
     private prisma: PrismaService,
     private notificationHelper: NotificationHelperService
-  ) {}
+  ) { }
 
-  async create(createLikeDto: CreateLikeDto, userId: number): Promise<LikeResponse> {
+  async create(
+    createLikeDto: CreateLikeDto,
+    userId: number,
+  ): Promise<LikeResponse> {
     // Verify target exists based on target_type
-    await this.verifyTargetExists(createLikeDto.target_type, createLikeDto.target_id);
+    await this.verifyTargetExists(
+      createLikeDto.target_type,
+      createLikeDto.target_id,
+    );
 
     // Check if user already liked this target
     const existingLike = await this.prisma.likes.findUnique({
@@ -23,8 +37,8 @@ export class LikesService {
           user_id: userId,
           target_type: createLikeDto.target_type,
           target_id: createLikeDto.target_id,
-        }
-      }
+        },
+      },
     });
 
     if (existingLike) {
@@ -43,9 +57,9 @@ export class LikesService {
             full_name: true,
             email: true,
             avatar_url: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     // Update like count for posts
@@ -54,6 +68,26 @@ export class LikesService {
     }
 
     return like;
+  }
+
+  async getTotalLikesByUser(userId: number): Promise<{ total_likes: number }> {
+    // 1. Lấy tất cả post của user
+    const userPosts = await this.prisma.posts.findMany({
+      where: { user_id: userId },
+      select: { id: true }
+    });
+
+    // 2. Đếm like trên các post đó
+    const postLikeCount = await this.prisma.likes.count({
+      where: {
+        target_type: 'post',
+        target_id: { in: userPosts.map(p => p.id) }
+      }
+    });
+
+    const total_likes = postLikeCount;
+
+    return { total_likes };
   }
 
   async findAll(queryDto: QueryLikesDto): Promise<PaginatedLikesResponse> {
@@ -75,8 +109,8 @@ export class LikesService {
               full_name: true,
               email: true,
               avatar_url: true,
-            }
-          }
+            },
+          },
         },
         orderBy: {
           created_at: 'desc',
@@ -106,9 +140,9 @@ export class LikesService {
             full_name: true,
             email: true,
             avatar_url: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     if (!like) {
@@ -118,15 +152,19 @@ export class LikesService {
     return like;
   }
 
-  async remove(targetType: string, targetId: number, userId: number): Promise<void> {
+  async remove(
+    targetType: string,
+    targetId: number,
+    userId: number,
+  ): Promise<void> {
     const existingLike = await this.prisma.likes.findUnique({
       where: {
         user_id_target_type_target_id: {
           user_id: userId,
           target_type: targetType,
           target_id: targetId,
-        }
-      }
+        },
+      },
     });
 
     if (!existingLike) {
@@ -139,8 +177,8 @@ export class LikesService {
           user_id: userId,
           target_type: targetType,
           target_id: targetId,
-        }
-      }
+        },
+      },
     });
 
     // Update like count for posts
@@ -149,12 +187,16 @@ export class LikesService {
     }
   }
 
-  async getStats(targetType: string, targetId: number, userId?: number): Promise<LikeStatsResponse> {
+  async getStats(
+    targetType: string,
+    targetId: number,
+    userId?: number,
+  ): Promise<LikeStatsResponse> {
     const total_likes = await this.prisma.likes.count({
       where: {
         target_type: targetType,
         target_id: targetId,
-      }
+      },
     });
 
     let user_liked = false;
@@ -165,8 +207,8 @@ export class LikesService {
             user_id: userId,
             target_type: targetType,
             target_id: targetId,
-          }
-        }
+          },
+        },
       });
       user_liked = !!userLike;
     }
@@ -179,7 +221,11 @@ export class LikesService {
     };
   }
 
-  async toggleLike(targetType: string, targetId: number, userId: number): Promise<{ liked: boolean; total_likes: number }> {
+  async toggleLike(
+    targetType: string,
+    targetId: number,
+    userId: number,
+  ): Promise<{ liked: boolean; total_likes: number }> {
     // Verify target exists
     await this.verifyTargetExists(targetType, targetId);
 
@@ -189,8 +235,8 @@ export class LikesService {
           user_id: userId,
           target_type: targetType,
           target_id: targetId,
-        }
-      }
+        },
+      },
     });
 
     let liked: boolean;
@@ -203,8 +249,8 @@ export class LikesService {
             user_id: userId,
             target_type: targetType,
             target_id: targetId,
-          }
-        }
+          },
+        },
       });
       liked = false;
     } else {
@@ -214,7 +260,7 @@ export class LikesService {
           user_id: userId,
           target_type: targetType,
           target_id: targetId,
-        }
+        },
       });
       liked = true;
     }
@@ -229,7 +275,11 @@ export class LikesService {
       if (targetType === 'post') {
         await this.notificationHelper.handlePostLike(targetId, userId, liked);
       } else if (targetType === 'comment') {
-        await this.notificationHelper.handleCommentLike(targetId, userId, liked);
+        await this.notificationHelper.handleCommentLike(
+          targetId,
+          userId,
+          liked,
+        );
       }
     }
 
@@ -238,17 +288,20 @@ export class LikesService {
       where: {
         target_type: targetType,
         target_id: targetId,
-      }
+      },
     });
 
     return { liked, total_likes };
   }
 
-  private async verifyTargetExists(targetType: string, targetId: number): Promise<void> {
+  private async verifyTargetExists(
+    targetType: string,
+    targetId: number,
+  ): Promise<void> {
     switch (targetType) {
       case 'post':
         const post = await this.prisma.posts.findUnique({
-          where: { id: targetId }
+          where: { id: targetId },
         });
         if (!post) {
           throw new NotFoundException('Post not found');
@@ -256,7 +309,7 @@ export class LikesService {
         break;
       case 'product':
         const product = await this.prisma.products.findUnique({
-          where: { id: targetId }
+          where: { id: targetId },
         });
         if (!product) {
           throw new NotFoundException('Product not found');
@@ -264,7 +317,7 @@ export class LikesService {
         break;
       case 'comment':
         const comment = await this.prisma.comments.findUnique({
-          where: { id: targetId }
+          where: { id: targetId },
         });
         if (!comment) {
           throw new NotFoundException('Comment not found');
@@ -280,12 +333,12 @@ export class LikesService {
       where: {
         target_type: 'post',
         target_id: postId,
-      }
+      },
     });
 
     await this.prisma.posts.update({
       where: { id: postId },
-      data: { like_count: likeCount }
+      data: { like_count: likeCount },
     });
   }
 }

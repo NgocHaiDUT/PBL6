@@ -17,12 +17,15 @@ import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { QueryCommentsDto } from './dto/query-comments.dto';
-import { CommentResponse, PaginatedCommentsResponse } from './interfaces/comment.interface';
+import {
+  CommentResponse,
+  PaginatedCommentsResponse,
+} from './interfaces/comment.interface';
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('comments')
 export class CommentsController {
-  constructor(private readonly commentsService: CommentsService) { }
+  constructor(private readonly commentsService: CommentsService) {}
 
   @UseGuards(AuthGuard('jwt'))
   @Post()
@@ -36,7 +39,9 @@ export class CommentsController {
   }
 
   @Get()
-  async findAll(@Query() queryDto: QueryCommentsDto): Promise<PaginatedCommentsResponse> {
+  async findAll(
+    @Query() queryDto: QueryCommentsDto,
+  ): Promise<PaginatedCommentsResponse> {
     return this.commentsService.findAll(queryDto);
   }
 
@@ -45,14 +50,17 @@ export class CommentsController {
     return this.commentsService.findAllFlat(targetId);
   }
 
-
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<CommentResponse> {
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<CommentResponse> {
     return this.commentsService.findOne(id);
   }
 
   @Get(':id/replies')
-  async getReplies(@Param('id', ParseIntPipe) id: number): Promise<CommentResponse[]> {
+  async getReplies(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<CommentResponse[]> {
     return this.commentsService.getReplies(id);
   }
 

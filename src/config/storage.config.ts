@@ -25,7 +25,7 @@ const createUploadDir = (dir: string) => {
   }
 };
 
-const getStorage = (directory: string) => {
+const getStorage = (directory: string, dynamicPath: boolean = false) => {
   if (storageDriver === 's3') {
     return multerS3({
       s3: s3,
@@ -34,21 +34,31 @@ const getStorage = (directory: string) => {
         cb(null, { fieldName: file.fieldname });
       },
       key: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         const extension = extname(file.originalname);
-        cb(null, `${directory}/${uniqueSuffix}${extension}`);
+        // ✅ Phân chia video/image cho S3
+        const actualDirectory = dynamicPath && file.mimetype.startsWith('video/') 
+          ? 'videos' 
+          : directory;
+        cb(null, `${actualDirectory}/${uniqueSuffix}${extension}`);
       }
     });
   } else {
     // local storage
-    const localDirectory = `uploads/${directory}`;
-    createUploadDir(localDirectory);
     return diskStorage({
       destination: (req, file, cb) => {
+        // ✅ Phân chia video vào uploads/videos, image vào uploads/postimages
+        let localDirectory;
+        if (dynamicPath && file.mimetype.startsWith('video/')) {
+          localDirectory = 'uploads/videos';
+        } else {
+          localDirectory = `uploads/${directory}`;
+        }
+        createUploadDir(localDirectory);
         cb(null, localDirectory);
       },
       filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         const extension = extname(file.originalname);
         cb(null, `${uniqueSuffix}${extension}`);
       },
@@ -65,11 +75,18 @@ const allowedMimeTypes = {
 const fileValidators = {
   image: {
     filter: (req, file, cb) => {
-      const isImage = allowedMimeTypes.image.test(file.mimetype) || file.originalname.match(/\.(heic|heif)$/i);
+      const isImage =
+        allowedMimeTypes.image.test(file.mimetype) ||
+        file.originalname.match(/\.(heic|heif)$/i);
       if (isImage) {
         cb(null, true);
       } else {
-        cb(new Error('Only image files are allowed! (.jpg, .jpeg, .png, .gif, .webp, .heic, .heif)'), false);
+        cb(
+          new Error(
+            'Only image files are allowed! (.jpg, .jpeg, .png, .gif, .webp, .heic, .heif)',
+          ),
+          false,
+        );
       }
     },
     limit: 10 * 1024 * 1024, // 10MB
@@ -79,14 +96,19 @@ const fileValidators = {
       if (allowedMimeTypes.video.test(file.mimetype)) {
         cb(null, true);
       } else {
-        cb(new Error('Only video files are allowed! (.mp4, .mov, .avi, .mkv)'), false);
+        cb(
+          new Error('Only video files are allowed! (.mp4, .mov, .avi, .mkv)'),
+          false,
+        );
       }
     },
     limit: 50 * 1024 * 1024, // 50MB
   },
   media: {
     filter: (req, file, cb) => {
-      const isImage = allowedMimeTypes.image.test(file.mimetype) || file.originalname.match(/\.(heic|heif)$/i);
+      const isImage =
+        allowedMimeTypes.image.test(file.mimetype) ||
+        file.originalname.match(/\.(heic|heif)$/i);
       const isVideo = allowedMimeTypes.video.test(file.mimetype);
       if (isImage || isVideo) {
         cb(null, true);
@@ -95,23 +117,26 @@ const fileValidators = {
       }
     },
     limit: 50 * 1024 * 1024, // Use the larger limit for mixed media
-  }
+  },
 };
 
 export const getMulterOptions = (
   directory: string,
-  type: 'image' | 'video' | 'media' = 'image'
+  type: 'image' | 'video' | 'media' = 'image',
 ) => {
   const validator = fileValidators[type];
   if (!validator) {
     throw new Error(`Invalid type specified for getMulterOptions: ${type}`);
   }
+  
+  // ✅ Sử dụng dynamicPath=true cho type='media' để phân chia video/image
+  const useDynamicPath = type === 'media';
+  
   return {
-    storage: getStorage(directory),
+    storage: getStorage(directory, useDynamicPath),
     fileFilter: validator.filter,
     limits: {
       fileSize: validator.limit,
     },
   };
 };
-
