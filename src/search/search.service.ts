@@ -4,7 +4,7 @@ import { SearchQueryDto, SearchType } from './dto/search.dto';
 
 @Injectable()
 export class SearchService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Tìm kiếm posts
@@ -12,13 +12,25 @@ export class SearchService {
   async searchPosts(query: string, limit: number = 20) {
     const posts = await this.prisma.posts.findMany({
       where: {
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { content_md: { contains: query, mode: 'insensitive' } },
+        AND: [
+          {
+            OR: [
+              { title: { contains: query, mode: 'insensitive' } },
+              { content_md: { contains: query, mode: 'insensitive' } },
+              { user: { full_name: { contains: query, mode: 'insensitive' } } },
+            ],
+          },
+          {
+            post_type: {
+              in: ['post', 'image', 'text'], // Include 'post' type which is used in database
+            },
+          },
+          {
+            moderation_status: {
+              in: ['pending', 'approved'], // Include both pending and approved posts
+            },
+          },
         ],
-        post_type: {
-          in: ['image', 'text'], // Exclude video posts
-        },
       },
       include: {
         user: {
@@ -29,10 +41,6 @@ export class SearchService {
           },
         },
         post_media: {
-          where: {
-            media_type: 'image',
-          },
-          take: 1,
           orderBy: {
             sort_order: 'asc',
           },
@@ -57,7 +65,12 @@ export class SearchService {
       like_count: post.like_count || 0,
       comment_count: 0, // TODO: Add comment count if needed
       created_at: post.created_at.toISOString(),
-      thumbnail_url: post.post_media[0]?.media_url || null,
+      post_media: post.post_media.map(media => ({
+        id: media.id,
+        media_url: media.media_url,
+        media_type: media.media_type,
+        sort_order: media.sort_order,
+      })),
     }));
   }
 
@@ -310,11 +323,23 @@ export class SearchService {
   private async countPosts(query: string): Promise<number> {
     return this.prisma.posts.count({
       where: {
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { content_md: { contains: query, mode: 'insensitive' } },
+        AND: [
+          {
+            OR: [
+              { title: { contains: query, mode: 'insensitive' } },
+              { content_md: { contains: query, mode: 'insensitive' } },
+              { user: { full_name: { contains: query, mode: 'insensitive' } } },
+            ],
+          },
+          {
+            post_type: { in: ['post', 'image', 'text'] },
+          },
+          {
+            moderation_status: {
+              in: ['pending', 'approved'],
+            },
+          },
         ],
-        post_type: { in: ['image', 'text'] },
       },
     });
   }
