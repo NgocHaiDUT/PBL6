@@ -27,7 +27,29 @@ These endpoints are typically restricted to users with administrative or seller 
 
 -   **Endpoint:** `POST /product/add-brand`
 -   **Description:** Adds a new brand. Requires `manage_brands` permission.
--   **Request:** `multipart/form-data` with fields `userid`, `name`, `slug`, and a `file` for the logo.
+-   **Request:** `multipart/form-data` with fields `name`, `slug`, and a `file` for the logo.
+-   **Auth:** Required (JWT).
+
+### Edit Brand Name
+
+-   **Endpoint:** `POST /product/edit-brand-name`
+-   **Description:** Updates the name of an existing brand. Requires `manage_brands` permission.
+-   **Auth:** Required (JWT).
+-   **Request Body:** `{ "id": "1", "name": "New Brand Name" }`
+
+### Edit Brand Slug
+
+-   **Endpoint:** `POST /product/edit-brand-slug`
+-   **Description:** Updates the slug of an existing brand. Requires `manage_brands` permission.
+-   **Auth:** Required (JWT).
+-   **Request Body:** `{ "id": "1", "slug": "new-brand-slug" }`
+
+### Edit Brand Logo
+
+-   **Endpoint:** `POST /product/edit-brand-logo`
+-   **Description:** Updates the logo of an existing brand. Requires `manage_brands` permission.
+-   **Auth:** Required (JWT).
+-   **Request:** `multipart/form-data` with fields `id` and a `file` for the new logo.
 
 ### Get All Categories
 
@@ -38,26 +60,70 @@ These endpoints are typically restricted to users with administrative or seller 
 
 -   **Endpoint:** `POST /product/add-category`
 -   **Description:** Adds a new product category. Requires `manage_categorys` permission.
--   **Request Body:** `{ "userid": 1, "name": "Skincare", "slug": "skincare", "parent_id": null }`
+-   **Auth:** Required (JWT).
+-   **Request Body:** `{ "name": "Skincare", "slug": "skincare", "parent_id": "1" }` (parent_id is optional)
+
+### Edit Category Name
+
+-   **Endpoint:** `POST /product/edit-category-name`
+-   **Description:** Updates the name of an existing category. Requires `manage_categorys` permission.
+-   **Auth:** Required (JWT).
+-   **Request Body:** `{ "id": "1", "name": "New Category Name" }`
+
+### Edit Category Slug
+
+-   **Endpoint:** `POST /product/edit-category-slug`
+-   **Description:** Updates the slug of an existing category. Requires `manage_categorys` permission.
+-   **Auth:** Required (JWT).
+-   **Request Body:** `{ "id": "1", "slug": "new-category-slug" }`
 
 ### Add a New Product
 
 -   **Endpoint:** `POST /product/add-product`
 -   **Description:** Creates a new product within a specific shop. Requires `create_product` permission and shop ownership/staff status.
+-   **Auth:** Required (JWT).
 -   **Request Body:**
     ```json
     {
-      "user_id": 2,
-      "shop_id": 1,
+      "shop_id": "1",
       "name": "Hydrating Serum",
       "slug": "hydrating-serum",
-      "skin_type_compat": "all",
+      "skin_type_compat": "normal",
       "is_published": true,
       "description": "A serum for all skin types.",
-      "brand_id": 1,
-      "category_ids": [2, 5]
+      "how_to_use": "Apply 2-3 drops to clean skin.",
+      "brand_id": "1",
+      "category_ids": ["2", "5"]
     }
     ```
+-   **Valid skin_type_compat values:** `unknown`, `normal`, `oily`, `dry`, `combination`, `sensitive`
+
+### Edit Product
+
+-   **Endpoint:** `PUT /product/edit-product/:id`
+-   **Description:** Updates an existing product. Requires `edit_product` permission.
+-   **Auth:** Required (JWT).
+-   **Params:** `id` (product ID).
+-   **Request Body:** (all fields are optional)
+    ```json
+    {
+      "name": "Updated Product Name",
+      "slug": "updated-slug",
+      "description": "Updated description",
+      "how_to_use": "Updated instructions",
+      "skin_type_compat": "combination",
+      "is_published": false,
+      "brand_id": "2",
+      "category_ids": ["3", "6"]
+    }
+    ```
+
+### Delete Product
+
+-   **Endpoint:** `DELETE /product/delete-product/:id`
+-   **Description:** Deletes a product. Requires `delete_product` permission.
+-   **Auth:** Required (JWT).
+-   **Params:** `id` (product ID).
 
 ### Add a Product Variant
 
@@ -66,13 +132,55 @@ These endpoints are typically restricted to users with administrative or seller 
 -   **Request Body:**
     ```json
     {
-      "product_id": 1,
+      "product_id": "1",
       "sku": "HS-50ML",
       "name": "50ml",
       "price": "500000",
-      "stock": "100"
+      "stock": "100",
+      "shade_hex": "#FF5733",
+      "size_label": "50ml",
+      "compare_at_price": "600000"
     }
     ```
+-   **Note:** Only `product_id`, `sku`, `name`, and `price` are required. Other fields are optional.
+
+### Edit Product Variant
+
+-   **Endpoint:** `PUT /product/edit-product-variant/:id`
+-   **Description:** Updates an existing product variant. Requires `edit_product` permission.
+-   **Auth:** Required (JWT).
+-   **Params:** `id` (variant ID).
+-   **Request Body:** (all fields are optional)
+    ```json
+    {
+      "sku": "HS-100ML",
+      "name": "100ml",
+      "price": "800000",
+      "stock": "50",
+      "shade_hex": "#00FF00",
+      "size_label": "100ml",
+      "compare_at_price": "1000000",
+      "is_active": true
+    }
+    ```
+
+### Delete Product Variant
+
+-   **Endpoint:** `DELETE /product/delete-product-variant/:id`
+-   **Description:** Deletes a product variant. Requires `delete_product` permission.
+-   **Auth:** Required (JWT).
+-   **Params:** `id` (variant ID).
+
+### Add Product Media
+
+-   **Endpoint:** `POST /product/add-product-media`
+-   **Description:** Adds an image or video to a product.
+-   **Request:** `multipart/form-data` with a `file` and query parameters.
+-   **Query Parameters:**
+    -   `product_id` (required): The product ID
+    -   `type` (optional): Media type (`image` or `video`, default: `image`)
+    -   `sort_order` (optional): Display order (default: `0`)
+-   **Example:** `POST /product/add-product-media?product_id=1&type=image&sort_order=1`
 
 ### Get Products by Shop
 
@@ -87,35 +195,46 @@ These endpoints are typically restricted to users with administrative or seller 
 
 ### Get All Products
 
--   **Endpoint:** `GET /product/products`
--   **Description:** Retrieves a paginated list of all published and approved products. Supports filtering and sorting.
--   **Query Parameters:** `page`, `limit`, `category`, `brand`, `min_price`, `max_price`, `sort`.
+-   **Endpoint:** `GET /product/all-products`
+-   **Description:** Retrieves a paginated list of all products with advanced filtering options.
+-   **Query Parameters:**
+    -   `page` (default: 1): Page number
+    -   `limit` (default: 20): Items per page
+    -   `category`: Filter by category slug
+    -   `brand`: Filter by brand slug
+    -   `minPrice`: Minimum price filter
+    -   `maxPrice`: Maximum price filter
+    -   `minRating`: Minimum rating filter
+    -   `search`: Search keyword in product name/description
+-   **Example:** `GET /product/all-products?page=1&limit=20&category=skincare&brand=cerave&minPrice=100000&maxPrice=500000&minRating=4`
 
 ### Get Product by ID
 
--   **Endpoint:** `GET /product/products/:id`
--   **Description:** Retrieves detailed information for a single product.
+-   **Endpoint:** `GET /product/product/:id`
+-   **Description:** Retrieves detailed information for a single product including variants, media, categories, and brand.
 
 ---
 
 ## 3. Wishlist APIs
 
+**Note:** These APIs are planned but not yet implemented in the current version.
+
 ### Add to Wishlist
 
--   **Endpoint:** `POST /product/wishlist/add`
+-   **Endpoint:** `POST /product/wishlist/add` _(Coming Soon)_
 -   **Description:** Adds a product to the user's wishlist.
 -   **Auth:** Required (JWT).
--   **Request Body:** `{ "productId": 1, "userId": 1 }` (userId is optional, taken from JWT).
+-   **Request Body:** `{ "productId": 1 }`
 
 ### Remove from Wishlist
 
--   **Endpoint:** `DELETE /product/wishlist/remove/:productId`
+-   **Endpoint:** `DELETE /product/wishlist/remove/:productId` _(Coming Soon)_
 -   **Description:** Removes a product from the user's wishlist.
 -   **Auth:** Required (JWT).
 
 ### Get Wishlist
 
--   **Endpoint:** `GET /product/wishlist`
+-   **Endpoint:** `GET /product/wishlist` _(Coming Soon)_
 -   **Description:** Retrieves all items in the user's wishlist.
 -   **Auth:** Required (JWT).
 
@@ -123,9 +242,11 @@ These endpoints are typically restricted to users with administrative or seller 
 
 ## 4. Shopping Cart APIs
 
+**Note:** These APIs are planned but not yet implemented in the current version.
+
 ### Add to Cart
 
--   **Endpoint:** `POST /product/cart/add`
+-   **Endpoint:** `POST /product/cart/add` _(Coming Soon)_
 -   **Description:** Adds a specific product variant to the user's shopping cart. If the item already exists, its quantity is increased.
 -   **Auth:** Required (JWT).
 -   **Request Body:**
@@ -133,17 +254,15 @@ These endpoints are typically restricted to users with administrative or seller 
     {
       "productId": 1,
       "variantId": 2,
-      "quantity": 1,
-      "userId": 1
+      "quantity": 1
     }
     ```
 
 ### Get Cart Contents
 
--   **Endpoint:** `GET /product/cart`
+-   **Endpoint:** `GET /product/cart` _(Coming Soon)_
 -   **Description:** Retrieves the contents of the user's cart, grouped by shop. This is the primary endpoint used before checkout.
 -   **Auth:** Required (JWT).
--   **Query Parameters:** `userId` (number).
 -   **Response:**
     ```json
     {
@@ -183,13 +302,13 @@ These endpoints are typically restricted to users with administrative or seller 
 
 ### Update Cart Item Quantity
 
--   **Endpoint:** `PUT /product/cart/items/:itemId`
+-   **Endpoint:** `PUT /product/cart/items/:itemId` _(Coming Soon)_
 -   **Description:** Updates the quantity of a specific item in the cart.
 -   **Auth:** Required (JWT).
 -   **Request Body:** `{ "quantity": 3 }`
 
 ### Remove from Cart
 
--   **Endpoint:** `DELETE /product/cart/items/:itemId`
+-   **Endpoint:** `DELETE /product/cart/items/:itemId` _(Coming Soon)_
 -   **Description:** Removes a specific item from the cart.
 -   **Auth:** Required (JWT).

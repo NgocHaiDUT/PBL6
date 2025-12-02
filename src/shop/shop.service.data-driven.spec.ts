@@ -2,20 +2,25 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ShopService } from './shop.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TestDataReader, TestCase } from './__test-data__/test-data-reader';
-import { TestReportWriter, TestResult } from './__test-reports__/test-report-writer';
+import {
+  TestReportWriter,
+  TestResult,
+} from './__test-reports__/test-report-writer';
 import { ScreenshotHelper } from './__test-reports__/screenshot-helper';
 
 function autoSetupMocksFromMetadata(testCase: TestCase, mockPrisma: any) {
   jest.clearAllMocks();
 
   if (!testCase.mockSetup) {
-    console.warn(`⚠️  Test case ${testCase.testCaseId} không có mockSetup metadata`);
+    console.warn(
+      `⚠️  Test case ${testCase.testCaseId} không có mockSetup metadata`,
+    );
     return;
   }
 
   for (const [mockPath, mockValue] of Object.entries(testCase.mockSetup)) {
     const parts = mockPath.split('.');
-    
+
     if (mockPath === '$transaction') {
       if (typeof mockValue === 'object' && mockValue !== null) {
         mockPrisma.$transaction.mockImplementation(async (callback) => {
@@ -23,20 +28,24 @@ function autoSetupMocksFromMetadata(testCase: TestCase, mockPrisma: any) {
 
           for (const [txPath, txReturnValue] of Object.entries(mockValue)) {
             const [table, method] = txPath.split('.');
-            
+
             if (!txMock[table]) {
               txMock[table] = {};
             }
-            
+
             txMock[table][method] = jest.fn().mockResolvedValue(txReturnValue);
           }
-          
+
           return callback(txMock);
         });
       } else if (mockValue === true) {
         mockPrisma.$transaction.mockImplementation(async (callback) => {
           return callback({
-            shop_staffs: { create: jest.fn(), deleteMany: jest.fn(), findFirst: jest.fn() },
+            shop_staffs: {
+              create: jest.fn(),
+              deleteMany: jest.fn(),
+              findFirst: jest.fn(),
+            },
             users: { update: jest.fn() },
             userpermission: { createMany: jest.fn(), deleteMany: jest.fn() },
           });
@@ -70,7 +79,6 @@ function autoSetupMocksFromMetadata(testCase: TestCase, mockPrisma: any) {
       mockMethod.mockResolvedValue(mockValue);
     }
   }
-
 }
 
 describe('ShopService - Data-Driven Testing', () => {
@@ -128,7 +136,10 @@ describe('ShopService - Data-Driven Testing', () => {
   });
 
   describe('addstaff', () => {
-    const testData = TestDataReader.getTestCasesForFunction('test-case.json', 'addstaff');
+    const testData = TestDataReader.getTestCasesForFunction(
+      'test-case.json',
+      'addstaff',
+    );
 
     beforeAll(() => {
       TestDataReader.printTestCasesSummary(testData);
@@ -150,10 +161,10 @@ describe('ShopService - Data-Driven Testing', () => {
             testCase.input.userid,
             testCase.input.staffemail,
             testCase.input.shopid,
-            testCase.input.is_manager
+            testCase.input.is_manager,
           );
 
-          const isMatch = 
+          const isMatch =
             actualResult?.success === testCase.expectedResult.success &&
             actualResult?.message === testCase.expectedResult.message;
 
@@ -163,18 +174,17 @@ describe('ShopService - Data-Driven Testing', () => {
           }
 
           expect(actualResult).toEqual(testCase.expectedResult);
-
         } catch (error) {
           testStatus = 'FAIL';
-          
+
           if (!actualResult) {
             actualResult = { success: false, message: error.message };
           }
-          
+
           if (!errorMessage) {
             errorMessage = error.message;
           }
-          
+
           shouldThrow = true;
           caughtError = error;
         } finally {
@@ -210,7 +220,10 @@ describe('ShopService - Data-Driven Testing', () => {
   });
 
   describe('removestaff', () => {
-    const testData = TestDataReader.getTestCasesForFunction('test-case.json', 'removestaff');
+    const testData = TestDataReader.getTestCasesForFunction(
+      'test-case.json',
+      'removestaff',
+    );
 
     beforeAll(() => {
       TestDataReader.printTestCasesSummary(testData);
@@ -231,10 +244,10 @@ describe('ShopService - Data-Driven Testing', () => {
           actualResult = await service.removestaff(
             testCase.input.userid,
             testCase.input.staffemail,
-            testCase.input.shopid
+            testCase.input.shopid,
           );
 
-          const isMatch = 
+          const isMatch =
             actualResult?.success === testCase.expectedResult.success &&
             actualResult?.message === testCase.expectedResult.message;
 
@@ -244,18 +257,17 @@ describe('ShopService - Data-Driven Testing', () => {
           }
 
           expect(actualResult).toEqual(testCase.expectedResult);
-
         } catch (error) {
           testStatus = 'FAIL';
-          
+
           if (!actualResult) {
             actualResult = { success: false, message: error.message };
           }
-          
+
           if (!errorMessage) {
             errorMessage = error.message;
           }
-          
+
           shouldThrow = true;
           caughtError = error;
         } finally {
@@ -293,18 +305,19 @@ describe('ShopService - Data-Driven Testing', () => {
   afterAll(async () => {
     if (testResults.length > 0) {
       const testRunFolder = TestReportWriter.getTestRunFolder();
-      
+
       ScreenshotHelper.setScreenshotsFolder(testRunFolder);
-      
-      const screenshots = await ScreenshotHelper.captureAllScreenshots(testResults);
-      
-      testResults.forEach(result => {
+
+      const screenshots =
+        await ScreenshotHelper.captureAllScreenshots(testResults);
+
+      testResults.forEach((result) => {
         result.screenshot = screenshots.get(result.testCaseId) || '';
       });
-      
+
       await TestReportWriter.writeAllFormats(testResults);
-      
+
       console.log(`\n📁 Test results saved to: ${testRunFolder}\n`);
     }
-  }, 60000); 
+  }, 60000);
 });

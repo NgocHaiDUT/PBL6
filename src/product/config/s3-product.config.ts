@@ -34,10 +34,10 @@ const getProductStorage = (directory: 'brands' | 'products') => {
         cb(null, { fieldName: file.fieldname });
       },
       key: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         const extension = file.originalname.split('.').pop();
         cb(null, `${directory}/${uniqueSuffix}.${extension}`);
-      }
+      },
     });
   } else {
     // local storage
@@ -48,7 +48,7 @@ const getProductStorage = (directory: 'brands' | 'products') => {
         cb(null, localDirectory);
       },
       filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         const extension = extname(file.originalname);
         cb(null, `${uniqueSuffix}${extension}`);
       },
@@ -89,12 +89,18 @@ export const s3ProductMediaConfig = {
 };
 
 // Helper function để tạo S3 URL trực tiếp
-export const generateS3Url = (bucketName: string, region: string, key: string): string => {
+export const generateS3Url = (
+  bucketName: string,
+  region: string,
+  key: string,
+): string => {
   return `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
 };
 
 // Helper function để parse S3 key từ full URL
 export const parseS3Key = (s3Url: string): string | null => {
-  const match = s3Url.match(/https:\/\/[^\/]+\.s3\.[^\/]+\.amazonaws\.com\/(.+)/);
+  const match = s3Url.match(
+    /https:\/\/[^\/]+\.s3\.[^\/]+\.amazonaws\.com\/(.+)/,
+  );
   return match ? match[1] : null;
 };

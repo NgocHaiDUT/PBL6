@@ -34,7 +34,7 @@ const getStorage = (directory: string, dynamicPath: boolean = false) => {
         cb(null, { fieldName: file.fieldname });
       },
       key: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         const extension = extname(file.originalname);
         // ✅ Phân chia video/image cho S3
         const actualDirectory = dynamicPath && file.mimetype.startsWith('video/') 
@@ -58,7 +58,7 @@ const getStorage = (directory: string, dynamicPath: boolean = false) => {
         cb(null, localDirectory);
       },
       filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         const extension = extname(file.originalname);
         cb(null, `${uniqueSuffix}${extension}`);
       },
@@ -75,11 +75,18 @@ const allowedMimeTypes = {
 const fileValidators = {
   image: {
     filter: (req, file, cb) => {
-      const isImage = allowedMimeTypes.image.test(file.mimetype) || file.originalname.match(/\.(heic|heif)$/i);
+      const isImage =
+        allowedMimeTypes.image.test(file.mimetype) ||
+        file.originalname.match(/\.(heic|heif)$/i);
       if (isImage) {
         cb(null, true);
       } else {
-        cb(new Error('Only image files are allowed! (.jpg, .jpeg, .png, .gif, .webp, .heic, .heif)'), false);
+        cb(
+          new Error(
+            'Only image files are allowed! (.jpg, .jpeg, .png, .gif, .webp, .heic, .heif)',
+          ),
+          false,
+        );
       }
     },
     limit: 10 * 1024 * 1024, // 10MB
@@ -89,14 +96,19 @@ const fileValidators = {
       if (allowedMimeTypes.video.test(file.mimetype)) {
         cb(null, true);
       } else {
-        cb(new Error('Only video files are allowed! (.mp4, .mov, .avi, .mkv)'), false);
+        cb(
+          new Error('Only video files are allowed! (.mp4, .mov, .avi, .mkv)'),
+          false,
+        );
       }
     },
     limit: 50 * 1024 * 1024, // 50MB
   },
   media: {
     filter: (req, file, cb) => {
-      const isImage = allowedMimeTypes.image.test(file.mimetype) || file.originalname.match(/\.(heic|heif)$/i);
+      const isImage =
+        allowedMimeTypes.image.test(file.mimetype) ||
+        file.originalname.match(/\.(heic|heif)$/i);
       const isVideo = allowedMimeTypes.video.test(file.mimetype);
       if (isImage || isVideo) {
         cb(null, true);
@@ -105,12 +117,12 @@ const fileValidators = {
       }
     },
     limit: 50 * 1024 * 1024, // Use the larger limit for mixed media
-  }
+  },
 };
 
 export const getMulterOptions = (
   directory: string,
-  type: 'image' | 'video' | 'media' = 'image'
+  type: 'image' | 'video' | 'media' = 'image',
 ) => {
   const validator = fileValidators[type];
   if (!validator) {
@@ -128,4 +140,3 @@ export const getMulterOptions = (
     },
   };
 };
-

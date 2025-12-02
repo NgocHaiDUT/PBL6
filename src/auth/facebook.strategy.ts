@@ -10,7 +10,9 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
     super({
       clientID: process.env.FB_APP_ID!,
       clientSecret: process.env.FB_APP_SECRET!,
-      callbackURL: process.env.FB_CALLBACK_URL || 'http://localhost:3000/auth/facebook/callback',
+      callbackURL:
+        process.env.FB_CALLBACK_URL ||
+        'http://localhost:3000/auth/facebook/callback',
       scope: ['email'],
       profileFields: ['id', 'emails', 'name', 'photos'],
       passReqToCallback: false,
@@ -22,7 +24,9 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
     const providerUserId = profile.id;
     const rawEmail = profile.emails?.[0]?.value;
     const email = rawEmail ?? `facebook_${providerUserId}@example.local`;
-    const fullName = `${profile.name?.givenName ?? ''} ${profile.name?.familyName ?? ''}`.trim() || null;
+    const fullName =
+      `${profile.name?.givenName ?? ''} ${profile.name?.familyName ?? ''}`.trim() ||
+      null;
     const avatarUrl = profile.photos?.[0]?.value ?? null;
 
     // 1) Existing identity
@@ -53,10 +57,10 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
         include: {
           rolePermissions: {
             select: {
-              permission_id: true
-            }
-          }
-        }
+              permission_id: true,
+            },
+          },
+        },
       });
 
       user = await this.prisma.users.create({
@@ -69,14 +73,17 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
       });
 
       // Assign default permissions to new user
-      if (defaultRole?.rolePermissions && defaultRole.rolePermissions.length > 0) {
-        const userPermissionsData = defaultRole.rolePermissions.map(rp => ({
+      if (
+        defaultRole?.rolePermissions &&
+        defaultRole.rolePermissions.length > 0
+      ) {
+        const userPermissionsData = defaultRole.rolePermissions.map((rp) => ({
           user_id: user!.id,
-          permission_id: rp.permission_id
+          permission_id: rp.permission_id,
         }));
 
         await this.prisma.userpermission.createMany({
-          data: userPermissionsData
+          data: userPermissionsData,
         });
       }
     }
@@ -84,7 +91,7 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
     // 3) Create identity
     identity = await this.prisma.auth_identities.create({
       data: {
-        user_id: user!.id,
+        user_id: user.id,
         provider,
         provider_user_id: providerUserId,
         access_token: accessToken,

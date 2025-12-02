@@ -4,7 +4,9 @@ import { Transform } from 'class-transformer';
 export class QueryLikesDto {
   @IsOptional()
   @IsString()
-  @IsIn(['post', 'product', 'comment'], { message: 'Target type must be either "post", "product", or "comment"' })
+  @IsIn(['post', 'product', 'comment'], {
+    message: 'Target type must be either "post", "product", or "comment"',
+  })
   target_type?: string;
 
   @IsOptional()
