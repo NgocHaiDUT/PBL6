@@ -8,10 +8,15 @@ import {
   ParseIntPipe,
   UseGuards,
   Req,
+  Param,
+  Delete,
+  Put,
 } from '@nestjs/common';
 import { AddressService } from './address.service';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
+import { CreateShopAddressDto } from './dto/create-shop-address.dto';
+import { UpdateShopAddressDto } from './dto/update-shop-address.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { GetDistrictsDto, GetWardsDto } from '../delivery/dto/ghn.dto';
 import { DeliveryService } from 'src/delivery/delivery.service';
@@ -23,6 +28,97 @@ export class AddressController {
     private readonly deliveryService: DeliveryService,
   ) {}
 
+  // ==================== USER ADDRESS ENDPOINTS ====================
+
+  @Post('user/add')
+  @UseGuards(AuthGuard('jwt'))
+  async addUserAddress(
+    @Body() createAddressDto: CreateAddressDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.addressService.addUserAddress(userId, createAddressDto);
+  }
+
+  @Put('user/update/:id')
+  @UseGuards(AuthGuard('jwt'))
+  async updateUserAddress(
+    @Param('id', ParseIntPipe) addressId: number,
+    @Body() updateAddressDto: UpdateAddressDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.addressService.updateUserAddress(addressId, userId, updateAddressDto);
+  }
+
+  @Get('user/all')
+  @UseGuards(AuthGuard('jwt'))
+  async getAllUserAddresses(@Req() req: any) {
+    const userId = req.user.userId;
+    return this.addressService.getUserAddresses(userId);
+  }
+
+  @Get('user/:userId')
+  @UseGuards(AuthGuard('jwt'))
+  async getUserAddressesByUserId(
+    @Param('userId', ParseIntPipe) userId: number,
+  ) {
+    return this.addressService.getUserAddresses(userId);
+  }
+
+  @Delete('user/delete/:id')
+  @UseGuards(AuthGuard('jwt'))
+  async deleteUserAddress(
+    @Param('id', ParseIntPipe) addressId: number,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.addressService.deleteUserAddress(addressId, userId);
+  }
+
+  // ==================== SHOP ADDRESS ENDPOINTS ====================
+
+  @Post('shop/add')
+  @UseGuards(AuthGuard('jwt'))
+  async addShopAddress(
+    @Body() createShopAddressDto: CreateShopAddressDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.addressService.addShopAddress(userId, createShopAddressDto);
+  }
+
+  @Put('shop/update/:id')
+  @UseGuards(AuthGuard('jwt'))
+  async updateShopAddress(
+    @Param('id', ParseIntPipe) addressId: number,
+    @Body() updateShopAddressDto: UpdateShopAddressDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.addressService.updateShopAddress(addressId, userId, updateShopAddressDto);
+  }
+
+  @Get('shop/all/:shopId')
+  @UseGuards(AuthGuard('jwt'))
+  async getShopAddressesByShopId(
+    @Param('shopId', ParseIntPipe) shopId: number,
+  ) {
+    return this.addressService.getShopAddresses(shopId);
+  }
+
+  @Delete('shop/delete/:id')
+  @UseGuards(AuthGuard('jwt'))
+  async deleteShopAddress(
+    @Param('id', ParseIntPipe) addressId: number,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.addressService.deleteShopAddress(addressId, userId);
+  }
+
+  // ==================== LEGACY ENDPOINTS (Deprecated) ====================
+
   @Post('add-address')
   @UseGuards(AuthGuard('jwt'))
   async addAddress(
@@ -30,20 +126,7 @@ export class AddressController {
     @Req() req: any,
   ) {
     const userId = req.user.userId;
-    return this.addressService.addaddress(
-      userId,
-      createAddressDto.label,
-      createAddressDto.receiver_name,
-      createAddressDto.phone,
-      createAddressDto.province,
-      createAddressDto.district,
-      createAddressDto.ward,
-      createAddressDto.street,
-      createAddressDto.is_default,
-      createAddressDto.ghn_province_id,
-      createAddressDto.ghn_district_id,
-      createAddressDto.ghn_ward_code,
-    );
+    return this.addressService.addUserAddress(userId, createAddressDto);
   }
 
   @Post('update-address')
@@ -52,21 +135,11 @@ export class AddressController {
     @Body() updateAddressDto: UpdateAddressDto,
     @Req() req: any,
   ) {
-    const userId = req.user.userId; // For ownership check in service if needed
-    // We assume the service will handle checking if this address belongs to the user.
-    return this.addressService.updateaddress(
+    const userId = req.user.userId;
+    return this.addressService.updateUserAddress(
       updateAddressDto.addressid,
-      updateAddressDto.label,
-      updateAddressDto.receiver_name,
-      updateAddressDto.phone,
-      updateAddressDto.province,
-      updateAddressDto.district,
-      updateAddressDto.ward,
-      updateAddressDto.street,
-      updateAddressDto.is_default,
-      updateAddressDto.ghn_province_id,
-      updateAddressDto.ghn_district_id,
-      updateAddressDto.ghn_ward_code,
+      userId,
+      updateAddressDto,
     );
   }
 
@@ -74,7 +147,7 @@ export class AddressController {
   @UseGuards(AuthGuard('jwt'))
   async getAllAddress(@Req() req: any) {
     const userId = req.user.userId;
-    return this.addressService.getaddresses(userId);
+    return this.addressService.getUserAddresses(userId);
   }
 
   @Post('delete-address')
@@ -83,12 +156,11 @@ export class AddressController {
     @Body('addressid', ParseIntPipe) addressid: number,
     @Req() req: any,
   ) {
-    const userId = req.user.userId; // For ownership check in service if needed
-    // We assume the service will handle checking if this address belongs to the user.
-    return this.addressService.deleteaddress(addressid);
+    const userId = req.user.userId;
+    return this.addressService.deleteUserAddress(addressid, userId);
   }
 
-  // GHN Endpoints
+  // ==================== GHN ENDPOINTS ====================
   @Get('provinces')
   async getProvinces() {
     return this.deliveryService.getProvinces();

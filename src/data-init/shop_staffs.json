@@ -1,0 +1,26 @@
+[
+  {
+    "shop_id": 1,
+    "user_id": 3,
+    "is_manager": true,
+    "created_at": "2025-01-15T08:00:00Z"
+  },
+  {
+    "shop_id": 1,
+    "user_id": 4,
+    "is_manager": false,
+    "created_at": "2025-01-20T08:00:00Z"
+  },
+  {
+    "shop_id": 2,
+    "user_id": 5,
+    "is_manager": true,
+    "created_at": "2025-01-15T08:00:00Z"
+  },
+  {
+    "shop_id": 2,
+    "user_id": 6,
+    "is_manager": false,
+    "created_at": "2025-02-01T08:00:00Z"
+  }
+]
