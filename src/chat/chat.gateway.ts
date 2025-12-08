@@ -119,7 +119,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         {
           conversation_id: conversation.id,
           content: data.content,
-          type: messageType,
+          messageType: messageType,
           payload: data.payload || (data.postId ? { postId: data.postId } : null),
         },
         data.senderShopId // Pass shopId if sending as shop
@@ -750,8 +750,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             type: 'private',
             participants: {
               create: [
-                { user_id: data.senderId },
-                { user_id: data.receiverId }
+                { user_id: data.senderId, entity_type: 'user' },
+                { user_id: data.receiverId, entity_type: 'user' }
               ]
             }
           },
@@ -774,10 +774,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // 3. Create message
       const message = await this.prisma.messages.create({
         data: {
-          conversation_id: conversation.id,
+          conversation_id: conversation?.id || 0,
           sender_id: data.senderId,
           content: data.content || '',
           type: messageType, // ✅ Use 'type' field with enum value
+          sender_type: 'user',
         },
         include: {
           sender: {
@@ -825,9 +826,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           thumbnailUrl: m.thumbnail_url,
         })),
         sender: {
-          Id: message.sender?.id,
-          Fullname: message.sender?.full_name || 'Unknown User',
-          Avatar: message.sender?.avatar_url,
+          Id: message.sender_id,
+          Fullname: 'Unknown User',
+          Avatar: null,
         }
       };
 
