@@ -408,26 +408,24 @@ export class ProductController {
     );
   }
 
-    // TODO: The following endpoints need to be implemented in ProductService
-    /*
-    @Get('shop/:shopId/products')
-    async getShopProducts(
-        @Param('shopId', ParseIntPipe) shopId: number,
-        @Query('page') page?: string,
-        @Query('limit') limit?: string,
-        @Query('search') search?: string,
-        @Query('category_id') category_id?: string,
-        @Query('brand_id') brand_id?: string,
-        @Query('is_published') is_published?: string,
-        @Query('skin_type') skin_type?: string,
-        @Query('min_price') min_price?: string,
-        @Query('max_price') max_price?: string,
-        @Query('sort_field') sort_field?: string,
-        @Query('sort_order') sort_order?: string,
-    ) {
-        // Parse pagination
-        const pageNum = page ? parseInt(page) : 1;
-        const limitNum = limit ? parseInt(limit) : 20;
+  @Get('shop/:shopId/products')
+  async getShopProducts(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+    @Query('category_id') category_id?: string,
+    @Query('brand_id') brand_id?: string,
+    @Query('is_published') is_published?: string,
+    @Query('skin_type') skin_type?: string,
+    @Query('min_price') min_price?: string,
+    @Query('max_price') max_price?: string,
+    @Query('sort_field') sort_field?: string,
+    @Query('sort_order') sort_order?: string,
+  ) {
+    // Parse pagination
+    const pageNum = page ? parseInt(page) : 1;
+    const limitNum = limit ? parseInt(limit) : 20;
 
     // Build filters
     const filters: any = {};
