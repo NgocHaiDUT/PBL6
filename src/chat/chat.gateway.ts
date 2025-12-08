@@ -145,7 +145,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         type: message.type,
         payload: message.payload,
         createdAt: message.created_at.toISOString(),
-<<<<<<< HEAD
+        sharedPostId: (message as any).post_id || null, // ✅ Include shared post ID
+        messageType: message.type, // ✅ Use the enum type
         sender: message.sender ? {
           id: message.sender.id,
           fullName: message.sender.full_name || 'Unknown User',
@@ -154,8 +155,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           id: message.sender_shop.id,
           fullName: message.sender_shop.name,
           avatarUrl: message.sender_shop.logo_url,
-        } : null,
+        } : {
+          Id: message.sender_id,
+          Fullname: 'Unknown User',
+          Avatar: null,
+        }
       };
+
+      // Debug log để kiểm tra formatted message
+      this.logger.log(`Formatted message:`, {
+        sharedPostId: formattedMessage.sharedPostId,
+        messageType: formattedMessage.messageType,
+        type: message.type,
+        originalPostId: data.postId,
+        originalMessageType: data.messageType
+      });
 
       // 4. Send message to all participants in the conversation
       conversation.participants.forEach(participant => {
@@ -170,24 +184,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             .to(`shop_${participant.shop_id}`)
             .emit('newMessage', formattedMessage);
         }
-=======
-        sharedPostId: (message as any).post_id || null, // ✅ Include shared post ID
-        messageType: message.type, // ✅ Use the enum type
-        sender: {
-          Id: message.sender?.id || message.sender_id,
-          Fullname: message.sender?.full_name || 'Unknown User',
-          Avatar: message.sender?.avatar_url || null,
-        }
-      };
-
-      // Debug log để kiểm tra formatted message
-      this.logger.log(`Formatted message:`, {
-        sharedPostId: formattedMessage.sharedPostId,
-        messageType: formattedMessage.messageType,
-        type: message.type,
-        originalPostId: data.postId,
-        originalMessageType: data.messageType
->>>>>>> origin/develop
       });
 
       // 5. Send message to both users
@@ -308,88 +304,72 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       // 4. Format messages for frontend
-      const formattedMessages = messageHistory.data.map((msg) => ({
-        id: msg.id,
-        conversationId: msg.conversation_id,
-        senderId: msg.sender_id,
-        senderShopId: msg.sender_shop_id,
-        senderType: msg.sender_type,
-        receiverId: data.targetId === msg.sender_id ? data.openerId : data.targetId,
-        content: msg.content,
-        type: msg.type,
-        payload: msg.payload,
-        createdAt: msg.created_at.toISOString(),
-        sender: msg.sender
-          ? {
-              id: msg.sender.id,
-              fullName: msg.sender.full_name || 'Unknown User',
-              avatarUrl: msg.sender.avatar_url,
-            }
-          : msg.sender_shop
+      const formattedMessages = messageHistory.data.map((msg) => {
+        // ✅ Debug log raw reactions from database
+        this.logger.log(`🔍 Message ${msg.id} raw message_reactions from DB:`, (msg as any).message_reactions);
+        
+        // Group reactions by emoji
+        const reactionsGrouped = ((msg as any).message_reactions || []).reduce((acc: any, r: any) => {
+          if (!acc[r.emoji]) {
+            acc[r.emoji] = { emoji: r.emoji, count: 0, users: [] };
+          }
+          acc[r.emoji].count++;
+          acc[r.emoji].users.push(r.user_id);
+          return acc;
+        }, {} as Record<string, { emoji: string; count: number; users: number[] }>);
+
+        const formattedReactions = Object.values(reactionsGrouped);
+
+        // ✅ Debug log formatted reactions
+        this.logger.log(`📊 Message ${msg.id} formatted reactions (${formattedReactions.length}):`, formattedReactions);
+
+        // ✅ Format media files
+        const mediaFiles = ((msg as any).message_media || []).map((media: any) => ({
+          id: media.id,
+          url: media.media_url,
+          type: media.media_type,
+          fileName: media.file_name,
+          fileSize: media.file_size,
+          duration: media.duration,
+          thumbnailUrl: media.thumbnail_url,
+        }));
+
+        this.logger.log(`📎 Message ${msg.id} has ${mediaFiles.length} media files:`, mediaFiles);
+
+        return {
+          id: msg.id,
+          conversationId: msg.conversation_id,
+          senderId: msg.sender_id,
+          senderShopId: msg.sender_shop_id,
+          senderType: msg.sender_type,
+          receiverId: data.targetId === msg.sender_id ? data.openerId : data.targetId,
+          content: msg.content,
+          type: msg.type,
+          payload: msg.payload,
+          createdAt: msg.created_at.toISOString(),
+          sharedPostId: (msg as any).post_id, // ✅ Include shared post ID
+          messageType: msg.type, // ✅ Use 'type' field (enum message_type)
+          reactions: formattedReactions, // ✅ Include reactions
+          mediaFiles: mediaFiles, // ✅ Include media files
+          sender: msg.sender
             ? {
-                id: msg.sender_shop.id,
-                fullName: msg.sender_shop.name,
-                avatarUrl: msg.sender_shop.logo_url,
+                id: msg.sender.id,
+                fullName: msg.sender.full_name || 'Unknown User',
+                avatarUrl: msg.sender.avatar_url,
               }
-            : null,
-        reactions: (msg as any).message_reactions || [],
-        media: (msg as any).message_media || [],
-      }));
-        formattedMessages = conversation.messages.map(msg => {
-          // ✅ Debug log raw reactions from database
-          this.logger.log(`🔍 Message ${msg.id} raw message_reactions from DB:`, msg.message_reactions);
-          
-          // Group reactions by emoji
-          const reactionsGrouped = (msg.message_reactions || []).reduce((acc, r) => {
-            if (!acc[r.emoji]) {
-              acc[r.emoji] = { emoji: r.emoji, count: 0, users: [] };
-            }
-            acc[r.emoji].count++;
-            acc[r.emoji].users.push(r.user_id);
-            return acc;
-          }, {} as Record<string, { emoji: string; count: number; users: number[] }>);
-
-          const formattedReactions = Object.values(reactionsGrouped);
-
-          // ✅ Debug log formatted reactions
-          this.logger.log(`📊 Message ${msg.id} formatted reactions (${formattedReactions.length}):`, formattedReactions);
-
-          // ✅ Format media files
-          const mediaFiles = ((msg as any).message_media || []).map((media: any) => ({
-            id: media.id,
-            url: media.media_url,
-            type: media.media_type,
-            fileName: media.file_name,
-            fileSize: media.file_size,
-            duration: media.duration,
-            thumbnailUrl: media.thumbnail_url,
-          }));
-
-          this.logger.log(`📎 Message ${msg.id} has ${mediaFiles.length} media files:`, mediaFiles);
-
-          const formattedMessage = {
-            id: msg.id,
-            senderId: msg.sender_id,
-            receiverId: data.targetId === msg.sender_id ? data.openerId : data.targetId,
-            content: msg.content,
-            createdAt: msg.created_at.toISOString(),
-            sharedPostId: (msg as any).post_id, // ✅ Include shared post ID
-            messageType: msg.type, // ✅ Use 'type' field (enum message_type)
-            reactions: formattedReactions, // ✅ Include reactions
-            mediaFiles: mediaFiles, // ✅ Include media files
-            sender: {
-              Id: msg.sender?.id,
-              Fullname: msg.sender?.full_name || 'Unknown User',
-              Avatar: msg.sender?.avatar_url,
-            }
-          };
-          
-          // ✅ Debug final formatted message
-          this.logger.log(`✉️ Final formatted message ${msg.id}:`, JSON.stringify(formattedMessage, null, 2));
-          
-          return formattedMessage;
-        });
-      }
+            : msg.sender_shop
+              ? {
+                  id: msg.sender_shop.id,
+                  fullName: msg.sender_shop.name,
+                  avatarUrl: msg.sender_shop.logo_url,
+                }
+              : {
+                  Id: msg.sender_id,
+                  Fullname: 'Unknown User',
+                  Avatar: null,
+                }
+        };
+      });
 
       // 4. Notify target user (optional)
       this.server.to(`${data.targetId}`).emit('openChat', { 
