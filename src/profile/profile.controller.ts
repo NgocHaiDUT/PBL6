@@ -6,6 +6,7 @@ import { ProfileService } from './profile.service';
 import { getMulterOptions } from '../config/storage.config';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../auth/constants/Permission.enum';
 
 @Controller('profile')
 export class ProfileController {
@@ -237,7 +238,7 @@ export class ProfileController {
 
   @Post('update-logo-shop')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_profile_shop')
+  @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   @UseInterceptors(FileInterceptor('file', getMulterOptions('shops')))
   async updatelogoshop(
     @Body('shopid', ParseIntPipe) shopid: number,
@@ -254,7 +255,7 @@ export class ProfileController {
 
   @Post('update-banner-shop')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_profile_shop')
+  @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   @UseInterceptors(FileInterceptor('file', getMulterOptions('shops')))
   async updatebannershop(
     @Body('shopid', ParseIntPipe) shopid: number,
@@ -271,7 +272,7 @@ export class ProfileController {
 
   @Post('update-phone-shop')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_profile_shop')
+  @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   async updateshopphone(
     @Body() body: { shopid: number; phone: string },
     @Req() req: any,
@@ -282,7 +283,7 @@ export class ProfileController {
 
   @Post('update-email-shop')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_profile_shop')
+  @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   async updateshopemail(
     @Body() body: { shopid: number; email: string },
     @Req() req: any,
@@ -293,7 +294,7 @@ export class ProfileController {
 
   @Post('update-description-shop')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_profile_shop')
+  @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   async updateshopdescription(
     @Body() body: { shopid: number; description: string },
     @Req() req: any,

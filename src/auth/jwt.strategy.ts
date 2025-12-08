@@ -19,7 +19,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.prisma.users.findUnique({
       where: { id: Number(payload.sub) },
       include: {
-        role: true,
+        role: {
+          include: {
+            rolePermissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
         userPermissions: {
           include: {
             permission: true,
@@ -32,17 +40,25 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException();
     }
 
-    const permissions = user.userPermissions.map((up) => up.permission.name);
+    // Lấy permissions từ role
+    const rolePermissions = user.role?.rolePermissions?.map((rp) => rp.permission.name) || [];
+    // Lấy permissions trực tiếp từ user
+    const userPermissions = user.userPermissions.map((up) => up.permission.name);
+    // Merge và loại bỏ duplicate
+    const allPermissions = [...new Set([...rolePermissions, ...userPermissions])];
 
     console.log('🔍 [JWT Strategy] User ID:', user.id);
-    console.log('🔍 [JWT Strategy] User permissions:', permissions);
+    console.log('🔍 [JWT Strategy] User role:', user.role?.name);
+    console.log('🔍 [JWT Strategy] Role permissions:', rolePermissions);
+    console.log('🔍 [JWT Strategy] User permissions:', userPermissions);
+    console.log('🔍 [JWT Strategy] All permissions:', allPermissions);
 
     // The object returned here will be attached to the request object as `req.user`.
     return {
       userId: user.id,
       email: user.email,
       role: user.role?.name || user.role,
-      permissions: permissions,
+      permissions: allPermissions,
     };
   }
 }

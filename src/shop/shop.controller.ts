@@ -14,6 +14,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../auth/constants/Permission.enum';
 import { ShopService } from './shop.service';
 
 @Controller('shop')
@@ -22,7 +23,7 @@ export class ShopController {
 
   @Post('staff')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_shop_staff')
+  @RequirePermissions(Permission.MANAGE_SHOP_STAFF)
   async addStaff(
     @Body()
     body: {
@@ -44,7 +45,7 @@ export class ShopController {
   // Xóa nhân viên khỏi shop
   @Delete('staff')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_shop_staff')
+  @RequirePermissions(Permission.MANAGE_SHOP_STAFF)
   async removeStaff(
     @Body()
     body: {
@@ -65,7 +66,7 @@ export class ShopController {
 
   @Post('staff/permissions')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_shop_staff')
+  @RequirePermissions(Permission.MANAGE_SHOP_STAFF)
   async updateStaffPermissions(
     @Body()
     body: {
@@ -94,7 +95,7 @@ export class ShopController {
 
   @Delete('staff/permissions')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_shop_staff')
+  @RequirePermissions(Permission.MANAGE_SHOP_STAFF)
   async deleteStaffPermissions(
     @Body()
     body: {

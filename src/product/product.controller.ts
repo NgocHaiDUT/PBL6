@@ -6,6 +6,7 @@ import { Controller, Body, Post, Get, UploadedFile, Query, UseInterceptors, BadR
 import { AuthGuard } from '@nestjs/passport';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../auth/constants/Permission.enum';
 // Import local file config for local testing
 // import { s3BrandConfig } from './config/s3-product.config';
 import { brandMulterConfig, productMediaMulterConfig } from './config/product-multer.config';
@@ -62,7 +63,7 @@ export class ProductController {
 
   @Post('add-brand')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_brands')
+  @RequirePermissions(Permission.MANAGE_BRANDS)
   @UseInterceptors(FileInterceptor('file', brandMulterConfig))
   async addbrand(
     @Body() body: { name: string; slug: string },
@@ -79,7 +80,7 @@ export class ProductController {
 
   @Post('edit-brand-name')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_brands')
+  @RequirePermissions(Permission.MANAGE_BRANDS)
   async editbrandname(
     @Body() body: { id: string; name: string },
     @Req() req: any,
@@ -97,7 +98,7 @@ export class ProductController {
 
   @Post('edit-brand-slug')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_brands')
+  @RequirePermissions(Permission.MANAGE_BRANDS)
   async editbrandslug(
     @Body() body: { id: string; slug: string },
     @Req() req: any,
@@ -115,7 +116,7 @@ export class ProductController {
 
   @Post('edit-brand-logo')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_brands')
+  @RequirePermissions(Permission.MANAGE_BRANDS)
   @UseInterceptors(FileInterceptor('file', brandMulterConfig))
   async editbrandlogo(
     @Body() body: { id: string },
@@ -136,7 +137,7 @@ export class ProductController {
 
   @Post('add-category')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_categorys')
+  @RequirePermissions(Permission.MANAGE_CATEGORYS)
   async addcategory(
     @Body() body: { parent_id?: string; name: string; slug: string },
     @Req() req: any,
@@ -154,7 +155,7 @@ export class ProductController {
 
   @Post('edit-category-name')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_categorys')
+  @RequirePermissions(Permission.MANAGE_CATEGORYS)
   async editcategoryname(
     @Body() body: { id: string; name: string },
     @Req() req: any,
@@ -171,7 +172,7 @@ export class ProductController {
 
   @Post('edit-category-slug')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_categorys')
+  @RequirePermissions(Permission.MANAGE_CATEGORYS)
   async editcategoryslug(
     @Body() body: { id: string; slug: string },
     @Req() req: any,
@@ -188,7 +189,7 @@ export class ProductController {
 
   @Post('add-product')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('create_product')
+  @RequirePermissions(Permission.CREATE_PRODUCT)
   async addProduct(
     @Body()
     body: {
@@ -247,7 +248,7 @@ export class ProductController {
 
   @Put('edit-product/:id')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_product')
+  @RequirePermissions(Permission.EDIT_PRODUCT)
   async editProduct(
     @Param('id', ParseIntPipe) id: number,
     @Body()
@@ -302,7 +303,7 @@ export class ProductController {
 
   @Delete('delete-product/:id')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('delete_product')
+  @RequirePermissions(Permission.DELETE_PRODUCT)
   async deleteProduct(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     const userId = req.user.userId;
     return this.productservice.deleteProduct(id, userId);
@@ -340,7 +341,7 @@ export class ProductController {
 
   @Put('edit-product-variant/:id')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_product')
+  @RequirePermissions(Permission.EDIT_PRODUCT)
   async editProductVariant(
     @Param('id', ParseIntPipe) id: number,
     @Body()
@@ -373,7 +374,7 @@ export class ProductController {
 
   @Delete('delete-product-variant/:id')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('delete_product')
+  @RequirePermissions(Permission.DELETE_PRODUCT)
   async deleteProductVariant(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: any,

@@ -25,8 +25,18 @@ export class DataInitService implements OnModuleInit {
       await this.seedPermissions();
       await this.seedRolePermissions();
       await this.seedAdminUser();
+      await this.seedUsers(); // Create regular users for testing
       await this.seedShops();
-      await this.seedProducts(); // Enabled product seeding
+      await this.seedShopStaffs();
+      await this.seedProducts();
+      await this.seedCoupons();
+      await this.seedCarts();
+      await this.seedCartItems();
+      await this.seedAddresses();
+      await this.seedShopAddresses();
+      await this.seedOrders(); // Must be before order_coupons and shipment_logs
+      await this.seedOrderCoupons();
+      await this.seedShipmentLogs();
 
       // await this.uploadBrandLogosIfNeeded();
 
@@ -306,6 +316,57 @@ export class DataInitService implements OnModuleInit {
     } catch (error) {
       this.logger.error('❌ Lỗi khi tạo admin user:', error);
     }
+  }
+
+  private async seedUsers() {
+    const existingUsers = await this.prisma.users.count({
+      where: {
+        email: {
+          not: 'admin@pbl6.com',
+        },
+      },
+    });
+
+    if (existingUsers > 0) {
+      this.logger.log('Regular users đã tồn tại, không khởi tạo mới');
+      return;
+    }
+
+    const usersFilePath = path.join(
+      process.cwd(),
+      'src',
+      'data-init',
+      'users.json',
+    );
+    const usersDataRaw = fs.readFileSync(usersFilePath, 'utf8');
+    const usersData = JSON.parse(usersDataRaw);
+
+    if (!Array.isArray(usersData)) {
+      this.logger.error('Dữ liệu users không phải là array');
+      return;
+    }
+
+    for (const user of usersData) {
+      try {
+        const hashedPassword = await bcrypt.hash(user.password, 10);
+        await this.prisma.users.create({
+          data: {
+            email: user.email,
+            password_hash: hashedPassword,
+            full_name: user.full_name,
+            phone: user.phone,
+            role_id: user.role_id,
+            is_active: true,
+            created_at: new Date(user.created_at),
+            updated_at: new Date(user.updated_at),
+          },
+        });
+      } catch (error) {
+        this.logger.error(`Lỗi khi tạo user ${user.email}:`, error);
+      }
+    }
+
+    this.logger.log(`Đã tạo ${usersData.length} users thành công`);
   }
 
   private async seedShops() {
@@ -771,5 +832,336 @@ export class DataInitService implements OnModuleInit {
         error: error.message,
       };
     }
+  }
+
+  private async seedShopStaffs() {
+    const existingStaffs = await this.prisma.shop_staffs.count();
+    if (existingStaffs > 0) {
+      this.logger.log('Shop staffs đã tồn tại, không khởi tạo mới');
+      return;
+    }
+
+    const shopStaffsFilePath = path.join(
+      process.cwd(),
+      'src',
+      'data-init',
+      'shop_staffs.json',
+    );
+    const shopStaffsDataRaw = fs.readFileSync(shopStaffsFilePath, 'utf8');
+    const shopStaffsData = JSON.parse(shopStaffsDataRaw);
+
+    if (!Array.isArray(shopStaffsData)) {
+      this.logger.error('Dữ liệu shop_staffs không phải là array');
+      return;
+    }
+
+    for (const staff of shopStaffsData) {
+      try {
+        await this.prisma.shop_staffs.create({
+          data: {
+            shop_id: staff.shop_id,
+            user_id: staff.user_id,
+            is_manager: staff.is_manager,
+            created_at: new Date(staff.created_at),
+          },
+        });
+      } catch (error) {
+        this.logger.error(`Lỗi khi tạo shop staff:`, error);
+      }
+    }
+
+    this.logger.log(`Đã tạo ${shopStaffsData.length} shop staffs thành công`);
+  }
+
+  private async seedCoupons() {
+    const existingCoupons = await this.prisma.coupons.count();
+    if (existingCoupons > 0) {
+      this.logger.log('Coupons đã tồn tại, không khởi tạo mới');
+      return;
+    }
+
+    const couponsFilePath = path.join(
+      process.cwd(),
+      'src',
+      'data-init',
+      'coupons.json',
+    );
+    const couponsDataRaw = fs.readFileSync(couponsFilePath, 'utf8');
+    const couponsData = JSON.parse(couponsDataRaw);
+
+    if (!Array.isArray(couponsData)) {
+      this.logger.error('Dữ liệu coupons không phải là array');
+      return;
+    }
+
+    for (const coupon of couponsData) {
+      try {
+        await this.prisma.coupons.create({
+          data: {
+            code: coupon.code,
+            description: coupon.description,
+            discount_type: coupon.discount_type,
+            discount_value: coupon.discount_value,
+            min_subtotal: coupon.min_subtotal,
+            usage_limit: coupon.usage_limit,
+            used_count: coupon.used_count,
+            starts_at: coupon.starts_at ? new Date(coupon.starts_at) : null,
+            ends_at: coupon.ends_at ? new Date(coupon.ends_at) : null,
+            created_at: new Date(coupon.created_at),
+          },
+        });
+      } catch (error) {
+        this.logger.error(`Lỗi khi tạo coupon ${coupon.code}:`, error);
+      }
+    }
+
+    this.logger.log(`Đã tạo ${couponsData.length} coupons thành công`);
+  }
+
+  private async seedCarts() {
+    const existingCarts = await this.prisma.carts.count();
+    if (existingCarts > 0) {
+      this.logger.log('Carts đã tồn tại, không khởi tạo mới');
+      return;
+    }
+
+    const cartsFilePath = path.join(
+      process.cwd(),
+      'src',
+      'data-init',
+      'carts.json',
+    );
+    const cartsDataRaw = fs.readFileSync(cartsFilePath, 'utf8');
+    const cartsData = JSON.parse(cartsDataRaw);
+
+    if (!Array.isArray(cartsData)) {
+      this.logger.error('Dữ liệu carts không phải là array');
+      return;
+    }
+
+    for (const cart of cartsData) {
+      try {
+        await this.prisma.carts.create({
+          data: {
+            user_id: cart.user_id,
+            created_at: new Date(cart.created_at),
+            updated_at: new Date(cart.updated_at),
+          },
+        });
+      } catch (error) {
+        this.logger.error(`Lỗi khi tạo cart cho user ${cart.user_id}:`, error);
+      }
+    }
+
+    this.logger.log(`Đã tạo ${cartsData.length} carts thành công`);
+  }
+
+  private async seedCartItems() {
+    const existingCartItems = await this.prisma.cart_items.count();
+    if (existingCartItems > 0) {
+      this.logger.log('Cart items đã tồn tại, không khởi tạo mới');
+      return;
+    }
+
+    const cartItemsFilePath = path.join(
+      process.cwd(),
+      'src',
+      'data-init',
+      'cart_items.json',
+    );
+    const cartItemsDataRaw = fs.readFileSync(cartItemsFilePath, 'utf8');
+    const cartItemsData = JSON.parse(cartItemsDataRaw);
+
+    if (!Array.isArray(cartItemsData)) {
+      this.logger.error('Dữ liệu cart_items không phải là array');
+      return;
+    }
+
+    // Get product mapping
+    const productsInDB = await this.prisma.products.findMany({
+      orderBy: { id: 'asc' },
+      select: { id: true },
+    });
+
+    const productIdMap = new Map<number, number>();
+    productsInDB.forEach((product, index) => {
+      productIdMap.set(index + 1, product.id);
+    });
+
+    for (const cartItem of cartItemsData) {
+      try {
+        const realProductId = productIdMap.get(cartItem.product_id);
+        if (!realProductId) {
+          this.logger.warn(
+            `Không tìm thấy product_id mapping cho ${cartItem.product_id}`,
+          );
+          continue;
+        }
+
+        // Get variant
+        const variants = await this.prisma.product_variants.findMany({
+          where: { product_id: realProductId },
+          orderBy: { id: 'asc' },
+        });
+
+        const realVariantId =
+          variants[cartItem.variant_id - 1]?.id || variants[0]?.id;
+        if (!realVariantId) {
+          this.logger.warn(
+            `Không tìm thấy variant cho product ${realProductId}`,
+          );
+          continue;
+        }
+
+        await this.prisma.cart_items.create({
+          data: {
+            cart_id: cartItem.cart_id,
+            product_id: realProductId,
+            variant_id: realVariantId,
+            quantity: cartItem.quantity,
+            price_snapshot: cartItem.price_snapshot,
+            created_at: new Date(cartItem.created_at),
+          },
+        });
+      } catch (error) {
+        this.logger.error(`Lỗi khi tạo cart item:`, error);
+      }
+    }
+
+    this.logger.log(`Đã tạo ${cartItemsData.length} cart items thành công`);
+  }
+
+  private async seedOrderCoupons() {
+    const existingOrderCoupons = await this.prisma.order_coupons.count();
+    if (existingOrderCoupons > 0) {
+      this.logger.log('Order coupons đã tồn tại, không khởi tạo mới');
+      return;
+    }
+
+    // Get actual order IDs from database
+    const ordersInDB = await this.prisma.orders.findMany({
+      orderBy: { id: 'asc' },
+      select: { id: true },
+    });
+
+    if (ordersInDB.length === 0) {
+      this.logger.error('Không có orders trong DB để tạo order_coupons');
+      return;
+    }
+
+    // Create mapping: index position (1,2,3...) -> actual order_id
+    const orderIdMap = new Map<number, number>();
+    ordersInDB.forEach((order, index) => {
+      orderIdMap.set(index + 1, order.id);
+    });
+
+    const orderCouponsFilePath = path.join(
+      process.cwd(),
+      'src',
+      'data-init',
+      'order_coupons.json',
+    );
+    const orderCouponsDataRaw = fs.readFileSync(orderCouponsFilePath, 'utf8');
+    const orderCouponsData = JSON.parse(orderCouponsDataRaw);
+
+    if (!Array.isArray(orderCouponsData)) {
+      this.logger.error('Dữ liệu order_coupons không phải là array');
+      return;
+    }
+
+    for (const orderCoupon of orderCouponsData) {
+      try {
+        const realOrderId = orderIdMap.get(orderCoupon.order_id);
+        if (!realOrderId) {
+          this.logger.warn(
+            `Không tìm thấy order mapping cho order_id ${orderCoupon.order_id}, skip`,
+          );
+          continue;
+        }
+
+        await this.prisma.order_coupons.create({
+          data: {
+            order_id: realOrderId,
+            coupon_id: orderCoupon.coupon_id,
+            amount: orderCoupon.amount,
+          },
+        });
+      } catch (error) {
+        this.logger.error(
+          `Lỗi khi tạo order coupon cho order ${orderCoupon.order_id}:`,
+          error,
+        );
+      }
+    }
+
+    this.logger.log(
+      `Đã tạo ${orderCouponsData.length} order coupons thành công`,
+    );
+  }
+
+  private async seedShipmentLogs() {
+    const existingShipmentLogs = await this.prisma.shipment_logs.count();
+    if (existingShipmentLogs > 0) {
+      this.logger.log('Shipment logs đã tồn tại, không khởi tạo mới');
+      return;
+    }
+
+    // Get actual shipment IDs from database
+    const shipmentsInDB = await this.prisma.shipments.findMany({
+      orderBy: { id: 'asc' },
+      select: { id: true },
+    });
+
+    if (shipmentsInDB.length === 0) {
+      this.logger.error('Không có shipments trong DB để tạo shipment_logs');
+      return;
+    }
+
+    // Create mapping: index position (1,2,3...) -> actual shipment_id
+    const shipmentIdMap = new Map<number, number>();
+    shipmentsInDB.forEach((shipment, index) => {
+      shipmentIdMap.set(index + 1, shipment.id);
+    });
+
+    const shipmentLogsFilePath = path.join(
+      process.cwd(),
+      'src',
+      'data-init',
+      'shipment_logs.json',
+    );
+    const shipmentLogsDataRaw = fs.readFileSync(shipmentLogsFilePath, 'utf8');
+    const shipmentLogsData = JSON.parse(shipmentLogsDataRaw);
+
+    if (!Array.isArray(shipmentLogsData)) {
+      this.logger.error('Dữ liệu shipment_logs không phải là array');
+      return;
+    }
+
+    for (const shipmentLog of shipmentLogsData) {
+      try {
+        const realShipmentId = shipmentIdMap.get(shipmentLog.shipment_id);
+        if (!realShipmentId) {
+          this.logger.warn(
+            `Không tìm thấy shipment mapping cho shipment_id ${shipmentLog.shipment_id}, skip`,
+          );
+          continue;
+        }
+
+        await this.prisma.shipment_logs.create({
+          data: {
+            shipment_id: realShipmentId,
+            status: shipmentLog.status,
+            location_description: shipmentLog.location_description,
+            updated_at: new Date(shipmentLog.updated_at),
+          },
+        });
+      } catch (error) {
+        this.logger.error(`Lỗi khi tạo shipment log:`, error);
+      }
+    }
+
+    this.logger.log(
+      `Đã tạo ${shipmentLogsData.length} shipment logs thành công`,
+    );
   }
 }
