@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
-import { getMulterOptions } from '../config/storage.config';
+import { getMulterOptions, getFileUrl } from '../config/storage.config';
 
 @Controller('chat')
 export class ChatController {
@@ -18,7 +18,7 @@ export class ChatController {
     FileInterceptor('file', getMulterOptions('chat_media', 'media')),
   )
   uploadFile(@UploadedFile() file: any) {
-    const fileUrl = file.location || `/uploads/chat_media/${file.filename}`;
+    const fileUrl = getFileUrl(file, 'chat_media');
     return {
       success: true,
       message: 'File uploaded successfully',

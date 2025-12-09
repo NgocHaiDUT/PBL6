@@ -98,16 +98,48 @@ export const s3PostVideoConfig = {
 };
 
 /**
+ * Tạo storage động cho media (hỗ trợ cả ảnh và video)
+ */
+const getPostMediaStorage = () => {
+  if (storageDriver === 's3') {
+    return multerS3({
+      s3: s3,
+      bucket: process.env.AWS_S3_BUCKET_NAME!,
+      metadata: function (req, file, cb) {
+        cb(null, { fieldName: file.fieldname });
+      },
+      key: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const extension = file.originalname.split('.').pop();
+        // Tự động phân loại theo MIME type
+        const directory = file.mimetype.startsWith('video/') ? 'videos' : 'postimages';
+        cb(null, `${directory}/${uniqueSuffix}.${extension}`);
+      },
+    });
+  } else {
+    // Local storage với phân loại động
+    return diskStorage({
+      destination: (req, file, cb) => {
+        const directory = file.mimetype.startsWith('video/') ? 'uploads/videos' : 'uploads/postimages';
+        createUploadDir(directory);
+        cb(null, directory);
+      },
+      filename: (req, file, cb) => {
+        const timestamp = Date.now();
+        const ext = extname(file.originalname);
+        const filename = `${timestamp}${ext}`;
+        cb(null, filename);
+      },
+    });
+  }
+};
+
+/**
  * Cấu hình cho additional media upload (nhiều ảnh/video)
  * Hỗ trợ cả ảnh và video trong cùng một upload
  */
 export const s3PostMediaConfig = {
-  storage: (req, file, cb) => {
-    // Tự động phân loại: video hoặc image
-    const directory = file.mimetype.startsWith('video/') ? 'videos' : 'postimages';
-    const storage = getPostStorage(directory);
-    cb(null, storage);
-  },
+  storage: getPostMediaStorage(),
   fileFilter: (req, file, cb) => {
     const allowedImageTypes = /\/(jpg|jpeg|png|gif|heic|heif|webp)$/;
     const allowedVideoTypes = /\/(mp4|mov|avi|mkv|webm)$/;
@@ -121,6 +153,10 @@ export const s3PostMediaConfig = {
   limits: {
     fileSize: 100 * 1024 * 1024, // 100MB (cho cả ảnh và video)
     files: 10, // Tối đa 10 files
+    fields: 20, // Số lượng fields tối đa
+    fieldSize: 100 * 1024 * 1024, // 100MB per field
+    fieldNameSize: 100, // Độ dài tên field
+    headerPairs: 2000, // Số lượng header pairs
   },
 };
 
@@ -147,12 +183,24 @@ export const parseS3Key = (s3Url: string): string | null => {
 
 /**
  * Helper function để lấy file URL (S3 hoặc local)
- * Trả về URL theo format: videos/filename hoặc postimages/filename
+ * S3: Trả về full URL (https://bucket.s3.region.amazonaws.com/key)
+ * Local: Trả về relative path (videos/filename hoặc postimages/filename)
  */
 export const getPostFileUrl = (file: Express.Multer.File): string => {
   if (storageDriver === 's3') {
-    // S3: file.key chứa full path (videos/xxx.mp4 hoặc postimages/xxx.jpg)
-    return (file as any).key || (file as any).location;
+    // S3: Trả về full URL
+    const fileKey = (file as any).key;
+    const fileLocation = (file as any).location;
+    
+    // Ưu tiên dùng location, nếu không có thì build từ key
+    if (fileLocation) {
+      return fileLocation;
+    } else if (fileKey) {
+      const bucketName = process.env.AWS_S3_BUCKET_NAME!;
+      const region = process.env.AWS_REGION || 'ap-southeast-1';
+      return `https://${bucketName}.s3.${region}.amazonaws.com/${fileKey}`;
+    }
+    return fileKey; // Fallback
   } else {
     // Local: file.path chứa uploads/videos/xxx hoặc uploads/postimages/xxx
     // Chuyển thành format: videos/filename hoặc postimages/filename

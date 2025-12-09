@@ -140,3 +140,29 @@ export const getMulterOptions = (
     },
   };
 };
+
+/**
+ * Helper function để lấy file URL (S3 hoặc local)
+ * S3: Trả về full URL (https://bucket.s3.region.amazonaws.com/key)
+ * Local: Trả về relative path (directory/filename)
+ */
+export const getFileUrl = (file: Express.Multer.File, directory: string): string => {
+  if (storageDriver === 's3') {
+    // S3: Trả về full URL
+    const fileKey = (file as any).key;
+    const fileLocation = (file as any).location;
+    
+    // Ưu tiên dùng location, nếu không có thì build từ key
+    if (fileLocation) {
+      return fileLocation;
+    } else if (fileKey) {
+      const bucketName = process.env.AWS_S3_BUCKET_NAME!;
+      const region = process.env.AWS_REGION || 'ap-southeast-1';
+      return `https://${bucketName}.s3.${region}.amazonaws.com/${fileKey}`;
+    }
+    return fileKey; // Fallback
+  } else {
+    // Local: Trả về relative path
+    return `${directory}/${file.filename}`;
+  }
+};

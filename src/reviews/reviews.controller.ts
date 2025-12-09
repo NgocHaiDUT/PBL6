@@ -19,7 +19,7 @@ import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { QueryReviewsDto } from './dto/query-reviews.dto';
-import { getMulterOptions } from '../config/storage.config';
+import { getMulterOptions, getFileUrl } from '../config/storage.config';
 
 @Controller('reviews')
 export class ReviewsController {
@@ -114,7 +114,7 @@ export class ReviewsController {
       };
     }
 
-    const mediaUrl = file.location || `/uploads/reviews/${file.filename}`;
+    const mediaUrl = getFileUrl(file, 'reviews');
     return {
       success: true,
       message: 'File uploaded successfully',
