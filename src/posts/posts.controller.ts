@@ -126,6 +126,12 @@ export class PostsController {
     @UploadedFiles() files: any[],
     @Req() req: any,
   ) {
+    console.log('📸 [PostsController] Upload media request received:', {
+      postId: id,
+      filesCount: files?.length || 0,
+      userId: req.user?.userId,
+      headers: req.headers['content-type'],
+    });
     const userId = req.user.userId;
     return this.postsService.uploadAdditionalMedia(id, userId, files);
   }

@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { QueryReviewsDto } from './dto/query-reviews.dto';
+import { getFileUrl } from '../config/storage.config';
 
 @Injectable()
 export class ReviewsService {
@@ -303,7 +304,7 @@ export class ReviewsService {
       throw new ForbiddenException('You can only update your own reviews');
     }
 
-    const mediaUrl = file.location || `/uploads/reviews/${file.filename}`;
+    const mediaUrl = getFileUrl(file, 'reviews');
 
     const updatedReview = await this.prisma.reviews.update({
       where: { id: reviewId },

@@ -3,7 +3,7 @@ import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express
 import { UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProfileService } from './profile.service';
-import { getMulterOptions } from '../config/storage.config';
+import { getMulterOptions, getFileUrl } from '../config/storage.config';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/constants/Permission.enum';
@@ -128,7 +128,7 @@ export class ProfileController {
       throw new BadRequestException('file is required');
     }
     const userId = req.user.userId;
-    const avatarUrl = file.location || `/uploads/avatars/${file.filename}`;
+    const avatarUrl = getFileUrl(file, 'avatars');
     return this.profileService.updateavatar(userId, avatarUrl);
   }
 
