@@ -33,7 +33,10 @@ export class ProductController {
       throw new BadRequestException('Thiếu file ảnh');
     }
     const userId = req.user.userId;
-    const brandUrl = `/uploads/brands/${file.filename}`;
+    // S3: file.location or file.key, Local: file.filename
+    const brandUrl = USE_S3 
+      ? file.location || `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
+      : `/uploads/brands/${file.filename}`;
     return this.productservice.addbrand(userId, body.name, body.slug, brandUrl);
   }
 
@@ -80,7 +83,9 @@ export class ProductController {
       return { success: false, message: 'Thiếu file ảnh' };
     }
     const userId = req.user.userId;
-    const brandUrl = `/uploads/brands/${file.filename}`;
+    const brandUrl = USE_S3 
+      ? file.location || `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
+      : `/uploads/brands/${file.filename}`;
     return this.productservice.editbrandslogo(userId, brandId, brandUrl);
   }
   @Get('categories')
@@ -183,7 +188,9 @@ export class ProductController {
       throw new BadRequestException('Thiếu file ảnh');
     }
     const userId = req.user.userId;
-    const brandUrl = `/uploads/brands/${file.filename}`;
+    const brandUrl = USE_S3 
+      ? file.location || `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
+      : `/uploads/brands/${file.filename}`;
     return this.productservice.addbrand(userId, body.name, body.slug, brandUrl);
   }
 
@@ -236,7 +243,9 @@ export class ProductController {
       return { success: false, message: 'Thiếu trường hoặc file ảnh' };
     }
     const userId = req.user.userId;
-    const brandUrl = `/uploads/brands/${file.filename}`;
+    const brandUrl = USE_S3 
+      ? file.location || `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
+      : `/uploads/brands/${file.filename}`;
     return this.productservice.editbrandslogo(
       userId,
       Number(body.id),
@@ -464,7 +473,9 @@ export class ProductController {
       return { success: false, message: 'Thiếu file ảnh' };
     }
 
-    const mediaUrl = `/uploads/products/${file.filename}`;
+    const mediaUrl = USE_S3 
+      ? file.location || `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
+      : `/uploads/products/${file.filename}`;
 
     return this.productservice.addProductMedia(
       productId,

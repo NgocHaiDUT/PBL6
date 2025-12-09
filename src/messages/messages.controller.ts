@@ -22,6 +22,8 @@ import { CreateConversationDto } from './dto/create-conversation.dto';
 import { QueryMessagesDto } from './dto/query-messages.dto';
 import { QueryConversationsDto } from './dto/query-conversations.dto';
 import { getMulterOptions } from '../config/storage.config';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 
 @Controller('messages')
 @UseGuards(AuthGuard('jwt')) // ✅ Require JWT for all endpoints
@@ -35,8 +37,6 @@ export class MessagesController {
     @Req() req: any,
   ) {
     return this.messagesService.createConversation(req.user.userId, createConversationDto);
-    const userId = req.user?.sub || req.user?.userId;
-    return this.messagesService.createConversation(userId, createConversationDto);
   }
 
   @Get('conversations')
@@ -47,7 +47,6 @@ export class MessagesController {
   ) {
     const userId = req.user?.sub || req.user?.userId;
     return this.messagesService.getUserConversations(userId, queryDto);
-    return this.messagesService.getUserConversations(req.user.userId, queryDto);
   }
 
   @Get('conversations/:id')
@@ -58,7 +57,6 @@ export class MessagesController {
   ) {
     const userId = req.user?.sub || req.user?.userId;
     return this.messagesService.getConversationById(id, userId);
-    return this.messagesService.getConversationById(id, req.user.userId);
   }
 
   @Post('conversations/find-or-create/:otherUserId')
@@ -111,13 +109,40 @@ export class MessagesController {
 
   // Lấy danh sách conversations của shop
   @Get('shop/:shopId/conversations')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions('chat_with_customer')
   getShopConversations(
     @Param('shopId', ParseIntPipe) shopId: number,
     @Query() queryDto: QueryConversationsDto,
     @Req() req: any,
   ) {
     return this.messagesService.getShopConversations(shopId, req.user.userId, queryDto);
+  }
+
+  // Lấy tin nhắn trong conversation cụ thể của shop
+  @Get('shop/:shopId/conversations/:conversationId/messages')
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions('chat_with_customer')
+  getShopConversationMessages(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Param('conversationId', ParseIntPipe) conversationId: number,
+    @Query() queryDto: QueryMessagesDto,
+    @Req() req: any,
+  ) {
+    // Verify user có quyền quản lý shop này
+    return this.messagesService.getShopMessages(shopId, conversationId, req.user.userId, queryDto);
+  }
+
+  // Đánh dấu tất cả tin nhắn trong conversation của shop là đã đọc
+  @Patch('shop/:shopId/conversations/:conversationId/read-all')
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions('chat_with_customer')
+  markShopConversationAsRead(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Param('conversationId', ParseIntPipe) conversationId: number,
+    @Req() req: any,
+  ) {
+    return this.messagesService.markShopMessagesAsRead(shopId, conversationId, req.user.userId);
   }
 
   @Get('conversations/:conversationId/messages')
@@ -202,7 +227,7 @@ export class MessagesController {
       console.log('📤 [uploadMessageMedia] User ID:', userId);
 
       // Format uploaded files info
-      const uploadedFiles = files.map((file) => {
+      const uploadedFiles = files.map((file: any) => {
         console.log('📎 Processing file:', {
           originalname: file.originalname,
           mimetype: file.mimetype,
@@ -217,8 +242,8 @@ export class MessagesController {
           ? 'video' 
           : 'file';
 
-        // ✅ All chat media files are stored in /uploads/chat-media/
-        const urlPath = `/uploads/chat-media/${file.filename}`;
+        // S3: file.location, Local: /uploads/chat-media/
+        const urlPath = file.location || `/uploads/chat-media/${file.filename}`;
 
         return {
           url: urlPath,
