@@ -1,0 +1,22 @@
+[
+  {
+    "order_id": 1,
+    "coupon_id": 4,
+    "amount": 50000
+  },
+  {
+    "order_id": 3,
+    "coupon_id": 1,
+    "amount": 45000
+  },
+  {
+    "order_id": 4,
+    "coupon_id": 2,
+    "amount": 40000
+  },
+  {
+    "order_id": 6,
+    "coupon_id": 1,
+    "amount": 100000
+  }
+]

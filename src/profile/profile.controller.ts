@@ -6,6 +6,7 @@ import { ProfileService } from './profile.service';
 import { getMulterOptions } from '../config/storage.config';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../auth/constants/Permission.enum';
 
 @Controller('users')
 export class ProfileController {
@@ -231,7 +232,7 @@ export class ProfileController {
 
   @Patch('shops/:shopId/logo')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_profile_shop')
+  @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   @UseInterceptors(FileInterceptor('file', getMulterOptions('shops')))
   async updateShopLogo(
     @Param('shopId', ParseIntPipe) shopId: number,
@@ -248,7 +249,7 @@ export class ProfileController {
 
   @Patch('shops/:shopId/banner')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_profile_shop')
+  @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   @UseInterceptors(FileInterceptor('file', getMulterOptions('shops')))
   async updateShopBanner(
     @Param('shopId', ParseIntPipe) shopId: number,
@@ -265,7 +266,7 @@ export class ProfileController {
 
   @Patch('shops/:shopId/phone')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_profile_shop')
+  @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   async updateShopPhone(
     @Param('shopId', ParseIntPipe) shopId: number,
     @Body('phone') phone: string,
@@ -277,7 +278,7 @@ export class ProfileController {
 
   @Patch('shops/:shopId/email')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_profile_shop')
+  @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   async updateShopEmail(
     @Param('shopId', ParseIntPipe) shopId: number,
     @Body('email') email: string,
@@ -289,7 +290,7 @@ export class ProfileController {
 
   @Patch('shops/:shopId/description')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_profile_shop')
+  @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   async updateShopDescription(
     @Param('shopId', ParseIntPipe) shopId: number,
     @Body('description') description: string,
