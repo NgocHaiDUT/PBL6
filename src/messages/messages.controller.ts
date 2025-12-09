@@ -14,8 +14,8 @@ import {
   UploadedFiles,
   BadRequestException,
 } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { MessagesService } from './messages.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { CreateConversationDto } from './dto/create-conversation.dto';
@@ -28,112 +28,142 @@ import { getMulterOptions } from '../config/storage.config';
 export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
 
-  // Tạo cuộc hội thoại mới
   @Post('conversations')
+  @UseGuards(AuthGuard('jwt'))
   createConversation(
     @Body() createConversationDto: CreateConversationDto,
     @Req() req: any,
   ) {
+    return this.messagesService.createConversation(req.user.userId, createConversationDto);
     const userId = req.user?.sub || req.user?.userId;
     return this.messagesService.createConversation(userId, createConversationDto);
   }
 
-  // Lấy danh sách cuộc hội thoại của user
   @Get('conversations')
+  @UseGuards(AuthGuard('jwt'))
   getUserConversations(
     @Query() queryDto: QueryConversationsDto,
     @Req() req: any,
   ) {
     const userId = req.user?.sub || req.user?.userId;
     return this.messagesService.getUserConversations(userId, queryDto);
+    return this.messagesService.getUserConversations(req.user.userId, queryDto);
   }
 
-  // Lấy chi tiết cuộc hội thoại
   @Get('conversations/:id')
+  @UseGuards(AuthGuard('jwt'))
   getConversation(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: any,
   ) {
     const userId = req.user?.sub || req.user?.userId;
     return this.messagesService.getConversationById(id, userId);
+    return this.messagesService.getConversationById(id, req.user.userId);
   }
 
-  // Tìm hoặc tạo cuộc hội thoại với user khác
   @Post('conversations/find-or-create/:otherUserId')
-  async findOrCreateConversation(
+  @UseGuards(AuthGuard('jwt'))
+  findOrCreateConversation(
     @Param('otherUserId', ParseIntPipe) otherUserId: number,
     @Req() req: any,
   ) {
-    const userId = req.user?.sub || req.user?.userId;
-    console.log('📞 [findOrCreateConversation] userId from JWT:', userId);
-    console.log('📞 [findOrCreateConversation] otherUserId from param:', otherUserId);
-    
-    if (!userId || !otherUserId) {
-      throw new Error('Missing userId or otherUserId');
-    }
-    
-    return this.messagesService.findOrCreateConversation(userId, otherUserId);
+    return this.messagesService.findOrCreateConversation(req.user.userId, otherUserId);
   }
 
-  // Gửi tin nhắn
+  @Post('conversations/shop/:shopId')
+  @UseGuards(AuthGuard('jwt'))
+  findOrCreateShopConversation(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Req() req: any,
+  ) {
+    const userId = req.user?.sub || req.user?.userId;
+    console.log('📞 [findOrCreateShopConversation] userId from JWT:', userId);
+    console.log('📞 [findOrCreateShopConversation] shopId from param:', shopId);
+    
+    if (!userId || !shopId) {
+      throw new Error('Missing userId or shopId');
+    }
+    
+    return this.messagesService.findOrCreateShopConversation(req.user.userId, shopId);
+  }
+
+  // Gửi tin nhắn từ user
   @Post()
+  @UseGuards(AuthGuard('jwt'))
   sendMessage(
     @Body() createMessageDto: CreateMessageDto,
     @Req() req: any,
   ) {
-    const userId = req.user?.sub || req.user?.userId;
-    return this.messagesService.sendMessage(userId, createMessageDto);
+    return this.messagesService.sendMessage(req.user.userId, createMessageDto);
   }
 
-  // Lấy tin nhắn trong cuộc hội thoại
+  // Gửi tin nhắn từ shop
+  @Post('shop/:shopId')
+  @UseGuards(AuthGuard('jwt'))
+  sendMessageAsShop(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Body() createMessageDto: CreateMessageDto,
+    @Req() req: any,
+  ) {
+    // Kiểm tra user có quyền quản lý shop này không sẽ được xử lý trong service
+    return this.messagesService.sendMessage(req.user.userId, createMessageDto, shopId);
+  }
+
+  // Lấy danh sách conversations của shop
+  @Get('shop/:shopId/conversations')
+  @UseGuards(AuthGuard('jwt'))
+  getShopConversations(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Query() queryDto: QueryConversationsDto,
+    @Req() req: any,
+  ) {
+    return this.messagesService.getShopConversations(shopId, req.user.userId, queryDto);
+  }
+
   @Get('conversations/:conversationId/messages')
+  @UseGuards(AuthGuard('jwt'))
   getMessages(
     @Param('conversationId', ParseIntPipe) conversationId: number,
     @Query() queryDto: QueryMessagesDto,
     @Req() req: any,
   ) {
-    const userId = req.user?.sub || req.user?.userId;
-    return this.messagesService.getMessages(conversationId, userId, queryDto);
+    return this.messagesService.getMessages(conversationId, req.user.userId, queryDto);
   }
 
-  // Đánh dấu tin nhắn là đã đọc
   @Patch(':messageId/read')
+  @UseGuards(AuthGuard('jwt'))
   markMessageAsRead(
     @Param('messageId', ParseIntPipe) messageId: number,
     @Req() req: any,
   ) {
-    const userId = req.user?.sub || req.user?.userId;
-    return this.messagesService.markMessageAsRead(messageId, userId);
+    return this.messagesService.markMessageAsRead(messageId, req.user.userId);
   }
 
-  // Đánh dấu tất cả tin nhắn trong conversation là đã đọc
   @Patch('conversations/:conversationId/read-all')
+  @UseGuards(AuthGuard('jwt'))
   markAllMessagesAsRead(
     @Param('conversationId', ParseIntPipe) conversationId: number,
     @Req() req: any,
   ) {
-    const userId = req.user?.sub || req.user?.userId;
-    return this.messagesService.markAllMessagesAsRead(conversationId, userId);
+    return this.messagesService.markAllMessagesAsRead(conversationId, req.user.userId);
   }
 
-  // Đếm số tin nhắn chưa đọc trong conversation
   @Get('conversations/:conversationId/unread-count')
+  @UseGuards(AuthGuard('jwt'))
   getUnreadCount(
     @Param('conversationId', ParseIntPipe) conversationId: number,
     @Req() req: any,
   ) {
-    const userId = req.user?.sub || req.user?.userId;
-    return this.messagesService.getUnreadMessagesCount(conversationId, userId);
+    return this.messagesService.getUnreadMessagesCount(conversationId, req.user.userId);
   }
 
-  // Xóa tin nhắn
   @Delete(':messageId')
+  @UseGuards(AuthGuard('jwt'))
   deleteMessage(
     @Param('messageId', ParseIntPipe) messageId: number,
     @Req() req: any,
   ) {
-    const userId = req.user?.sub || req.user?.userId;
-    return this.messagesService.deleteMessage(messageId, userId);
+    return this.messagesService.deleteMessage(messageId, req.user.userId);
   }
 
   // ✅ Upload media files for chat messages

@@ -9,6 +9,10 @@ export class SendMessageDto {
   receiverId: number;
 
   @IsOptional()
+  @IsInt()
+  senderShopId?: number; // Nếu gửi từ shop
+
+  @IsOptional()
   @IsString()
   content?: string;
 

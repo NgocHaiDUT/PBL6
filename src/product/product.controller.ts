@@ -2,65 +2,176 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
 // Import S3 config instead of local file config
 import { s3BrandConfig, STORAGE_TYPE, generateBrandImageUrl, USE_S3 } from './config/product.config';
-import { Controller, Body, Post, Get, UploadedFile, Query, UseInterceptors, BadRequestException, Param, ParseIntPipe, Put, Delete, UseGuards, Req } from '@nestjs/common';
+import { Controller, Body, Post, Get, UploadedFile, Query, UseInterceptors, BadRequestException, Param, ParseIntPipe, Put, Delete, UseGuards, Req , Patch } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../auth/constants/Permission.enum';
 // Import local file config for local testing
 // import { s3BrandConfig } from './config/s3-product.config';
 import { brandMulterConfig, productMediaMulterConfig } from './config/product-multer.config';
 
-@Controller('product')
+@Controller('products')
 export class ProductController {
   constructor(private readonly productservice: ProductService) {}
 
-  @Get('all-brands')
-  async getallbrands() {
-    console.log('Controller - getallbrands called');
+  @Get('brands')
+  async getAllBrands() {
+    console.log('Controller - getAllBrands called');
     return this.productservice.getallbrand();
   }
 
-    @Get('all-categories')
-    async getallcategories()
-    {
-        console.log('Controller - getallcategories called');
-        return this.productservice.getallcategories();
+  @Post('brands')
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_BRANDS)
+  @UseInterceptors(FileInterceptor('file', brandMulterConfig))
+  async createBrand(
+    @Body() body: { name: string; slug: string },
+    @UploadedFile() file: any,
+    @Req() req: any,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Thiếu file ảnh');
     }
+    const userId = req.user.userId;
+    const brandUrl = `/uploads/brands/${file.filename}`;
+    return this.productservice.addbrand(userId, body.name, body.slug, brandUrl);
+  }
 
-    @Get('all-products')
-    async getallproducts(
-        @Query('page') page?: string,
-        @Query('limit') limit?: string,
-        @Query('category') category?: string,
-        @Query('brand') brand?: string,
-        @Query('minPrice') minPrice?: string,
-        @Query('maxPrice') maxPrice?: string,
-        @Query('minRating') minRating?: string,
-        @Query('search') search?: string,
-    )
-    {
-        return this.productservice.getAllProducts({
-            page: page ? parseInt(page) : 1,
-            limit: limit ? parseInt(limit) : 20,
-            category,
-            brand,
-            minPrice: minPrice ? parseFloat(minPrice) : undefined,
-            maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
-            minRating: minRating ? parseFloat(minRating) : undefined,
-            search,
-        });
+  @Patch('brands/:brandId/name')
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_BRANDS)
+  async updateBrandName(
+    @Param('brandId', ParseIntPipe) brandId: number,
+    @Body('name') name: string,
+    @Req() req: any,
+  ) {
+    if (!name) {
+      return { success: false, message: 'Thiếu trường name' };
     }
+    const userId = req.user.userId;
+    return this.productservice.editbrandname(userId, brandId, name);
+  }
 
-    @Get('product/:id')
-    async getproductbyid(@Param('id') id: string)
-    {
-        if (!id) {
-            throw new BadRequestException('Thiếu ID sản phẩm');
-        }
-        return this.productservice.getProductById(Number(id));
+  @Patch('brands/:brandId/slug')
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_BRANDS)
+  async updateBrandSlug(
+    @Param('brandId', ParseIntPipe) brandId: number,
+    @Body('slug') slug: string,
+    @Req() req: any,
+  ) {
+    if (!slug) {
+      return { success: false, message: 'Thiếu trường slug' };
     }
+    const userId = req.user.userId;
+    return this.productservice.editbrandslug(userId, brandId, slug);
+  }
 
-  @Post('add-brand')
+  @Patch('brands/:brandId/logo')
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_BRANDS)
+  @UseInterceptors(FileInterceptor('file', brandMulterConfig))
+  async updateBrandLogo(
+    @Param('brandId', ParseIntPipe) brandId: number,
+    @UploadedFile() file: any,
+    @Req() req: any,
+  ) {
+    if (!file) {
+      return { success: false, message: 'Thiếu file ảnh' };
+    }
+    const userId = req.user.userId;
+    const brandUrl = `/uploads/brands/${file.filename}`;
+    return this.productservice.editbrandslogo(userId, brandId, brandUrl);
+  }
+  @Get('categories')
+  async getAllCategories() {
+    console.log('Controller - getAllCategories called');
+    return this.productservice.getallcategories();
+  }
+
+  @Post('categories')
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_CATEGORYS)
+  async createCategory(
+    @Body() body: { parent_id?: string; name: string; slug: string },
+    @Req() req: any,
+  ) {
+    if (!body.name || !body.slug)
+      return { success: false, message: 'Thiếu trường' };
+    const userId = req.user.userId;
+    return this.productservice.addcategory(
+      userId,
+      body.name,
+      body.slug,
+      Number(body.parent_id),
+    );
+  }
+
+  @Patch('categories/:categoryId/name')
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_CATEGORYS)
+  async updateCategoryName(
+    @Param('categoryId', ParseIntPipe) categoryId: number,
+    @Body('name') name: string,
+    @Req() req: any,
+  ) {
+    if (!name)
+      return { success: false, message: 'Thiếu trường name' };
+    const userId = req.user.userId;
+    return this.productservice.editnamecategory(userId, categoryId, name);
+  }
+
+  @Patch('categories/:categoryId/slug')
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions('manage_categorys')
+  async updateCategorySlug(
+    @Param('categoryId', ParseIntPipe) categoryId: number,
+    @Body('slug') slug: string,
+    @Req() req: any,
+  ) {
+    if (!slug)
+      return { success: false, message: 'Thiếu trường slug' };
+    const userId = req.user.userId;
+    return this.productservice.editslugcategory(userId, categoryId, slug);
+  }points
+  @Get()
+  async getAllProducts(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('category') category?: string,
+    @Query('brand') brand?: string,
+    @Query('minPrice') minPrice?: string,
+    @Query('maxPrice') maxPrice?: string,
+    @Query('minRating') minRating?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.productservice.getAllProducts({
+      page: page ? parseInt(page) : 1,
+      limit: limit ? parseInt(limit) : 20,
+      category,
+      brand,
+      minPrice: minPrice ? parseFloat(minPrice) : undefined,
+      maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+      minRating: minRating ? parseFloat(minRating) : undefined,
+      search,
+    });
+  }
+
+  @Get('search')
+  async searchProducts(@Query() query: any) {
+    return this.productservice.searchProducts(query);
+  }
+
+  @Get('filter')
+  async filterProducts(@Query() query: any) {
+    return this.productservice.filterProducts(query);
+  }
+
+  @Get(':productId')
+  async getProductById(@Param('productId', ParseIntPipe) productId: number) {
+    return this.productservice.getProductById(productId);
+  }
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   @RequirePermissions('manage_brands')
   @UseInterceptors(FileInterceptor('file', brandMulterConfig))
@@ -97,7 +208,7 @@ export class ProductController {
 
   @Post('edit-brand-slug')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_brands')
+  @RequirePermissions(Permission.MANAGE_CATEGORYS)
   async editbrandslug(
     @Body() body: { id: string; slug: string },
     @Req() req: any,
@@ -134,62 +245,11 @@ export class ProductController {
     );
   }
 
-  @Post('add-category')
+  // Product CRUD
+  @Post()
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_categorys')
-  async addcategory(
-    @Body() body: { parent_id?: string; name: string; slug: string },
-    @Req() req: any,
-  ) {
-    if (!body.name || !body.slug)
-      return { success: false, message: 'Thiếu trường' };
-    const userId = req.user.userId;
-    return this.productservice.addcategory(
-      userId,
-      body.name,
-      body.slug,
-      Number(body.parent_id),
-    );
-  }
-
-  @Post('edit-category-name')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_categorys')
-  async editcategoryname(
-    @Body() body: { id: string; name: string },
-    @Req() req: any,
-  ) {
-    if (!body.id || !body.name)
-      return { success: false, message: 'Thiếu trường' };
-    const userId = req.user.userId;
-    return this.productservice.editnamecategory(
-      userId,
-      Number(body.id),
-      body.name,
-    );
-  }
-
-  @Post('edit-category-slug')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_categorys')
-  async editcategoryslug(
-    @Body() body: { id: string; slug: string },
-    @Req() req: any,
-  ) {
-    if (!body.id || !body.slug)
-      return { success: false, message: 'Thiếu trường' };
-    const userId = req.user.userId;
-    return this.productservice.editslugcategory(
-      userId,
-      Number(body.id),
-      body.slug,
-    );
-  }
-
-  @Post('add-product')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('create_product')
-  async addProduct(
+  @RequirePermissions(Permission.CREATE_PRODUCT)
+  async createProduct(
     @Body()
     body: {
       shop_id: string;
@@ -227,29 +287,29 @@ export class ProductController {
       };
     }
 
-        const categoryIds = body.category_ids
-            ? body.category_ids.map(id => Number(id))
-            : undefined;
-        const userId = req.user.userId;
-        return this.productservice.addproducts(
-            userId,
-            Number(body.shop_id),
-            body.name,
-            body.slug || '',
-            body.skin_type_compat as any,
-            body.is_published ?? false,
-            body.how_to_use,
-            body.description,
-            body.brand_id ? Number(body.brand_id) : undefined,
-            categoryIds
-        );
-    }
+    const categoryIds = body.category_ids
+      ? body.category_ids.map((id) => Number(id))
+      : undefined;
+    const userId = req.user.userId;
+    return this.productservice.addproducts(
+      userId,
+      Number(body.shop_id),
+      body.name,
+      body.slug || '',
+      body.skin_type_compat as any,
+      body.is_published ?? false,
+      body.how_to_use,
+      body.description,
+      body.brand_id ? Number(body.brand_id) : undefined,
+      categoryIds,
+    );
+  }
 
-  @Put('edit-product/:id')
+  @Put(':productId')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_product')
-  async editProduct(
-    @Param('id', ParseIntPipe) id: number,
+  @RequirePermissions(Permission.EDIT_PRODUCT)
+  async updateProduct(
+    @Param('productId', ParseIntPipe) productId: number,
     @Body()
     body: {
       name?: string;
@@ -287,7 +347,7 @@ export class ProductController {
 
     const userId = req.user.userId;
     return this.productservice.editProduct(
-      id,
+      productId,
       userId,
       body.name,
       body.slug,
@@ -300,16 +360,22 @@ export class ProductController {
     );
   }
 
-  @Delete('delete-product/:id')
+  @Delete(':productId')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('delete_product')
-  async deleteProduct(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+  @RequirePermissions(Permission.DELETE_PRODUCT)
+  async deleteProduct(
+    @Param('productId', ParseIntPipe) productId: number,
+    @Req() req: any,
+  ) {
     const userId = req.user.userId;
-    return this.productservice.deleteProduct(id, userId);
+    return this.productservice.deleteProduct(productId, userId);
   }
 
-  @Post('add-product-variant')
-  async addProductVariant(
+  // Product Variants
+  @Post('variants')
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions('create_product')
+  async createProductVariant(
     @Body()
     body: {
       product_id: string;
@@ -321,6 +387,7 @@ export class ProductController {
       size_label?: string;
       compare_at_price?: string;
     },
+    @Req() req: any,
   ) {
     if (!body.product_id || !body.sku || !body.name || !body.price) {
       return { success: false, message: 'Thiếu trường bắt buộc' };
@@ -338,11 +405,11 @@ export class ProductController {
     );
   }
 
-  @Put('edit-product-variant/:id')
+  @Put('variants/:variantId')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_product')
-  async editProductVariant(
-    @Param('id', ParseIntPipe) id: number,
+  @RequirePermissions(Permission.EDIT_PRODUCT)
+  async updateProductVariant(
+    @Param('variantId', ParseIntPipe) variantId: number,
     @Body()
     body: {
       sku?: string;
@@ -358,7 +425,7 @@ export class ProductController {
   ) {
     const userId = req.user.userId;
     return this.productservice.editProductVariant(
-      id,
+      variantId,
       userId,
       body.sku,
       body.name,
@@ -371,29 +438,29 @@ export class ProductController {
     );
   }
 
-  @Delete('delete-product-variant/:id')
+  @Delete('variants/:variantId')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('delete_product')
+  @RequirePermissions(Permission.DELETE_PRODUCT)
   async deleteProductVariant(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('variantId', ParseIntPipe) variantId: number,
     @Req() req: any,
   ) {
     const userId = req.user.userId;
-    return this.productservice.deleteProductVariant(id, userId);
+    return this.productservice.deleteProductVariant(variantId, userId);
   }
 
-  @Post('add-product-media')
+  // Product Media
+  @Post(':productId/media')
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions('edit_product')
   @UseInterceptors(FileInterceptor('file', productMediaMulterConfig))
   async addProductMedia(
-    @Query('product_id') product_id: string,
-    @Query('type') type?: string,
-    @Query('sort_order') sort_order?: string,
+    @Param('productId', ParseIntPipe) productId: number,
+    @Body('type') type?: string,
+    @Body('sort_order') sortOrder?: string,
     @UploadedFile() file?: any,
+    @Req() req?: any,
   ) {
-    if (!product_id) {
-      return { success: false, message: 'product_id là bắt buộc' };
-    }
-
     if (!file) {
       return { success: false, message: 'Thiếu file ảnh' };
     }
@@ -401,33 +468,32 @@ export class ProductController {
     const mediaUrl = `/uploads/products/${file.filename}`;
 
     return this.productservice.addProductMedia(
-      Number(product_id),
+      productId,
       mediaUrl,
       type || 'image',
-      sort_order ? Number(sort_order) : 0,
+      sortOrder ? Number(sortOrder) : 0,
     );
   }
 
-    // TODO: The following endpoints need to be implemented in ProductService
-    /*
-    @Get('shop/:shopId/products')
-    async getShopProducts(
-        @Param('shopId', ParseIntPipe) shopId: number,
-        @Query('page') page?: string,
-        @Query('limit') limit?: string,
-        @Query('search') search?: string,
-        @Query('category_id') category_id?: string,
-        @Query('brand_id') brand_id?: string,
-        @Query('is_published') is_published?: string,
-        @Query('skin_type') skin_type?: string,
-        @Query('min_price') min_price?: string,
-        @Query('max_price') max_price?: string,
-        @Query('sort_field') sort_field?: string,
-        @Query('sort_order') sort_order?: string,
-    ) {
-        // Parse pagination
-        const pageNum = page ? parseInt(page) : 1;
-        const limitNum = limit ? parseInt(limit) : 20;
+  // Shop Products
+  @Get('shops/:shopId')
+  async getShopProducts(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+    @Query('category_id') category_id?: string,
+    @Query('brand_id') brand_id?: string,
+    @Query('is_published') is_published?: string,
+    @Query('skin_type') skin_type?: string,
+    @Query('min_price') min_price?: string,
+    @Query('max_price') max_price?: string,
+    @Query('sort_field') sort_field?: string,
+    @Query('sort_order') sort_order?: string,
+  ) {
+    // Parse pagination
+    const pageNum = page ? parseInt(page) : 1;
+    const limitNum = limit ? parseInt(limit) : 20;
 
     // Build filters
     const filters: any = {};
@@ -467,45 +533,7 @@ export class ProductController {
     );
   }
 
-  // Customer Product APIs
-  @Get('products')
-  async getAllProducts(@Query() query: any) {
-    return this.productservice.getAllProducts(query);
-  }
-
-  @Get('products/search')
-  async searchProducts(@Query() query: any) {
-    return this.productservice.searchProducts(query);
-  }
-
-  @Get('products/filter')
-  async filterProducts(@Query() query: any) {
-    return this.productservice.filterProducts(query);
-  }
-
-  @Get('products/:id')
-  async getProductById(@Param('id') id: string) {
-    return this.productservice.getProductById(Number(id));
-  }
-
-  // Wishlist APIs
-  @Post('wishlist/add')
-  @UseGuards(AuthGuard('jwt'))
-  async addToWishlist(@Body() body: { productId: number }, @Req() req: any) {
-    const userId = req.user.userId;
-    return this.productservice.addToWishlist(body.productId, userId);
-  }
-
-  @Delete('wishlist/remove/:productId')
-  @UseGuards(AuthGuard('jwt'))
-  async removeFromWishlist(
-    @Param('productId') productId: string,
-    @Req() req: any,
-  ) {
-    const userId = req.user.userId;
-    return this.productservice.removeFromWishlist(Number(productId), userId);
-  }
-
+  // Wishlist
   @Get('wishlist')
   @UseGuards(AuthGuard('jwt'))
   async getWishlist(@Req() req: any) {
@@ -513,8 +541,32 @@ export class ProductController {
     return this.productservice.getWishlist(userId);
   }
 
-  // Cart APIs
-  @Post('cart/add')
+  @Post('wishlist')
+  @UseGuards(AuthGuard('jwt'))
+  async addToWishlist(@Body('productId', ParseIntPipe) productId: number, @Req() req: any) {
+    const userId = req.user.userId;
+    return this.productservice.addToWishlist(productId, userId);
+  }
+
+  @Delete('wishlist/:productId')
+  @UseGuards(AuthGuard('jwt'))
+  async removeFromWishlist(
+    @Param('productId', ParseIntPipe) productId: number,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.productservice.removeFromWishlist(productId, userId);
+  }
+
+  // Cart
+  @Get('cart')
+  @UseGuards(AuthGuard('jwt'))
+  async getCart(@Req() req: any) {
+    const userId = req.user.userId;
+    return this.productservice.getCart(userId);
+  }
+
+  @Post('cart')
   @UseGuards(AuthGuard('jwt'))
   async addToCart(
     @Body() body: { productId: number; variantId?: number; quantity: number },
@@ -529,24 +581,22 @@ export class ProductController {
     );
   }
 
-  @Get('cart')
-  @UseGuards(AuthGuard('jwt'))
-  async getCart(@Req() req: any) {
-    const userId = req.user.userId;
-    return this.productservice.getCart(userId);
-  }
-
   @Put('cart/items/:itemId')
+  @UseGuards(AuthGuard('jwt'))
   async updateCartItem(
-    @Param('itemId') itemId: string,
-    @Body() body: { quantity: number },
+    @Param('itemId', ParseIntPipe) itemId: number,
+    @Body('quantity', ParseIntPipe) quantity: number,
+    @Req() req: any,
   ) {
-    return this.productservice.updateCartItem(Number(itemId), body.quantity);
+    return this.productservice.updateCartItem(itemId, quantity);
   }
 
-    @Delete('cart/items/:itemId')
-    async removeFromCart(@Param('itemId') itemId: string) {
-        return this.productservice.removeFromCart(Number(itemId));
-    }
-    */
+  @Delete('cart/items/:itemId')
+  @UseGuards(AuthGuard('jwt'))
+  async removeFromCart(
+    @Param('itemId', ParseIntPipe) itemId: number,
+    @Req() req: any,
+  ) {
+    return this.productservice.removeFromCart(itemId);
+  }
 }

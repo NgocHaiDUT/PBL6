@@ -23,6 +23,7 @@ import { getMulterOptions } from '../config/storage.config';
 import { AuthGuard } from '@nestjs/passport';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../auth/constants/Permission.enum';
 
 @Controller('posts')
 export class PostsController {
@@ -30,7 +31,7 @@ export class PostsController {
 
   @Post()
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('create_post')
+  @RequirePermissions(Permission.CREATE_POST)
   @UseInterceptors(
     FilesInterceptor('media', 10, getMulterOptions('postimages', 'media')),
   )
@@ -66,7 +67,7 @@ export class PostsController {
 
   @Patch(':id')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_post')
+  @RequirePermissions(Permission.EDIT_POST)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updatePostDto: UpdatePostDto,
@@ -78,7 +79,7 @@ export class PostsController {
 
   @Delete(':id')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('delete_post')
+  @RequirePermissions(Permission.DELETE_POST)
   remove(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     const userId = req.user.userId;
     return this.postsService.deletePost(id, userId);
@@ -86,7 +87,7 @@ export class PostsController {
 
   @Post(':id/upload-cover')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_post')
+  @RequirePermissions(Permission.EDIT_POST)
   @UseInterceptors(
     FileInterceptor('cover', getMulterOptions('postimages', 'image')),
   )
@@ -101,7 +102,7 @@ export class PostsController {
 
   @Post(':id/upload-video')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_post')
+  @RequirePermissions(Permission.EDIT_POST)
   @UseInterceptors(
     FileInterceptor('video', getMulterOptions('videos', 'video')),
   )
@@ -116,7 +117,7 @@ export class PostsController {
 
   @Post(':id/upload-media')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_post')
+  @RequirePermissions(Permission.EDIT_POST)
   @UseInterceptors(
     FilesInterceptor('media', 10, getMulterOptions('postimages', 'media')),
   )
@@ -131,7 +132,7 @@ export class PostsController {
 
   @Delete('media/:mediaId')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('edit_post')
+  @RequirePermissions(Permission.EDIT_POST)
   deleteMedia(
     @Param('mediaId', ParseIntPipe) mediaId: number,
     @Req() req: any,

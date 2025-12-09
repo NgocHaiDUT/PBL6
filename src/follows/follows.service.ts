@@ -88,6 +88,8 @@ export class FollowsService {
     const { user_id, type, page = 1, limit = 20 } = queryDto;
     const skip = (page - 1) * limit;
 
+    console.log('🔍 [FollowsService] findAll query:', { user_id, type, page, limit });
+
     const where: any = {};
 
     if (user_id && type === 'followers') {
@@ -100,6 +102,8 @@ export class FollowsService {
       // Default to followers if type not specified
       where.following_id = user_id;
     }
+
+    console.log('🔍 [FollowsService] Where clause:', where);
 
     const [follows, total] = await Promise.all([
       this.prisma.follows.findMany({
@@ -130,6 +134,12 @@ export class FollowsService {
       }),
       this.prisma.follows.count({ where }),
     ]);
+
+    console.log('✅ [FollowsService] Found follows:', {
+      count: follows.length,
+      total,
+      sampleData: follows.slice(0, 2)
+    });
 
     return {
       data: follows,

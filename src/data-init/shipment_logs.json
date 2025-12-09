@@ -1,0 +1,158 @@
+[
+  {
+    "shipment_id": 1,
+    "status": "pending",
+    "location_description": "Đơn hàng đang chờ xử lý",
+    "updated_at": "2025-10-15T11:00:00Z"
+  },
+  {
+    "shipment_id": 1,
+    "status": "packing",
+    "location_description": "Đơn hàng đang được đóng gói tại kho",
+    "updated_at": "2025-10-15T14:30:00Z"
+  },
+  {
+    "shipment_id": 1,
+    "status": "in_transit",
+    "location_description": "Đơn hàng đã được giao cho đơn vị vận chuyển - Bưu cục Quận 7, TP.HCM",
+    "updated_at": "2025-10-16T08:15:00Z"
+  },
+  {
+    "shipment_id": 1,
+    "status": "in_transit",
+    "location_description": "Đang vận chuyển - Trung tâm phân loại khu vực miền Nam",
+    "updated_at": "2025-10-17T10:20:00Z"
+  },
+  {
+    "shipment_id": 1,
+    "status": "in_transit",
+    "location_description": "Đang giao hàng - Shipper đang trên đường giao đến bạn",
+    "updated_at": "2025-10-18T09:30:00Z"
+  },
+  {
+    "shipment_id": 1,
+    "status": "delivered",
+    "location_description": "Giao hàng thành công - Người nhận: Nguyễn Văn A",
+    "updated_at": "2025-10-18T15:45:00Z"
+  },
+  {
+    "shipment_id": 2,
+    "status": "pending",
+    "location_description": "Đơn hàng đang chờ xử lý",
+    "updated_at": "2025-10-20T10:00:00Z"
+  },
+  {
+    "shipment_id": 2,
+    "status": "packing",
+    "location_description": "Đơn hàng đang được đóng gói",
+    "updated_at": "2025-10-20T16:00:00Z"
+  },
+  {
+    "shipment_id": 2,
+    "status": "in_transit",
+    "location_description": "Đơn hàng đã được giao cho GHTK - Bưu cục Hà Nội",
+    "updated_at": "2025-10-21T08:00:00Z"
+  },
+  {
+    "shipment_id": 2,
+    "status": "in_transit",
+    "location_description": "Đang vận chuyển đến khu vực giao hàng",
+    "updated_at": "2025-10-22T14:20:00Z"
+  },
+  {
+    "shipment_id": 3,
+    "status": "pending",
+    "location_description": "Đơn hàng đang chờ xử lý",
+    "updated_at": "2025-11-01T09:00:00Z"
+  },
+  {
+    "shipment_id": 3,
+    "status": "packing",
+    "location_description": "Đang đóng gói tại kho hàng",
+    "updated_at": "2025-11-01T15:30:00Z"
+  },
+  {
+    "shipment_id": 3,
+    "status": "in_transit",
+    "location_description": "Đã giao cho Viettel Post - Hub miền Trung",
+    "updated_at": "2025-11-02T07:45:00Z"
+  },
+  {
+    "shipment_id": 3,
+    "status": "in_transit",
+    "location_description": "Đang vận chuyển - Trạm trung chuyển Đà Nẵng",
+    "updated_at": "2025-11-03T11:00:00Z"
+  },
+  {
+    "shipment_id": 3,
+    "status": "in_transit",
+    "location_description": "Shipper đang giao hàng",
+    "updated_at": "2025-11-04T08:30:00Z"
+  },
+  {
+    "shipment_id": 3,
+    "status": "delivered",
+    "location_description": "Giao hàng thành công",
+    "updated_at": "2025-11-04T16:20:00Z"
+  },
+  {
+    "shipment_id": 4,
+    "status": "pending",
+    "location_description": "Đơn hàng đang chờ xử lý",
+    "updated_at": "2025-11-10T10:00:00Z"
+  },
+  {
+    "shipment_id": 4,
+    "status": "packing",
+    "location_description": "Đang chuẩn bị hàng",
+    "updated_at": "2025-11-10T14:00:00Z"
+  },
+  {
+    "shipment_id": 5,
+    "status": "pending",
+    "location_description": "Đơn hàng mới được tạo",
+    "updated_at": "2025-11-15T11:30:00Z"
+  },
+  {
+    "shipment_id": 5,
+    "status": "packing",
+    "location_description": "Đang đóng gói sản phẩm",
+    "updated_at": "2025-11-15T16:45:00Z"
+  },
+  {
+    "shipment_id": 5,
+    "status": "in_transit",
+    "location_description": "Đã bàn giao cho J&T Express",
+    "updated_at": "2025-11-16T08:20:00Z"
+  },
+  {
+    "shipment_id": 5,
+    "status": "in_transit",
+    "location_description": "Đang vận chuyển đến địa chỉ nhận hàng",
+    "updated_at": "2025-11-17T10:00:00Z"
+  },
+  {
+    "shipment_id": 5,
+    "status": "delivered",
+    "location_description": "Đã giao hàng thành công",
+    "updated_at": "2025-11-18T14:15:00Z"
+  },
+  {
+    "shipment_id": 6,
+    "status": "pending",
+    "location_description": "Đơn hàng đang chờ xử lý",
+    "updated_at": "2025-11-20T09:00:00Z"
+  },
+  {
+    "shipment_id": 6,
+    "status": "packing",
+    "location_description": "Đơn hàng đang được chuẩn bị",
+    "updated_at": "2025-11-20T15:00:00Z"
+  },
+  {
+    "shipment_id": 7,
+    "status": "failed",
+    "location_description": "Đơn hàng đã bị hủy - Hoàn tiền",
+    "updated_at": "2025-11-06T10:00:00Z"
+  }
+]

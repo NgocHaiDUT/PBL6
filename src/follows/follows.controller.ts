@@ -101,6 +101,7 @@ export class FollowsController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ): Promise<PaginatedFollowsResponse> {
+    console.log('👥 [FollowsController] getFollowers called for userId:', userId);
     const queryDto: QueryFollowsDto = {
       user_id: userId,
       type: 'followers',
@@ -117,6 +118,7 @@ export class FollowsController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ): Promise<PaginatedFollowsResponse> {
+    console.log('👥 [FollowsController] getFollowing called for userId:', userId);
     const queryDto: QueryFollowsDto = {
       user_id: userId,
       type: 'following',
