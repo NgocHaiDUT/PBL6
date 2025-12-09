@@ -20,12 +20,25 @@ export class VnpayService implements PaymentStrategy {
     private readonly thirdPartyVnpayService: ThirdPartyVnpayService,
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async createPaymentUrl(
     createPaymentUrlDto: CreatePaymentUrlDto,
   ): Promise<string> {
-    const { amount, orderInfo, orderId, ipAddr } = createPaymentUrlDto;
+    let { amount, orderInfo, orderId, ipAddr } = createPaymentUrlDto;
+
+    // If amount is 0, fetch from order
+    if (amount === 0) {
+      const order = await this.prisma.orders.findUnique({
+        where: { id: orderId },
+      });
+
+      if (!order) {
+        throw new NotFoundException(`Order #${orderId} not found`);
+      }
+
+      amount = order.total_amount.toNumber();
+    }
 
     const returnUrl =
       this.configService.get<string>('VNPAY_RETURN_URL') ||
@@ -109,13 +122,13 @@ export class VnpayService implements PaymentStrategy {
 
     return isSuccess
       ? {
-          RspCode: '00',
-          Message: 'Success',
-        }
+        RspCode: '00',
+        Message: 'Success',
+      }
       : {
-          RspCode: '99',
-          Message: 'Payment failed',
-        };
+        RspCode: '99',
+        Message: 'Payment failed',
+      };
   }
 
   async confirmReturnPayment(data: VnpayReturnDto): Promise<void> {

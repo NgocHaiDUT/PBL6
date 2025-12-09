@@ -328,7 +328,8 @@ export class ProfileService {
                     id: user.id,
                     full_name: user.full_name,
                     email: user.email,
-                    Avatar: user.avatar_url, // Map to match UserInfo interface
+                    avatar: user.avatar_url, // ✅ Fix: Map to 'avatar' instead of 'Avatar'
+                    avatar_url: user.avatar_url, // ✅ Also include raw avatar_url for debugging
                     phone: user.phone,
                     story: user.story,
                     created_at: user.created_at,

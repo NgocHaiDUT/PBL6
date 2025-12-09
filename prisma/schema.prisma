@@ -76,6 +76,7 @@ enum message_type {
   VIDEO
   SHARE_POST
   SHARE_PRODUCT
+  SHARE_PROFILE
 }
 
 ///////////////////////////////////////////////////////
@@ -108,6 +109,7 @@ model users {
   posts                     posts[]
   likes                     likes[]
   comments                  comments[]
+  saved_posts               saved_posts[]
   skin_analyses             skin_analyses[]
   tryon_sessions            tryon_sessions[]
   recommendations           recommendations[]
@@ -517,6 +519,7 @@ model posts {
   post_media        post_media[]
   post_products     post_products[]
   post_tags         post_tags[]
+  saved_posts       saved_posts[]
 }
 
 model post_media {
@@ -576,6 +579,17 @@ model comments {
   user        users      @relation(fields: [user_id], references: [id])
   parent      comments?  @relation("CommentReplies", fields: [parent_id], references: [id])
   replies     comments[] @relation("CommentReplies")
+}
+
+model saved_posts {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  post_id    Int
+  created_at DateTime @default(now())
+  user       users    @relation(fields: [user_id], references: [id])
+  post       posts    @relation(fields: [post_id], references: [id])
+
+  @@unique([user_id, post_id])
 }
 
 ///////////////////////////////////////////////////////
@@ -720,6 +734,7 @@ model messages {
   type              message_type        @default(TEXT)
   content           String?
   post_id           Int? // Shared post ID
+  shared_profile_id Int? // Shared profile user ID
   is_edited         Boolean             @default(false)
   edited_at         DateTime?
   is_deleted        Boolean             @default(false)

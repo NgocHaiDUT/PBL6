@@ -60,7 +60,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       receiverId: number; 
       content: string; 
       postId?: number; 
-      messageType?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHARE_POST' | 'SHARE_PRODUCT';
+      sharedProfileId?: number;
+      messageType?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHARE_POST' | 'SHARE_PRODUCT' | 'SHARE_PROFILE';
     },
     @ConnectedSocket() client: Socket,
   ) {
@@ -106,10 +107,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       // 2. Determine message type
-      let messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHARE_POST' | 'SHARE_PRODUCT' = 'TEXT';
+      let messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHARE_POST' | 'SHARE_PRODUCT' | 'SHARE_PROFILE' = 'TEXT';
       
       if (data.postId) {
         messageType = 'SHARE_POST';
+      } else if (data.sharedProfileId) {
+        messageType = 'SHARE_PROFILE';
       } else if (data.messageType) {
         messageType = data.messageType;
       }
@@ -121,6 +124,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           sender_id: data.senderId,
           content: data.content,
           post_id: data.postId, // ✅ Include postId
+          shared_profile_id: data.sharedProfileId, // ✅ Include sharedProfileId
           type: messageType, // ✅ Use enum value
         },
         include: {
@@ -134,14 +138,31 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
       });
 
-      // Debug log để kiểm tra dữ liệu
-      this.logger.log(`Created message with data:`, {
-        id: message.id,
-        post_id: (message as any).post_id,
-        type: message.type,
-        postId: data.postId,
-        messageType: data.messageType
-      });
+      // ✅ Load shared profile data if exists
+      let sharedProfile: { id: number; full_name: string | null; avatar_url: string | null; bio: string | null } | null = null;
+      if (data.sharedProfileId) {
+        try {
+          const profileUser = await this.prisma.users.findUnique({
+            where: { id: data.sharedProfileId },
+            select: {
+              id: true,
+              full_name: true,
+              avatar_url: true,
+              story: true,
+            }
+          });
+          if (profileUser) {
+            sharedProfile = {
+              id: profileUser.id,
+              full_name: profileUser.full_name,
+              avatar_url: profileUser.avatar_url,
+              bio: profileUser.story,
+            };
+          }
+        } catch (error) {
+          this.logger.error(`Failed to load shared profile ${data.sharedProfileId}:`, error);
+        }
+      }
 
       // 4. Format message for frontend
       const formattedMessage = {
@@ -154,6 +175,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         payload: message.payload,
         createdAt: message.created_at.toISOString(),
         sharedPostId: (message as any).post_id || null, // ✅ Include shared post ID
+        sharedProfileId: (message as any).shared_profile_id || null, // ✅ Include shared profile ID
+        sharedProfile: sharedProfile, // ✅ Include shared profile data
         messageType: message.type, // ✅ Use the enum type
         sender: {
           Id: message.sender?.id || message.sender_id,
@@ -161,15 +184,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           Avatar: message.sender?.avatar_url || null,
         }
       };
-
-      // Debug log để kiểm tra formatted message
-      this.logger.log(`Formatted message:`, {
-        sharedPostId: formattedMessage.sharedPostId,
-        messageType: formattedMessage.messageType,
-        type: message.type,
-        originalPostId: data.postId,
-        originalMessageType: data.messageType
-      });
 
       // 5. Send message to both users
       this.server.to(`${data.senderId}`).emit('newMessage', formattedMessage);
@@ -298,10 +312,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // 3. Format messages
       let formattedMessages: any[] = [];
       if (conversation) {
-        formattedMessages = conversation.messages.map(msg => {
-          // ✅ Debug log raw reactions from database
-          this.logger.log(`🔍 Message ${msg.id} raw message_reactions from DB:`, msg.message_reactions);
-          
+        formattedMessages = await Promise.all(conversation.messages.map(async (msg) => {
           // Group reactions by emoji
           const reactionsGrouped = (msg.message_reactions || []).reduce((acc, r) => {
             if (!acc[r.emoji]) {
@@ -314,9 +325,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
           const formattedReactions = Object.values(reactionsGrouped);
 
-          // ✅ Debug log formatted reactions
-          this.logger.log(`📊 Message ${msg.id} formatted reactions (${formattedReactions.length}):`, formattedReactions);
-
           // ✅ Format media files
           const mediaFiles = ((msg as any).message_media || []).map((media: any) => ({
             id: media.id,
@@ -328,7 +336,32 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             thumbnailUrl: media.thumbnail_url,
           }));
 
-          this.logger.log(`📎 Message ${msg.id} has ${mediaFiles.length} media files:`, mediaFiles);
+          // ✅ Load shared profile data if exists
+          let sharedProfile: { id: number; full_name: string | null; avatar_url: string | null; bio: string | null } | null = null;
+          const sharedProfileId = (msg as any).shared_profile_id;
+          if (sharedProfileId) {
+            try {
+              const profileUser = await this.prisma.users.findUnique({
+                where: { id: sharedProfileId },
+                select: {
+                  id: true,
+                  full_name: true,
+                  avatar_url: true,
+                  story: true,
+                }
+              });
+              if (profileUser) {
+                sharedProfile = {
+                  id: profileUser.id,
+                  full_name: profileUser.full_name,
+                  avatar_url: profileUser.avatar_url,
+                  bio: profileUser.story,
+                };
+              }
+            } catch (error) {
+              this.logger.error(`Failed to load shared profile ${sharedProfileId}:`, error);
+            }
+          }
 
           const formattedMessage = {
             id: msg.id,
@@ -337,6 +370,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             content: msg.content,
             createdAt: msg.created_at.toISOString(),
             sharedPostId: (msg as any).post_id, // ✅ Include shared post ID
+            sharedProfileId: sharedProfileId, // ✅ Include shared profile ID
+            sharedProfile: sharedProfile, // ✅ Include shared profile data
             messageType: msg.type, // ✅ Use 'type' field (enum message_type)
             reactions: formattedReactions, // ✅ Include reactions
             mediaFiles: mediaFiles, // ✅ Include media files
@@ -347,11 +382,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             }
           };
           
-          // ✅ Debug final formatted message
-          this.logger.log(`✉️ Final formatted message ${msg.id}:`, JSON.stringify(formattedMessage, null, 2));
-          
           return formattedMessage;
-        });
+        }));
       }
 
       // 4. Notify target user (optional)
@@ -365,13 +397,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
 
       // 5. Send conversation to opener
-      // ✅ Debug log before emitting
-      this.logger.log(`📤 Emitting conversation to user ${data.openerId} with ${formattedMessages.length} messages`);
-      if (formattedMessages.length > 0) {
-        const firstMsg = formattedMessages[0];
-        this.logger.log(`📤 First message sample:`, JSON.stringify(firstMsg, null, 2));
-      }
-      
       client.emit('conversation', { 
         with: {
           Id: targetUser.id, // ✅ Use uppercase 'Id' to match frontend
