@@ -512,6 +512,175 @@ export class MessagesService {
   }
 
   // Lấy tin nhắn trong cuộc hội thoại
+  // Lấy tin nhắn trong conversation cụ thể của shop
+  async getShopMessages(
+    shopId: number,
+    conversationId: number,
+    userId: number,
+    queryDto: QueryMessagesDto,
+  ) {
+    // Kiểm tra user có quyền truy cập shop này không
+    const shop = await this.prisma.shops.findFirst({
+      where: {
+        id: shopId,
+        owner_id: userId,
+      },
+    });
+
+    if (!shop) {
+      const shopStaff = await this.prisma.shop_staffs.findFirst({
+        where: {
+          shop_id: shopId,
+          user_id: userId,
+        },
+      });
+
+      if (!shopStaff) {
+        throw new ForbiddenException('You do not have access to this shop');
+      }
+    }
+
+    // Kiểm tra conversation có thuộc về shop này không
+    const conversation = await this.prisma.conversations.findFirst({
+      where: {
+        id: conversationId,
+        participants: {
+          some: {
+            shop_id: shopId,
+            entity_type: 'shop',
+          },
+        },
+      },
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found or does not belong to this shop');
+    }
+
+    // Sử dụng logic tương tự getMessages
+    const { page, limit = 30, cursor, before, after } = queryDto;
+
+    // Cursor-based pagination
+    if (cursor || before || after) {
+      const whereCondition: any = {
+        conversation_id: conversationId,
+      };
+
+      if (before) {
+        whereCondition.id = { lt: before };
+      } else if (after) {
+        whereCondition.id = { gt: after };
+      } else if (cursor) {
+        whereCondition.id = { lte: cursor };
+      }
+
+      const messages = await this.prisma.messages.findMany({
+        where: whereCondition,
+        take: limit + 1,
+        orderBy: { id: 'desc' },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              full_name: true,
+              avatar_url: true,
+            },
+          },
+          sender_shop: {
+            select: {
+              id: true,
+              name: true,
+              logo_url: true,
+            },
+          },
+          message_reads: {
+            select: {
+              user_id: true,
+              read_at: true,
+              user: {
+                select: {
+                  id: true,
+                  full_name: true,
+                  avatar_url: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const hasMore = messages.length > limit;
+      const data = hasMore ? messages.slice(0, limit) : messages;
+
+      return {
+        data: data.reverse(),
+        cursor: {
+          next: hasMore ? data[data.length - 1]?.id : null,
+          previous: data.length > 0 ? data[0]?.id : null,
+          hasMore,
+        },
+      };
+    }
+
+    // Offset-based pagination
+    const skip = page ? (page - 1) * limit : 0;
+
+    const [messages, total] = await Promise.all([
+      this.prisma.messages.findMany({
+        where: {
+          conversation_id: conversationId,
+        },
+        skip,
+        take: limit,
+        orderBy: { id: 'desc' },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              full_name: true,
+              avatar_url: true,
+            },
+          },
+          sender_shop: {
+            select: {
+              id: true,
+              name: true,
+              logo_url: true,
+            },
+          },
+          message_reads: {
+            select: {
+              user_id: true,
+              read_at: true,
+              user: {
+                select: {
+                  id: true,
+                  full_name: true,
+                  avatar_url: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.messages.count({
+        where: {
+          conversation_id: conversationId,
+        },
+      }),
+    ]);
+
+    return {
+      data: messages.reverse(),
+      pagination: {
+        page: page || 1,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   async getMessages(
     conversationId: number,
     userId: number,
@@ -758,6 +927,84 @@ export class MessagesService {
 
     return {
       message: 'All messages marked as read',
+      marked_count: unreadMessages.length,
+    };
+  }
+
+  // Đánh dấu tất cả tin nhắn trong conversation của shop là đã đọc
+  async markShopMessagesAsRead(
+    shopId: number,
+    conversationId: number,
+    userId: number,
+  ) {
+    // Kiểm tra user có quyền truy cập shop này không
+    const shop = await this.prisma.shops.findFirst({
+      where: {
+        id: shopId,
+        owner_id: userId,
+      },
+    });
+
+    if (!shop) {
+      const shopStaff = await this.prisma.shop_staffs.findFirst({
+        where: {
+          shop_id: shopId,
+          user_id: userId,
+        },
+      });
+
+      if (!shopStaff) {
+        throw new ForbiddenException('You do not have access to this shop');
+      }
+    }
+
+    // Kiểm tra conversation có thuộc về shop này không
+    const conversation = await this.prisma.conversations.findFirst({
+      where: {
+        id: conversationId,
+        participants: {
+          some: {
+            shop_id: shopId,
+            entity_type: 'shop',
+          },
+        },
+      },
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found or does not belong to this shop');
+    }
+
+    // Lấy tất cả tin nhắn chưa đọc bởi user này
+    const unreadMessages = await this.prisma.messages.findMany({
+      where: {
+        conversation_id: conversationId,
+        NOT: {
+          message_reads: {
+            some: {
+              user_id: userId,
+            },
+          },
+        },
+      },
+      select: { id: true },
+    });
+
+    if (unreadMessages.length === 0) {
+      return { message: 'No unread messages' };
+    }
+
+    // Đánh dấu tất cả là đã đọc
+    await this.prisma.message_reads.createMany({
+      data: unreadMessages.map((message) => ({
+        message_id: message.id,
+        user_id: userId,
+      })),
+      skipDuplicates: true,
+    });
+
+    return {
+      message: 'All shop messages marked as read',
       marked_count: unreadMessages.length,
     };
   }

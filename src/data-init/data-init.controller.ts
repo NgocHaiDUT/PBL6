@@ -35,6 +35,23 @@ export class DataInitController {
     };
   }
 
+  // ============ APIs cho data có foreign key dependencies ============
+  
+  @Post('shop-staffs')
+  async seedShopStaffs() {
+    return await this.dataInitService.seedShopStaffs();
+  }
+
+  @Post('carts')
+  async seedCarts() {
+    return await this.dataInitService.seedCarts();
+  }
+
+  @Post('cart-items')
+  async seedCartItems() {
+    return await this.dataInitService.seedCartItems();
+  }
+
   @Post('addresses')
   async seedAddresses() {
     return await this.dataInitService.seedAddresses();

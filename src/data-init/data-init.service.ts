@@ -27,20 +27,20 @@ export class DataInitService implements OnModuleInit {
       await this.seedAdminUser();
       await this.seedUsers(); // Create regular users for testing
       await this.seedShops();
-      await this.seedShopStaffs();
       await this.seedProducts();
       await this.seedCoupons();
-      await this.seedCarts();
-      await this.seedCartItems();
-      await this.seedAddresses();
-      await this.seedShopAddresses();
-      await this.seedOrders(); // Must be before order_coupons and shipment_logs
-      await this.seedOrderCoupons();
-      await this.seedShipmentLogs();
+      // await this.seedShopStaffs(); // Moved to API
+      // await this.seedCarts(); // Moved to API
+      // await this.seedCartItems(); // Moved to API
+      // await this.seedAddresses(); // Moved to API
+      // await this.seedShopAddresses(); // Moved to API
+      // await this.seedOrders(); // Moved to API
+      // await this.seedOrderCoupons(); // Moved to API
+      // await this.seedShipmentLogs(); // Moved to API
 
       // await this.uploadBrandLogosIfNeeded();
 
-      this.logger.log('Dữ liệu khởi tạo thành công');
+      this.logger.log('Dữ liệu khởi tạo cơ bản thành công. Gọi các API riêng để tạo data có foreign key.');
     } catch (error) {
       this.logger.error('Lỗi khi tạo dữ liệu : ', error);
     }
@@ -834,43 +834,82 @@ export class DataInitService implements OnModuleInit {
     }
   }
 
-  private async seedShopStaffs() {
-    const existingStaffs = await this.prisma.shop_staffs.count();
-    if (existingStaffs > 0) {
-      this.logger.log('Shop staffs đã tồn tại, không khởi tạo mới');
-      return;
-    }
-
-    const shopStaffsFilePath = path.join(
-      process.cwd(),
-      'src',
-      'data-init',
-      'shop_staffs.json',
-    );
-    const shopStaffsDataRaw = fs.readFileSync(shopStaffsFilePath, 'utf8');
-    const shopStaffsData = JSON.parse(shopStaffsDataRaw);
-
-    if (!Array.isArray(shopStaffsData)) {
-      this.logger.error('Dữ liệu shop_staffs không phải là array');
-      return;
-    }
-
-    for (const staff of shopStaffsData) {
-      try {
-        await this.prisma.shop_staffs.create({
-          data: {
-            shop_id: staff.shop_id,
-            user_id: staff.user_id,
-            is_manager: staff.is_manager,
-            created_at: new Date(staff.created_at),
-          },
-        });
-      } catch (error) {
-        this.logger.error(`Lỗi khi tạo shop staff:`, error);
+  async seedShopStaffs() {
+    try {
+      const existingStaffs = await this.prisma.shop_staffs.count();
+      if (existingStaffs > 0) {
+        this.logger.log('Shop staffs đã tồn tại, không khởi tạo mới');
+        return { success: false, message: 'Shop staffs đã tồn tại' };
       }
-    }
 
-    this.logger.log(`Đã tạo ${shopStaffsData.length} shop staffs thành công`);
+      const shopStaffsFilePath = path.join(
+        process.cwd(),
+        'src',
+        'data-init',
+        'shop_staffs.json',
+      );
+      const shopStaffsDataRaw = fs.readFileSync(shopStaffsFilePath, 'utf8');
+      const shopStaffsData = JSON.parse(shopStaffsDataRaw);
+
+      if (!Array.isArray(shopStaffsData)) {
+        this.logger.error('Dữ liệu shop_staffs không phải là array');
+        return { success: false, message: 'Dữ liệu shop_staffs không hợp lệ' };
+      }
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const staff of shopStaffsData) {
+        try {
+          // Kiểm tra xem shop và user có tồn tại không
+          const shopExists = await this.prisma.shops.findUnique({
+            where: { id: staff.shop_id },
+          });
+          const userExists = await this.prisma.users.findUnique({
+            where: { id: staff.user_id },
+          });
+
+          if (!shopExists) {
+            this.logger.warn(`Shop ID ${staff.shop_id} không tồn tại, skip`);
+            errorCount++;
+            continue;
+          }
+          if (!userExists) {
+            this.logger.warn(`User ID ${staff.user_id} không tồn tại, skip`);
+            errorCount++;
+            continue;
+          }
+
+          await this.prisma.shop_staffs.create({
+            data: {
+              shop_id: staff.shop_id,
+              user_id: staff.user_id,
+              is_manager: staff.is_manager,
+              created_at: new Date(staff.created_at),
+            },
+          });
+          successCount++;
+        } catch (error) {
+          this.logger.error(`Lỗi khi tạo shop staff:`, error);
+          errorCount++;
+        }
+      }
+
+      this.logger.log(`Đã tạo ${successCount} shop staffs thành công`);
+      return {
+        success: true,
+        message: `Đã tạo ${successCount}/${shopStaffsData.length} shop staffs`,
+        successCount,
+        errorCount,
+      };
+    } catch (error) {
+      this.logger.error('Lỗi khi tạo shop staffs:', error);
+      return {
+        success: false,
+        message: 'Lỗi khi tạo shop staffs',
+        error: error.message,
+      };
+    }
   }
 
   private async seedCoupons() {
@@ -918,117 +957,192 @@ export class DataInitService implements OnModuleInit {
     this.logger.log(`Đã tạo ${couponsData.length} coupons thành công`);
   }
 
-  private async seedCarts() {
-    const existingCarts = await this.prisma.carts.count();
-    if (existingCarts > 0) {
-      this.logger.log('Carts đã tồn tại, không khởi tạo mới');
-      return;
-    }
-
-    const cartsFilePath = path.join(
-      process.cwd(),
-      'src',
-      'data-init',
-      'carts.json',
-    );
-    const cartsDataRaw = fs.readFileSync(cartsFilePath, 'utf8');
-    const cartsData = JSON.parse(cartsDataRaw);
-
-    if (!Array.isArray(cartsData)) {
-      this.logger.error('Dữ liệu carts không phải là array');
-      return;
-    }
-
-    for (const cart of cartsData) {
-      try {
-        await this.prisma.carts.create({
-          data: {
-            user_id: cart.user_id,
-            created_at: new Date(cart.created_at),
-            updated_at: new Date(cart.updated_at),
-          },
-        });
-      } catch (error) {
-        this.logger.error(`Lỗi khi tạo cart cho user ${cart.user_id}:`, error);
+  async seedCarts() {
+    try {
+      const existingCarts = await this.prisma.carts.count();
+      if (existingCarts > 0) {
+        this.logger.log('Carts đã tồn tại, không khởi tạo mới');
+        return { success: false, message: 'Carts đã tồn tại' };
       }
-    }
 
-    this.logger.log(`Đã tạo ${cartsData.length} carts thành công`);
+      const cartsFilePath = path.join(
+        process.cwd(),
+        'src',
+        'data-init',
+        'carts.json',
+      );
+      const cartsDataRaw = fs.readFileSync(cartsFilePath, 'utf8');
+      const cartsData = JSON.parse(cartsDataRaw);
+
+      if (!Array.isArray(cartsData)) {
+        this.logger.error('Dữ liệu carts không phải là array');
+        return { success: false, message: 'Dữ liệu carts không hợp lệ' };
+      }
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const cart of cartsData) {
+        try {
+          // Kiểm tra user có tồn tại không
+          const userExists = await this.prisma.users.findUnique({
+            where: { id: cart.user_id },
+          });
+
+          if (!userExists) {
+            this.logger.warn(
+              `User ID ${cart.user_id} không tồn tại, skip cart này`,
+            );
+            errorCount++;
+            continue;
+          }
+
+          await this.prisma.carts.create({
+            data: {
+              user_id: cart.user_id,
+              created_at: new Date(cart.created_at),
+              updated_at: new Date(cart.updated_at),
+            },
+          });
+          successCount++;
+        } catch (error) {
+          this.logger.error(`Lỗi khi tạo cart cho user ${cart.user_id}:`, error);
+          errorCount++;
+        }
+      }
+
+      this.logger.log(`Đã tạo ${successCount} carts thành công`);
+      return {
+        success: true,
+        message: `Đã tạo ${successCount}/${cartsData.length} carts`,
+        successCount,
+        errorCount,
+      };
+    } catch (error) {
+      this.logger.error('Lỗi khi tạo carts:', error);
+      return {
+        success: false,
+        message: 'Lỗi khi tạo carts',
+        error: error.message,
+      };
+    }
   }
 
-  private async seedCartItems() {
-    const existingCartItems = await this.prisma.cart_items.count();
-    if (existingCartItems > 0) {
-      this.logger.log('Cart items đã tồn tại, không khởi tạo mới');
-      return;
-    }
-
-    const cartItemsFilePath = path.join(
-      process.cwd(),
-      'src',
-      'data-init',
-      'cart_items.json',
-    );
-    const cartItemsDataRaw = fs.readFileSync(cartItemsFilePath, 'utf8');
-    const cartItemsData = JSON.parse(cartItemsDataRaw);
-
-    if (!Array.isArray(cartItemsData)) {
-      this.logger.error('Dữ liệu cart_items không phải là array');
-      return;
-    }
-
-    // Get product mapping
-    const productsInDB = await this.prisma.products.findMany({
-      orderBy: { id: 'asc' },
-      select: { id: true },
-    });
-
-    const productIdMap = new Map<number, number>();
-    productsInDB.forEach((product, index) => {
-      productIdMap.set(index + 1, product.id);
-    });
-
-    for (const cartItem of cartItemsData) {
-      try {
-        const realProductId = productIdMap.get(cartItem.product_id);
-        if (!realProductId) {
-          this.logger.warn(
-            `Không tìm thấy product_id mapping cho ${cartItem.product_id}`,
-          );
-          continue;
-        }
-
-        // Get variant
-        const variants = await this.prisma.product_variants.findMany({
-          where: { product_id: realProductId },
-          orderBy: { id: 'asc' },
-        });
-
-        const realVariantId =
-          variants[cartItem.variant_id - 1]?.id || variants[0]?.id;
-        if (!realVariantId) {
-          this.logger.warn(
-            `Không tìm thấy variant cho product ${realProductId}`,
-          );
-          continue;
-        }
-
-        await this.prisma.cart_items.create({
-          data: {
-            cart_id: cartItem.cart_id,
-            product_id: realProductId,
-            variant_id: realVariantId,
-            quantity: cartItem.quantity,
-            price_snapshot: cartItem.price_snapshot,
-            created_at: new Date(cartItem.created_at),
-          },
-        });
-      } catch (error) {
-        this.logger.error(`Lỗi khi tạo cart item:`, error);
+  async seedCartItems() {
+    try {
+      const existingCartItems = await this.prisma.cart_items.count();
+      if (existingCartItems > 0) {
+        this.logger.log('Cart items đã tồn tại, không khởi tạo mới');
+        return { success: false, message: 'Cart items đã tồn tại' };
       }
-    }
 
-    this.logger.log(`Đã tạo ${cartItemsData.length} cart items thành công`);
+      const cartItemsFilePath = path.join(
+        process.cwd(),
+        'src',
+        'data-init',
+        'cart_items.json',
+      );
+      const cartItemsDataRaw = fs.readFileSync(cartItemsFilePath, 'utf8');
+      const cartItemsData = JSON.parse(cartItemsDataRaw);
+
+      if (!Array.isArray(cartItemsData)) {
+        this.logger.error('Dữ liệu cart_items không phải là array');
+        return { success: false, message: 'Dữ liệu cart_items không hợp lệ' };
+      }
+
+      // Get product mapping
+      const productsInDB = await this.prisma.products.findMany({
+        orderBy: { id: 'asc' },
+        select: { id: true },
+      });
+
+      if (productsInDB.length === 0) {
+        return {
+          success: false,
+          message: 'Không có products trong DB. Vui lòng seed products trước!',
+        };
+      }
+
+      const productIdMap = new Map<number, number>();
+      productsInDB.forEach((product, index) => {
+        productIdMap.set(index + 1, product.id);
+      });
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const cartItem of cartItemsData) {
+        try {
+          // Kiểm tra cart có tồn tại không
+          const cartExists = await this.prisma.carts.findUnique({
+            where: { id: cartItem.cart_id },
+          });
+
+          if (!cartExists) {
+            this.logger.warn(
+              `Cart ID ${cartItem.cart_id} không tồn tại, skip item này`,
+            );
+            errorCount++;
+            continue;
+          }
+
+          const realProductId = productIdMap.get(cartItem.product_id);
+          if (!realProductId) {
+            this.logger.warn(
+              `Không tìm thấy product_id mapping cho ${cartItem.product_id}`,
+            );
+            errorCount++;
+            continue;
+          }
+
+          // Get variant
+          const variants = await this.prisma.product_variants.findMany({
+            where: { product_id: realProductId },
+            orderBy: { id: 'asc' },
+          });
+
+          const realVariantId =
+            variants[cartItem.variant_id - 1]?.id || variants[0]?.id;
+          if (!realVariantId) {
+            this.logger.warn(
+              `Không tìm thấy variant cho product ${realProductId}`,
+            );
+            errorCount++;
+            continue;
+          }
+
+          await this.prisma.cart_items.create({
+            data: {
+              cart_id: cartItem.cart_id,
+              product_id: realProductId,
+              variant_id: realVariantId,
+              quantity: cartItem.quantity,
+              price_snapshot: cartItem.price_snapshot,
+              created_at: new Date(cartItem.created_at),
+            },
+          });
+          successCount++;
+        } catch (error) {
+          this.logger.error(`Lỗi khi tạo cart item:`, error);
+          errorCount++;
+        }
+      }
+
+      this.logger.log(`Đã tạo ${successCount} cart items thành công`);
+      return {
+        success: true,
+        message: `Đã tạo ${successCount}/${cartItemsData.length} cart items`,
+        successCount,
+        errorCount,
+      };
+    } catch (error) {
+      this.logger.error('Lỗi khi tạo cart items:', error);
+      return {
+        success: false,
+        message: 'Lỗi khi tạo cart items',
+        error: error.message,
+      };
+    }
   }
 
   private async seedOrderCoupons() {
