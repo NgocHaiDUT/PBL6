@@ -19,7 +19,7 @@ import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { QueryPostsDto } from './dto/query-posts.dto';
-import { getMulterOptions } from '../config/storage.config';
+import { s3PostCoverConfig, s3PostVideoConfig, s3PostMediaConfig } from './config/s3-post.config';
 import { AuthGuard } from '@nestjs/passport';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
@@ -33,7 +33,7 @@ export class PostsController {
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   @RequirePermissions(Permission.CREATE_POST)
   @UseInterceptors(
-    FilesInterceptor('media', 10, getMulterOptions('postimages', 'media')),
+    FilesInterceptor('media', 10, s3PostMediaConfig),
   )
   create(
     @Body() createPostDto: CreatePostDto,
@@ -89,7 +89,7 @@ export class PostsController {
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   @RequirePermissions(Permission.EDIT_POST)
   @UseInterceptors(
-    FileInterceptor('cover', getMulterOptions('postimages', 'image')),
+    FileInterceptor('cover', s3PostCoverConfig),
   )
   uploadCoverImage(
     @Param('id', ParseIntPipe) id: number,
@@ -104,7 +104,7 @@ export class PostsController {
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   @RequirePermissions(Permission.EDIT_POST)
   @UseInterceptors(
-    FileInterceptor('video', getMulterOptions('videos', 'video')),
+    FileInterceptor('video', s3PostVideoConfig),
   )
   uploadVideo(
     @Param('id', ParseIntPipe) id: number,
@@ -119,7 +119,7 @@ export class PostsController {
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   @RequirePermissions(Permission.EDIT_POST)
   @UseInterceptors(
-    FilesInterceptor('media', 10, getMulterOptions('postimages', 'media')),
+    FilesInterceptor('media', 10, s3PostMediaConfig),
   )
   uploadAdditionalMedia(
     @Param('id', ParseIntPipe) id: number,

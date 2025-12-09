@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { getPostFileUrl } from './config/s3-post.config';
 
 import { QueryPostsDto } from './dto/query-posts.dto';
 
@@ -102,9 +103,8 @@ export class PostsService {
         const mediaType = file.mimetype.startsWith('video/')
           ? 'video'
           : 'image';
-        const directory = mediaType === 'video' ? 'videos' : 'postimages';
-        const mediaUrl =
-          file.location || `/uploads/${directory}/${file.filename}`;
+        // Sử dụng helper function để lấy URL theo format: videos/filename hoặc postimages/filename
+        const mediaUrl = getPostFileUrl(file);
         return {
           post_id: post.id,
           media_url: mediaUrl,
@@ -492,7 +492,8 @@ export class PostsService {
       throw new ForbiddenException('You can only update your own posts');
     }
 
-    const coverUrl = file.location || `/uploads/postimages/${file.filename}`;
+    // Sử dụng helper function để lấy URL: postimages/filename
+    const coverUrl = getPostFileUrl(file);
 
     // Create or update cover image in post_media table
     const existingCover = await this.prisma.post_media.findFirst({
@@ -545,7 +546,8 @@ export class PostsService {
       throw new ForbiddenException('You can only update your own posts');
     }
 
-    const videoUrl = file.location || `/uploads/videos/${file.filename}`;
+    // Sử dụng helper function để lấy URL: videos/filename
+    const videoUrl = getPostFileUrl(file);
 
     // Get current max sort_order for this post
     const maxSortOrder = await this.prisma.post_media.findFirst({
@@ -597,12 +599,11 @@ export class PostsService {
 
     const startOrder = (maxSortOrder?.sort_order || -1) + 1;
 
-    // Create media records using actual file paths
+    // Create media records using helper function
     const mediaData = files.map((file, index) => {
       const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
-      const directory = mediaType === 'video' ? 'videos' : 'postimages';
-      const mediaUrl =
-        file.location || `/uploads/${directory}/${file.filename}`;
+      // Sử dụng helper function: videos/filename hoặc postimages/filename
+      const mediaUrl = getPostFileUrl(file);
 
       return {
         post_id: postId,
