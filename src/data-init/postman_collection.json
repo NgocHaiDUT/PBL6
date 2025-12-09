@@ -1,0 +1,114 @@
+{
+  "info": {
+    "name": "PBL6 Data Init APIs",
+    "description": "Collection để seed data theo đúng thứ tự, tránh lỗi foreign key",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Shop Staffs",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/data-init/shop-staffs",
+          "host": ["{{baseUrl}}"],
+          "path": ["data-init", "shop-staffs"]
+        },
+        "description": "Tạo shop staffs. Yêu cầu: users và shops đã tồn tại."
+      },
+      "response": []
+    },
+    {
+      "name": "2. Addresses",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/data-init/addresses",
+          "host": ["{{baseUrl}}"],
+          "path": ["data-init", "addresses"]
+        },
+        "description": "Tạo địa chỉ user. Yêu cầu: users đã tồn tại."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Shop Addresses",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/data-init/shop-addresses",
+          "host": ["{{baseUrl}}"],
+          "path": ["data-init", "shop-addresses"]
+        },
+        "description": "Tạo địa chỉ shop. Yêu cầu: shops đã tồn tại."
+      },
+      "response": []
+    },
+    {
+      "name": "4. Carts",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/data-init/carts",
+          "host": ["{{baseUrl}}"],
+          "path": ["data-init", "carts"]
+        },
+        "description": "Tạo giỏ hàng. Yêu cầu: users đã tồn tại."
+      },
+      "response": []
+    },
+    {
+      "name": "5. Cart Items",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/data-init/cart-items",
+          "host": ["{{baseUrl}}"],
+          "path": ["data-init", "cart-items"]
+        },
+        "description": "Tạo items trong giỏ hàng. Yêu cầu: carts và products đã tồn tại."
+      },
+      "response": []
+    },
+    {
+      "name": "6. Orders",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/data-init/orders",
+          "host": ["{{baseUrl}}"],
+          "path": ["data-init", "orders"]
+        },
+        "description": "Tạo đơn hàng (bao gồm order_items, payments, shipments). Yêu cầu: users, shops, products, addresses, shop_addresses đã tồn tại."
+      },
+      "response": []
+    },
+    {
+      "name": "Upload Brand Logos to S3",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/data-init/upload-brand-logos",
+          "host": ["{{baseUrl}}"],
+          "path": ["data-init", "upload-brand-logos"]
+        },
+        "description": "Upload brand logos từ local lên S3 (optional)."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}

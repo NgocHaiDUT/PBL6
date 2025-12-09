@@ -114,7 +114,7 @@ export class ReviewsController {
       };
     }
 
-    const mediaUrl = `/uploads/reviews/${file.filename}`;
+    const mediaUrl = file.location || `/uploads/reviews/${file.filename}`;
     return {
       success: true,
       message: 'File uploaded successfully',
