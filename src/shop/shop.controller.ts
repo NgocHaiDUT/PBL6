@@ -14,6 +14,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../auth/constants/Permission.enum';
 import { ShopService } from './shop.service';
 
 @Controller('shops')
@@ -22,7 +23,7 @@ export class ShopController {
   // Thêm nhân viên
   @Post(':shopId/staff')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_shop_staff')
+  @RequirePermissions(Permission.MANAGE_SHOP_STAFF)
   async addStaff(
     @Param('shopId', ParseIntPipe) shopId: number,
     @Body()
@@ -44,7 +45,7 @@ export class ShopController {
   // Xóa nhân viên khỏi shop
   @Delete(':shopId/staff/:staffEmail')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_shop_staff')
+  @RequirePermissions(Permission.MANAGE_SHOP_STAFF)
   async removeStaff(
     @Param('shopId', ParseIntPipe) shopId: number,
     @Param('staffEmail') staffEmail: string,
@@ -63,7 +64,7 @@ export class ShopController {
   // Cập nhật quyền của nhân viên
   @Put(':shopId/staff/:staffEmail/permissions')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_shop_staff')
+  @RequirePermissions(Permission.MANAGE_SHOP_STAFF)
   async updateStaffPermissions(
     @Param('shopId', ParseIntPipe) shopId: number,
     @Param('staffEmail') staffEmail: string,
@@ -91,7 +92,7 @@ export class ShopController {
   // Xóa quyền của nhân viên
   @Delete(':shopId/staff/:staffEmail/permissions')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions('manage_shop_staff')
+  @RequirePermissions(Permission.MANAGE_SHOP_STAFF)
   async deleteStaffPermissions(
     @Param('shopId', ParseIntPipe) shopId: number,
     @Param('staffEmail') staffEmail: string,

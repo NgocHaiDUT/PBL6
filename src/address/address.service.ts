@@ -1,6 +1,15 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { DeliveryService } from '../delivery/delivery.service';
+import { CreateAddressDto } from './dto/create-address.dto';
+import { UpdateAddressDto } from './dto/update-address.dto';
+import { CreateShopAddressDto } from './dto/create-shop-address.dto';
+import { UpdateShopAddressDto } from './dto/update-shop-address.dto';
 
 @Injectable()
 export class AddressService {
@@ -8,6 +17,391 @@ export class AddressService {
     private prisma: PrismaService,
     private deliveryService: DeliveryService,
   ) {}
+
+  // ==================== HELPER METHODS ====================
+
+  private async resolveGHNLocationNames(
+    ghn_province_id?: number,
+    ghn_district_id?: number,
+    ghn_ward_code?: string,
+  ): Promise<{ province?: string; district?: string; ward?: string }> {
+    const result: { province?: string; district?: string; ward?: string } = {};
+
+    if (!ghn_province_id || !ghn_district_id || !ghn_ward_code) {
+      return result;
+    }
+
+    try {
+      const provinces = await this.deliveryService.getProvinces();
+      const foundProvince = provinces.find(
+        (p) => p.ProvinceID === ghn_province_id,
+      );
+      if (foundProvince) result.province = foundProvince.ProvinceName;
+
+      const districts = await this.deliveryService.getDistricts(ghn_province_id);
+      const foundDistrict = districts.find(
+        (d) => d.DistrictID === ghn_district_id,
+      );
+      if (foundDistrict) result.district = foundDistrict.DistrictName;
+
+      const wards = await this.deliveryService.getWards(ghn_district_id);
+      const foundWard = wards.find((w) => w.WardCode === ghn_ward_code);
+      if (foundWard) result.ward = foundWard.WardName;
+    } catch (error) {
+      throw new BadRequestException(
+        'Failed to validate address with GHN. Please check the provided location IDs.',
+      );
+    }
+
+    return result;
+  }
+
+  // ==================== USER ADDRESS METHODS ====================
+
+  async addUserAddress(userId: number, dto: CreateAddressDto) {
+    let officialProvinceName = dto.province;
+    let officialDistrictName = dto.district;
+    let officialWardName = dto.ward;
+
+    if (dto.ghn_province_id && dto.ghn_district_id && dto.ghn_ward_code) {
+      const resolvedNames = await this.resolveGHNLocationNames(
+        dto.ghn_province_id,
+        dto.ghn_district_id,
+        dto.ghn_ward_code,
+      );
+      if (resolvedNames.province) officialProvinceName = resolvedNames.province;
+      if (resolvedNames.district) officialDistrictName = resolvedNames.district;
+      if (resolvedNames.ward) officialWardName = resolvedNames.ward;
+    }
+
+    // If this is set as default, unset other defaults
+    if (dto.is_default) {
+      await this.prisma.addresses.updateMany({
+        where: { user_id: userId, is_default: true },
+        data: { is_default: false },
+      });
+    }
+
+    const address = await this.prisma.addresses.create({
+      data: {
+        user_id: userId,
+        label: dto.label || '',
+        recipient: dto.receiver_name,
+        phone: dto.phone,
+        province: officialProvinceName,
+        district: officialDistrictName,
+        ward: officialWardName,
+        street: dto.street,
+        is_default: dto.is_default || false,
+        ghn_province_id: dto.ghn_province_id,
+        ghn_district_id: dto.ghn_district_id,
+        ghn_ward_code: dto.ghn_ward_code,
+      },
+    });
+
+    return {
+      message: 'Thêm địa chỉ nhận hàng thành công',
+      data: address,
+    };
+  }
+
+  async updateUserAddress(
+    addressId: number,
+    userId: number,
+    dto: UpdateAddressDto,
+  ) {
+    // Check if address exists and belongs to user
+    const existingAddress = await this.prisma.addresses.findUnique({
+      where: { id: addressId },
+    });
+
+    if (!existingAddress) {
+      throw new NotFoundException('Địa chỉ không tồn tại');
+    }
+
+    if (existingAddress.user_id !== userId) {
+      throw new ForbiddenException('Bạn không có quyền cập nhật địa chỉ này');
+    }
+
+    const dataToUpdate: any = {};
+    if (dto.label !== undefined) dataToUpdate.label = dto.label;
+    if (dto.receiver_name !== undefined) dataToUpdate.recipient = dto.receiver_name;
+    if (dto.phone !== undefined) dataToUpdate.phone = dto.phone;
+    if (dto.street !== undefined) dataToUpdate.street = dto.street;
+
+    // Handle GHN location resolution
+    if (dto.ghn_province_id && dto.ghn_district_id && dto.ghn_ward_code) {
+      const resolvedNames = await this.resolveGHNLocationNames(
+        dto.ghn_province_id,
+        dto.ghn_district_id,
+        dto.ghn_ward_code,
+      );
+      dataToUpdate.province = resolvedNames.province || dto.province;
+      dataToUpdate.district = resolvedNames.district || dto.district;
+      dataToUpdate.ward = resolvedNames.ward || dto.ward;
+      dataToUpdate.ghn_province_id = dto.ghn_province_id;
+      dataToUpdate.ghn_district_id = dto.ghn_district_id;
+      dataToUpdate.ghn_ward_code = dto.ghn_ward_code;
+    } else {
+      if (dto.province !== undefined) dataToUpdate.province = dto.province;
+      if (dto.district !== undefined) dataToUpdate.district = dto.district;
+      if (dto.ward !== undefined) dataToUpdate.ward = dto.ward;
+    }
+
+    // Handle is_default flag
+    if (dto.is_default !== undefined) {
+      if (dto.is_default) {
+        // Unset other defaults for this user
+        await this.prisma.addresses.updateMany({
+          where: { user_id: userId, is_default: true, id: { not: addressId } },
+          data: { is_default: false },
+        });
+      }
+      dataToUpdate.is_default = dto.is_default;
+    }
+
+    const updatedAddress = await this.prisma.addresses.update({
+      where: { id: addressId },
+      data: dataToUpdate,
+    });
+
+    return {
+      message: 'Cập nhật địa chỉ nhận hàng thành công',
+      data: updatedAddress,
+    };
+  }
+
+  async deleteUserAddress(addressId: number, userId: number) {
+    // Check if address exists and belongs to user
+    const existingAddress = await this.prisma.addresses.findUnique({
+      where: { id: addressId },
+    });
+
+    if (!existingAddress) {
+      throw new NotFoundException('Địa chỉ không tồn tại');
+    }
+
+    if (existingAddress.user_id !== userId) {
+      throw new ForbiddenException('Bạn không có quyền xóa địa chỉ này');
+    }
+
+    await this.prisma.addresses.delete({
+      where: { id: addressId },
+    });
+
+    return { message: 'Xóa địa chỉ thành công' };
+  }
+
+  async getUserAddresses(userId: number) {
+    return this.prisma.addresses.findMany({
+      where: { user_id: userId },
+      orderBy: [{ is_default: 'desc' }, { created_at: 'desc' }],
+    });
+  }
+
+  // ==================== SHOP ADDRESS METHODS ====================
+
+  async addShopAddress(userId: number, dto: CreateShopAddressDto) {
+    // Verify user owns the shop or is a manager
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: dto.shop_id },
+      include: {
+        shop_staffs: {
+          where: { user_id: userId },
+        },
+      },
+    });
+
+    if (!shop) {
+      throw new NotFoundException('Shop không tồn tại');
+    }
+
+    const isOwner = shop.owner_id === userId;
+    const isManager = shop.shop_staffs.some((staff) => staff.is_manager);
+
+    if (!isOwner && !isManager) {
+      throw new ForbiddenException(
+        'Bạn không có quyền thêm địa chỉ cho shop này',
+      );
+    }
+
+    let officialProvinceName = dto.province;
+    let officialDistrictName = dto.district;
+    let officialWardName = dto.ward;
+
+    if (dto.ghn_province_id && dto.ghn_district_id && dto.ghn_ward_code) {
+      const resolvedNames = await this.resolveGHNLocationNames(
+        dto.ghn_province_id,
+        dto.ghn_district_id,
+        dto.ghn_ward_code,
+      );
+      if (resolvedNames.province) officialProvinceName = resolvedNames.province;
+      if (resolvedNames.district) officialDistrictName = resolvedNames.district;
+      if (resolvedNames.ward) officialWardName = resolvedNames.ward;
+    }
+
+    // If this is set as default, unset other defaults
+    if (dto.is_default) {
+      await this.prisma.shop_addresses.updateMany({
+        where: { shop_id: dto.shop_id, is_default: true },
+        data: { is_default: false },
+      });
+    }
+
+    const address = await this.prisma.shop_addresses.create({
+      data: {
+        shop_id: dto.shop_id,
+        name: dto.name,
+        phone: dto.phone,
+        email: dto.email,
+        province: officialProvinceName,
+        district: officialDistrictName,
+        ward: officialWardName,
+        street: dto.street,
+        is_default: dto.is_default || false,
+        ghn_province_id: dto.ghn_province_id,
+        ghn_district_id: dto.ghn_district_id,
+        ghn_ward_code: dto.ghn_ward_code,
+      },
+    });
+
+    return {
+      message: 'Thêm địa chỉ shop thành công',
+      data: address,
+    };
+  }
+
+  async updateShopAddress(
+    addressId: number,
+    userId: number,
+    dto: UpdateShopAddressDto,
+  ) {
+    // Check if address exists
+    const existingAddress = await this.prisma.shop_addresses.findUnique({
+      where: { id: addressId },
+      include: {
+        shop: {
+          include: {
+            shop_staffs: {
+              where: { user_id: userId },
+            },
+          },
+        },
+      },
+    });
+
+    if (!existingAddress) {
+      throw new NotFoundException('Địa chỉ shop không tồn tại');
+    }
+
+    // Check permissions
+    const isOwner = existingAddress.shop.owner_id === userId;
+    const isManager = existingAddress.shop.shop_staffs.some(
+      (staff) => staff.is_manager,
+    );
+
+    if (!isOwner && !isManager) {
+      throw new ForbiddenException(
+        'Bạn không có quyền cập nhật địa chỉ shop này',
+      );
+    }
+
+    const dataToUpdate: any = {};
+    if (dto.name !== undefined) dataToUpdate.name = dto.name;
+    if (dto.phone !== undefined) dataToUpdate.phone = dto.phone;
+    if (dto.email !== undefined) dataToUpdate.email = dto.email;
+    if (dto.street !== undefined) dataToUpdate.street = dto.street;
+
+    // Handle GHN location resolution
+    if (dto.ghn_province_id && dto.ghn_district_id && dto.ghn_ward_code) {
+      const resolvedNames = await this.resolveGHNLocationNames(
+        dto.ghn_province_id,
+        dto.ghn_district_id,
+        dto.ghn_ward_code,
+      );
+      dataToUpdate.province = resolvedNames.province || dto.province;
+      dataToUpdate.district = resolvedNames.district || dto.district;
+      dataToUpdate.ward = resolvedNames.ward || dto.ward;
+      dataToUpdate.ghn_province_id = dto.ghn_province_id;
+      dataToUpdate.ghn_district_id = dto.ghn_district_id;
+      dataToUpdate.ghn_ward_code = dto.ghn_ward_code;
+    } else {
+      if (dto.province !== undefined) dataToUpdate.province = dto.province;
+      if (dto.district !== undefined) dataToUpdate.district = dto.district;
+      if (dto.ward !== undefined) dataToUpdate.ward = dto.ward;
+    }
+
+    // Handle is_default flag
+    if (dto.is_default !== undefined) {
+      if (dto.is_default) {
+        // Unset other defaults for this shop
+        await this.prisma.shop_addresses.updateMany({
+          where: {
+            shop_id: existingAddress.shop_id,
+            is_default: true,
+            id: { not: addressId },
+          },
+          data: { is_default: false },
+        });
+      }
+      dataToUpdate.is_default = dto.is_default;
+    }
+
+    const updatedAddress = await this.prisma.shop_addresses.update({
+      where: { id: addressId },
+      data: dataToUpdate,
+    });
+
+    return {
+      message: 'Cập nhật địa chỉ shop thành công',
+      data: updatedAddress,
+    };
+  }
+
+  async deleteShopAddress(addressId: number, userId: number) {
+    // Check if address exists
+    const existingAddress = await this.prisma.shop_addresses.findUnique({
+      where: { id: addressId },
+      include: {
+        shop: {
+          include: {
+            shop_staffs: {
+              where: { user_id: userId },
+            },
+          },
+        },
+      },
+    });
+
+    if (!existingAddress) {
+      throw new NotFoundException('Địa chỉ shop không tồn tại');
+    }
+
+    // Check permissions
+    const isOwner = existingAddress.shop.owner_id === userId;
+    const isManager = existingAddress.shop.shop_staffs.some(
+      (staff) => staff.is_manager,
+    );
+
+    if (!isOwner && !isManager) {
+      throw new ForbiddenException('Bạn không có quyền xóa địa chỉ shop này');
+    }
+
+    await this.prisma.shop_addresses.delete({
+      where: { id: addressId },
+    });
+
+    return { message: 'Xóa địa chỉ shop thành công' };
+  }
+
+  async getShopAddresses(shopId: number) {
+    return this.prisma.shop_addresses.findMany({
+      where: { shop_id: shopId },
+      orderBy: [{ is_default: 'desc' }, { created_at: 'desc' }],
+    });
+  }
+
+  // ==================== LEGACY METHODS (For backward compatibility) ====================
 
   async addaddress(
     userid: number,
@@ -23,52 +417,20 @@ export class AddressService {
     ghn_district_id?: number,
     ghn_ward_code?: string,
   ) {
-    let officialProvinceName = province;
-    let officialDistrictName = district;
-    let officialWardName = ward;
-
-    if (ghn_province_id && ghn_district_id && ghn_ward_code) {
-      try {
-        const provinces = await this.deliveryService.getProvinces();
-        const foundProvince = provinces.find(
-          (p) => p.ProvinceID === ghn_province_id,
-        );
-        if (foundProvince) officialProvinceName = foundProvince.ProvinceName;
-
-        const districts =
-          await this.deliveryService.getDistricts(ghn_province_id);
-        const foundDistrict = districts.find(
-          (d) => d.DistrictID === ghn_district_id,
-        );
-        if (foundDistrict) officialDistrictName = foundDistrict.DistrictName;
-
-        const wards = await this.deliveryService.getWards(ghn_district_id);
-        const foundWard = wards.find((w) => w.WardCode === ghn_ward_code);
-        if (foundWard) officialWardName = foundWard.WardName;
-      } catch (error) {
-        throw new BadRequestException(
-          'Failed to validate address with GHN. Please check the provided location IDs.',
-        );
-      }
-    }
-
-    await this.prisma.addresses.create({
-      data: {
-        user_id: userid,
-        label: label || '',
-        recipient: receiver_name,
-        phone: phone,
-        province: officialProvinceName,
-        district: officialDistrictName,
-        ward: officialWardName,
-        street: street,
-        is_default: is_default || false,
-        ghn_province_id: ghn_province_id,
-        ghn_district_id: ghn_district_id,
-        ghn_ward_code: ghn_ward_code,
-      },
-    });
-    return { message: 'Thêm địa chỉ nhận hàng thành công' };
+    const dto: CreateAddressDto = {
+      label,
+      receiver_name,
+      phone,
+      province,
+      district,
+      ward,
+      street,
+      is_default,
+      ghn_province_id,
+      ghn_district_id,
+      ghn_ward_code,
+    };
+    return this.addUserAddress(userid, dto);
   }
 
   async updateaddress(
@@ -85,53 +447,42 @@ export class AddressService {
     ghn_district_id?: number,
     ghn_ward_code?: string,
   ) {
-    const dataToUpdate: any = {};
-    if (label !== undefined) dataToUpdate.label = label;
-    if (receiver_name !== undefined) dataToUpdate.recipient = receiver_name;
-    if (phone !== undefined) dataToUpdate.phone = phone;
-    if (street !== undefined) dataToUpdate.street = street;
-    if (is_default !== undefined) dataToUpdate.is_default = is_default;
+    // Get the address to find the user_id
+    const address = await this.prisma.addresses.findUnique({
+      where: { id: addressid },
+    });
 
-    dataToUpdate.province = province;
-    dataToUpdate.district = district;
-    dataToUpdate.ward = ward;
-    dataToUpdate.ghn_province_id = ghn_province_id;
-    dataToUpdate.ghn_district_id = ghn_district_id;
-    dataToUpdate.ghn_ward_code = ghn_ward_code;
-
-    if (ghn_province_id && ghn_district_id && ghn_ward_code) {
-      try {
-        const provinces = await this.deliveryService.getProvinces();
-        const foundProvince = provinces.find(
-          (p) => p.ProvinceID === ghn_province_id,
-        );
-        if (foundProvince) dataToUpdate.province = foundProvince.ProvinceName;
-
-        const districts =
-          await this.deliveryService.getDistricts(ghn_province_id);
-        const foundDistrict = districts.find(
-          (d) => d.DistrictID === ghn_district_id,
-        );
-        if (foundDistrict) dataToUpdate.district = foundDistrict.DistrictName;
-
-        const wards = await this.deliveryService.getWards(ghn_district_id);
-        const foundWard = wards.find((w) => w.WardCode === ghn_ward_code);
-        if (foundWard) dataToUpdate.ward = foundWard.WardName;
-      } catch (error) {
-        throw new BadRequestException(
-          'Failed to validate address with GHN. Please check the provided location IDs.',
-        );
-      }
+    if (!address) {
+      throw new NotFoundException('Địa chỉ không tồn tại');
     }
 
-    await this.prisma.addresses.update({
-      where: { id: addressid },
-      data: dataToUpdate,
-    });
-    return { message: 'Cập nhật địa chỉ nhận hàng thành công' };
+    const dto: UpdateAddressDto = {
+      addressid,
+      label,
+      receiver_name,
+      phone,
+      province,
+      district,
+      ward,
+      street,
+      is_default,
+      ghn_province_id,
+      ghn_district_id,
+      ghn_ward_code,
+    };
+
+    return this.updateUserAddress(addressid, address.user_id, dto);
   }
 
   async deleteaddress(addressid: number) {
+    const address = await this.prisma.addresses.findUnique({
+      where: { id: addressid },
+    });
+
+    if (!address) {
+      throw new NotFoundException('Địa chỉ không tồn tại');
+    }
+
     await this.prisma.addresses.delete({
       where: { id: addressid },
     });
@@ -139,8 +490,6 @@ export class AddressService {
   }
 
   async getaddresses(userid: number) {
-    return this.prisma.addresses.findMany({
-      where: { user_id: userid },
-    });
+    return this.getUserAddresses(userid);
   }
 }

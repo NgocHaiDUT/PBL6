@@ -144,9 +144,64 @@ export class UsersService {
     return user;
   }
 
-  async findOne(id: number): Promise<UserEntity> {
-    const user = await this.getUserOrThrow(id);
-    return this.sanitizeUser(user);
+  async findOne(id: number): Promise<any> {
+    const user = await this.prisma.users.findFirst({
+      where: { 
+        id,
+        is_deleted: false 
+      },
+      include: {
+        role: {
+          include: {
+            rolePermissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+        userPermissions: {
+          include: {
+            permission: true,
+          },
+        },
+        addresses: {
+          orderBy: {
+            is_default: 'desc',
+          },
+        },
+      },
+    });
+    
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+
+    // Get total orders count and total spending
+    const [totalOrders, orderStats] = await Promise.all([
+      this.prisma.orders.count({
+        where: {
+          user_id: id,
+        },
+      }),
+      this.prisma.orders.aggregate({
+        where: {
+          user_id: id,
+          payment_status: 'paid',
+        },
+        _sum: {
+          total_amount: true,
+        },
+      }),
+    ]);
+
+    const sanitizedUser = this.sanitizeUser(user);
+    
+    return {
+      ...sanitizedUser,
+      totalOrders,
+      totalSpending: orderStats._sum.total_amount || 0,
+    };
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<UserEntity> {
@@ -375,16 +430,72 @@ export class UsersService {
   }
 
   /**
-   * Get all permissions
+   * Get all permissions grouped by category
    */
   async getAllPermissions(): Promise<any> {
     const permissions = await this.prisma.permission.findMany({
       orderBy: { name: 'asc' },
     });
 
+    // Định nghĩa các nhóm permission
+    const permissionGroups = {
+      USER: {
+        groupName: 'User Management',
+        groupDescription: 'Quản lý người dùng',
+        keywords: ['user', 'view_users', 'create_user', 'update_user', 'delete_user']
+      },
+      ROLE_MANAGEMENT: {
+        groupName: 'Role & Permission Management',
+        groupDescription: 'Quản lý vai trò và quyền hạn',
+        keywords: ['role', 'permission', 'manage_roles', 'manage_permissions']
+      },
+      SHOP: {
+        groupName: 'Shop Management',
+        groupDescription: 'Quản lý cửa hàng',
+        keywords: ['shop', 'manage_shop_staff', 'edit_profile_shop']
+      },
+      PRODUCT: {
+        groupName: 'Product Management',
+        groupDescription: 'Quản lý sản phẩm',
+        keywords: ['product', 'brand', 'category', 'create_product', 'edit_product', 'delete_product', 'manage_brands', 'manage_categorys']
+      },
+      POST: {
+        groupName: 'Post Management',
+        groupDescription: 'Quản lý bài viết',
+        keywords: ['post', 'create_post', 'edit_post', 'delete_post']
+      },
+      OTHER: {
+        groupName: 'Other Permissions',
+        groupDescription: 'Các quyền khác',
+        keywords: []
+      }
+    };
+
+    // Phân loại permissions vào các nhóm
+    const groupedPermissions = Object.entries(permissionGroups).map(([groupKey, groupInfo]) => {
+      const groupPerms = permissions.filter(perm => {
+        // Kiểm tra nếu permission name khớp với keywords
+        return groupInfo.keywords.some(keyword => perm.name.includes(keyword));
+      });
+
+      return {
+        group: groupKey,
+        groupName: groupInfo.groupName,
+        groupDescription: groupInfo.groupDescription,
+        permissions: groupPerms.map(p => ({
+          id: p.id,
+          name: p.name
+        }))
+      };
+    }).filter(group => group.permissions.length > 0); // Chỉ trả về nhóm có permissions
+
     return {
       success: true,
-      data: permissions,
+      data: groupedPermissions,
+      metadata: {
+        total: permissions.length,
+        groups: groupedPermissions.length
+      }
     };
   }
 

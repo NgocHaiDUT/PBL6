@@ -1,0 +1,122 @@
+[
+  {
+    "code": "WELCOME2025",
+    "description": "Mã giảm giá chào mừng năm mới 2025 - Giảm 100k cho đơn hàng từ 500k",
+    "discount_type": "fixed",
+    "discount_value": 100000,
+    "min_subtotal": 500000,
+    "usage_limit": 1000,
+    "used_count": 245,
+    "starts_at": "2025-01-01T00:00:00Z",
+    "ends_at": "2025-12-31T23:59:59Z",
+    "created_at": "2024-12-15T08:00:00Z"
+  },
+  {
+    "code": "FREESHIP",
+    "description": "Miễn phí vận chuyển cho đơn hàng từ 300k",
+    "discount_type": "shipping",
+    "discount_value": 30000,
+    "min_subtotal": 300000,
+    "usage_limit": 5000,
+    "used_count": 1823,
+    "starts_at": "2025-01-01T00:00:00Z",
+    "ends_at": "2025-06-30T23:59:59Z",
+    "created_at": "2024-12-20T08:00:00Z"
+  },
+  {
+    "code": "FLASH20",
+    "description": "Flash sale - Giảm 20% tối đa 200k",
+    "discount_type": "percentage",
+    "discount_value": 20,
+    "min_subtotal": 200000,
+    "usage_limit": 500,
+    "used_count": 487,
+    "starts_at": "2025-11-01T00:00:00Z",
+    "ends_at": "2025-11-30T23:59:59Z",
+    "created_at": "2025-10-25T08:00:00Z"
+  },
+  {
+    "code": "VIP50",
+    "description": "Mã VIP - Giảm 50k cho khách hàng thân thiết",
+    "discount_type": "fixed",
+    "discount_value": 50000,
+    "min_subtotal": 250000,
+    "usage_limit": 2000,
+    "used_count": 356,
+    "starts_at": "2025-01-01T00:00:00Z",
+    "ends_at": "2025-12-31T23:59:59Z",
+    "created_at": "2024-12-10T08:00:00Z"
+  },
+  {
+    "code": "NEWUSER",
+    "description": "Mã dành cho khách hàng mới - Giảm 150k cho đơn đầu tiên từ 400k",
+    "discount_type": "fixed",
+    "discount_value": 150000,
+    "min_subtotal": 400000,
+    "usage_limit": 1500,
+    "used_count": 892,
+    "starts_at": "2025-01-01T00:00:00Z",
+    "ends_at": "2025-12-31T23:59:59Z",
+    "created_at": "2024-12-18T08:00:00Z"
+  },
+  {
+    "code": "SUMMER15",
+    "description": "Ưu đãi mùa hè - Giảm 15% tối đa 150k",
+    "discount_type": "percentage",
+    "discount_value": 15,
+    "min_subtotal": 300000,
+    "usage_limit": 800,
+    "used_count": 645,
+    "starts_at": "2025-06-01T00:00:00Z",
+    "ends_at": "2025-08-31T23:59:59Z",
+    "created_at": "2025-05-20T08:00:00Z"
+  },
+  {
+    "code": "MEGA100",
+    "description": "Mega sale cuối năm - Giảm 100k cho đơn từ 600k",
+    "discount_type": "fixed",
+    "discount_value": 100000,
+    "min_subtotal": 600000,
+    "usage_limit": 3000,
+    "used_count": 2145,
+    "starts_at": "2025-12-01T00:00:00Z",
+    "ends_at": "2025-12-15T23:59:59Z",
+    "created_at": "2025-11-25T08:00:00Z"
+  },
+  {
+    "code": "XMAS2025",
+    "description": "Giáng sinh 2025 - Giảm 25% tối đa 250k",
+    "discount_type": "percentage",
+    "discount_value": 25,
+    "min_subtotal": 500000,
+    "usage_limit": 1000,
+    "used_count": 123,
+    "starts_at": "2025-12-20T00:00:00Z",
+    "ends_at": "2025-12-26T23:59:59Z",
+    "created_at": "2025-12-10T08:00:00Z"
+  },
+  {
+    "code": "BEAUTY30",
+    "description": "Tuần lễ làm đẹp - Giảm 30k cho mọi đơn hàng",
+    "discount_type": "fixed",
+    "discount_value": 30000,
+    "min_subtotal": 150000,
+    "usage_limit": 5000,
+    "used_count": 3421,
+    "starts_at": "2025-03-01T00:00:00Z",
+    "ends_at": "2025-03-15T23:59:59Z",
+    "created_at": "2025-02-20T08:00:00Z"
+  },
+  {
+    "code": "SUPER200",
+    "description": "Super sale - Giảm 200k cho đơn từ 1 triệu",
+    "discount_type": "fixed",
+    "discount_value": 200000,
+    "min_subtotal": 1000000,
+    "usage_limit": 500,
+    "used_count": 78,
+    "starts_at": "2025-01-01T00:00:00Z",
+    "ends_at": "2025-12-31T23:59:59Z",
+    "created_at": "2024-12-28T08:00:00Z"
+  }
+]
