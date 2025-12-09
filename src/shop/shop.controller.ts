@@ -16,99 +16,93 @@ import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { ShopService } from './shop.service';
 
-@Controller('shop')
+@Controller('shops')
 export class ShopController {
   constructor(private readonly shopService: ShopService) {}
-
-  @Post('staff')
+  // Thêm nhân viên
+  @Post(':shopId/staff')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   @RequirePermissions('manage_shop_staff')
   async addStaff(
+    @Param('shopId', ParseIntPipe) shopId: number,
     @Body()
     body: {
-      staffemail: string;
-      shopid: number;
-      is_manager?: boolean;
+      staffEmail: string;
+      isManager?: boolean;
     },
     @Req() req: any,
   ) {
     const userId = req.user.userId;
     return this.shopService.addstaff(
       userId,
-      body.staffemail,
-      body.shopid,
-      body.is_manager ?? false,
+      body.staffEmail,
+      shopId,
+      body.isManager ?? false,
     );
   }
 
   // Xóa nhân viên khỏi shop
-  @Delete('staff')
+  @Delete(':shopId/staff/:staffEmail')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   @RequirePermissions('manage_shop_staff')
   async removeStaff(
-    @Body()
-    body: {
-      staffemail: string;
-      shopid: number;
-    },
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Param('staffEmail') staffEmail: string,
     @Req() req: any,
   ) {
     const userId = req.user.userId;
-    return this.shopService.removestaff(userId, body.staffemail, body.shopid);
+    return this.shopService.removestaff(userId, staffEmail, shopId);
   }
 
   // Lấy danh sách nhân viên của shop
-  @Get(':shopid/staffs')
-  async getStaffs(@Param('shopid', ParseIntPipe) shopid: number) {
-    return this.shopService.getstaffs(shopid);
+  @Get(':shopId/staff')
+  async getStaffs(@Param('shopId', ParseIntPipe) shopId: number) {
+    return this.shopService.getstaffs(shopId);
   }
 
-  @Post('staff/permissions')
+  // Cập nhật quyền của nhân viên
+  @Put(':shopId/staff/:staffEmail/permissions')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   @RequirePermissions('manage_shop_staff')
   async updateStaffPermissions(
-    @Body()
-    body: {
-      staffemail: string;
-      shopid: number;
-      permissions: string[];
-    },
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Param('staffEmail') staffEmail: string,
+    @Body() body: { permissions: string[] },
     @Req() req: any,
   ) {
     const userId = req.user.userId;
     return this.shopService.updatestaffpermission(
       userId,
-      body.staffemail,
-      body.shopid,
+      staffEmail,
+      shopId,
       body.permissions,
     );
   }
 
-  @Get(':shopid/staff/:staffemail/permissions')
-  async getpermissionstaff(
-    @Param('shopid', ParseIntPipe) shopid: number,
-    @Param('staffemail') staffemail: string,
+  // Lấy quyền của nhân viên
+  @Get(':shopId/staff/:staffEmail/permissions')
+  async getStaffPermissions(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Param('staffEmail') staffEmail: string,
   ) {
-    return this.shopService.getpermissionstaff(shopid, staffemail);
+    return this.shopService.getpermissionstaff(shopId, staffEmail);
   }
 
-  @Delete('staff/permissions')
+  // Xóa quyền của nhân viên
+  @Delete(':shopId/staff/:staffEmail/permissions')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   @RequirePermissions('manage_shop_staff')
   async deleteStaffPermissions(
-    @Body()
-    body: {
-      staffemail: string;
-      shopid: number;
-      permissions: string[];
-    },
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Param('staffEmail') staffEmail: string,
+    @Body() body: { permissions: string[] },
     @Req() req: any,
   ) {
     const userId = req.user.userId;
     return this.shopService.deletestaffpermission(
       userId,
-      body.staffemail,
-      body.shopid,
+      staffEmail,
+      shopId,
       body.permissions,
     );
   }
