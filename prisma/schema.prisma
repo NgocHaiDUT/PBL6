@@ -45,6 +45,7 @@ enum payment_status {
   pending
 }
 
+
 enum shipment_status {
   pending
   packing
@@ -76,7 +77,9 @@ enum message_type {
   VIDEO
   SHARE_POST
   SHARE_PRODUCT
+  SHARE_PROFILE
 }
+
 
 ///////////////////////////////////////////////////////
 // USERS & AUTH
@@ -108,6 +111,7 @@ model users {
   posts                     posts[]
   likes                     likes[]
   comments                  comments[]
+  saved_posts               saved_posts[]
   skin_analyses             skin_analyses[]
   tryon_sessions            tryon_sessions[]
   recommendations           recommendations[]
@@ -519,6 +523,7 @@ model posts {
   post_media        post_media[]
   post_products     post_products[]
   post_tags         post_tags[]
+  saved_posts       saved_posts[]
 }
 
 model post_media {
@@ -578,6 +583,17 @@ model comments {
   user        users      @relation(fields: [user_id], references: [id])
   parent      comments?  @relation("CommentReplies", fields: [parent_id], references: [id])
   replies     comments[] @relation("CommentReplies")
+}
+
+model saved_posts {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  post_id    Int
+  created_at DateTime @default(now())
+  user       users    @relation(fields: [user_id], references: [id])
+  post       posts    @relation(fields: [post_id], references: [id])
+
+  @@unique([user_id, post_id])
 }
 
 ///////////////////////////////////////////////////////
@@ -709,7 +725,7 @@ model conversation_participants {
   conversation_id Int
   user_id         Int?          // Nullable khi participant là shop
   shop_id         Int?          // Nullable khi participant là user
-  entity_type     String        // 'user' hoặc 'shop'
+  entity_type     String?        // 'user' hoặc 'shop'
   role            String?
   joined_at       DateTime      @default(now())
   conversation    conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
@@ -727,10 +743,11 @@ model messages {
   conversation_id   Int
   sender_id         Int?          // User ID nếu người gửi là user
   sender_shop_id  Int?          // Shop ID nếu người gửi là shop
-  sender_type     String        // 'user' hoặc 'shop'
+  sender_type     String?        // 'user' hoặc 'shop'
   type              message_type        @default(TEXT)
   content           String?
   post_id           Int? // Shared post ID
+  shared_profile_id Int? // Shared profile user ID
   is_edited         Boolean             @default(false)
   edited_at         DateTime?
   is_deleted        Boolean             @default(false)

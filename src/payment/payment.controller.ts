@@ -1,5 +1,5 @@
-import { Controller, Get, Query, Res, Logger } from '@nestjs/common';
-import { type Response } from 'express';
+import { Controller, Get, Post, Query, Body, Res, Req, Logger } from '@nestjs/common';
+import { type Response, type Request } from 'express';
 import { PaymentFactory } from './payment.factory';
 import { type VnpayReturnDto } from './dto/payment.dto';
 import { ConfigService } from '@nestjs/config';
@@ -11,7 +11,34 @@ export class PaymentController {
   constructor(
     private readonly paymentFactory: PaymentFactory,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
+
+  @Post('create-vnpay-url')
+  async createVnpayUrl(
+    @Body() body: { orderId: number },
+    @Req() req: Request,
+  ) {
+    this.logger.log(`Creating VNPay URL for order: ${body.orderId}`);
+
+    const paymentService = this.paymentFactory.getService('vnpay');
+
+    // Get client IP address
+    const ipAddr = (req.headers['x-forwarded-for'] as string)?.split(',')[0] ||
+      req.socket.remoteAddress ||
+      '127.0.0.1';
+
+    const paymentUrl = await paymentService.createPaymentUrl({
+      orderId: body.orderId,
+      amount: 0, // Will be fetched from order in the service
+      orderInfo: `Thanh toan don hang #${body.orderId}`,
+      ipAddr,
+    });
+
+    return {
+      success: true,
+      paymentUrl
+    };
+  }
 
   @Get('vnpay-return')
   async vnpayReturn(@Query() query: VnpayReturnDto, @Res() res: Response) {

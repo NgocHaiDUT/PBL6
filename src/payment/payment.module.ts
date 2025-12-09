@@ -16,8 +16,8 @@ import { PrismaModule } from 'src/prisma/prisma.module';
         vnpayHost:
           configService.get<string>('VNPAY_URL') ||
           'https://sandbox.vnpayment.vn',
-        tmnCode: configService.getOrThrow<string>('VNPAY_TMN_CODE'),
-        secureSecret: configService.getOrThrow<string>('VNPAY_HASH_SECRET'),
+        tmnCode: configService.get<string>('VNPAY_TMN_CODE') || 'DEFAULT_TMN_CODE',
+        secureSecret: configService.get<string>('VNPAY_HASH_SECRET') || 'DEFAULT_HASH_SECRET',
         testMode: true, // Force test mode for sandbox
       }),
       inject: [ConfigService],

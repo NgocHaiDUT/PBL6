@@ -375,7 +375,7 @@ export class MessagesService {
 
   // Gửi tin nhắn (từ user hoặc shop)
   async sendMessage(userId: number, createMessageDto: CreateMessageDto, shopId?: number) {
-    const { conversation_id, sender_id, receiver_id, content, postId, messageType } = createMessageDto;
+    const { conversation_id, sender_id, receiver_id, content, postId, sharedProfileId, messageType } = createMessageDto;
     
     let finalConversationId = conversation_id;
     
@@ -478,6 +478,7 @@ export class MessagesService {
         sender_type: senderType,
         content,
         post_id: postId, // ✅ Include postId
+        shared_profile_id: sharedProfileId, // ✅ Include sharedProfileId
         type: messageType, // ✅ Include messageType as enum
       },
       include: {
@@ -752,7 +753,9 @@ export class MessagesService {
                 }
               }
             }
-          }
+          },
+          message_media: true, // ✅ Include media files
+          message_reactions: true, // ✅ Include reactions
         }
       });
 
@@ -808,6 +811,8 @@ export class MessagesService {
               },
             },
           },
+          message_media: true, // ✅ Include media files
+          message_reactions: true, // ✅ Include reactions
         },
       }),
       this.prisma.messages.count({

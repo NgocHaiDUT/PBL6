@@ -27,7 +27,7 @@ import { Permission } from '../auth/constants/Permission.enum';
 
 @Controller('posts')
 export class PostsController {
-  constructor(private readonly postsService: PostsService) {}
+  constructor(private readonly postsService: PostsService) { }
 
   @Post()
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
@@ -47,6 +47,17 @@ export class PostsController {
   @Get()
   findAll(@Query() queryDto: QueryPostsDto) {
     return this.postsService.getPosts(queryDto);
+  }
+
+  // Save/Unsave Posts Endpoints - Must be before :id route
+  @Get('saved')
+  @UseGuards(AuthGuard('jwt'))
+  getSavedPosts(
+    @Query() query: QueryPostsDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.postsService.getSavedPosts(userId, query);
   }
 
   @Get(':id')
@@ -128,5 +139,36 @@ export class PostsController {
   ) {
     const userId = req.user.userId;
     return this.postsService.deleteMedia(mediaId, userId);
+  }
+
+  // Save/Unsave Posts Endpoints
+  @Post(':id/save')
+  @UseGuards(AuthGuard('jwt'))
+  savePost(
+    @Param('id', ParseIntPipe) postId: number,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.postsService.savePost(userId, postId);
+  }
+
+  @Delete(':id/save')
+  @UseGuards(AuthGuard('jwt'))
+  unsavePost(
+    @Param('id', ParseIntPipe) postId: number,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.postsService.unsavePost(userId, postId);
+  }
+
+  @Get(':id/is-saved')
+  @UseGuards(AuthGuard('jwt'))
+  checkIfPostIsSaved(
+    @Param('id', ParseIntPipe) postId: number,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.postsService.checkIfPostIsSaved(userId, postId);
   }
 }

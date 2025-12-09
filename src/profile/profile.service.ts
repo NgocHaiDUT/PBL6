@@ -16,15 +16,18 @@ export class ProfileService {
     return { message: 'Cập nhật tên thành công' };
   }
 
-    async updateavatar(userId: number, avatarUrl: string): Promise<{ message: string }> {
+    async updateavatar(userId: number, avatarUrl: string): Promise<{ message: string; avatarUrl: string }> {
         // Convert filename to proper URL path for local storage
-        const properAvatarUrl = getFileUrl(avatarUrl, 'avatars');
+        const properAvatarUrl = getFileUrl(avatarUrl, 'avatars') ?? avatarUrl;
         
         await this.prisma.users.update({
             where: { id: userId },
             data: { avatar_url: properAvatarUrl },
         });
-        return { message: 'Cập nhật ảnh đại diện thành công' };
+        return { 
+            message: 'Cập nhật ảnh đại diện thành công',
+            avatarUrl: properAvatarUrl 
+        };
     }
 
     async updatephone(userId: number, phone: string): Promise<{ message: string }> {
@@ -328,7 +331,8 @@ export class ProfileService {
                     id: user.id,
                     full_name: user.full_name,
                     email: user.email,
-                    Avatar: user.avatar_url, // Map to match UserInfo interface
+                    avatar: user.avatar_url, // ✅ Fix: Map to 'avatar' instead of 'Avatar'
+                    avatar_url: user.avatar_url, // ✅ Also include raw avatar_url for debugging
                     phone: user.phone,
                     story: user.story,
                     created_at: user.created_at,
@@ -341,9 +345,13 @@ export class ProfileService {
         }
     }
     async getProfile(userId: number) {
-        return this.prisma.users.findUnique({
+        const user = await this.prisma.users.findUnique({
             where: { id: userId },
         });
+        console.log('🔍 [getProfile] User data from database:', JSON.stringify(user, null, 2));
+        console.log('🔍 [getProfile] User keys:', user ? Object.keys(user) : 'null');
+        return user;
     }
 }
+
 

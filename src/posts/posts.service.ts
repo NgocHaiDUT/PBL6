@@ -657,4 +657,219 @@ export class PostsService {
       message: 'Media deleted successfully',
     };
   }
+
+  // Save/Unsave Posts Methods
+  async savePost(userId: number, postId: number) {
+    try {
+      // Check if post exists
+      const post = await this.prisma.posts.findUnique({
+        where: { id: postId },
+      });
+
+      if (!post) {
+        throw new NotFoundException('Post not found');
+      }
+
+      // Check if already saved
+      const existingSave = await this.prisma.saved_posts.findUnique({
+        where: {
+          user_id_post_id: {
+            user_id: userId,
+            post_id: postId,
+          },
+        },
+      });
+
+      if (existingSave) {
+        return {
+          success: false,
+          message: 'Post already saved',
+          is_saved: true,
+        };
+      }
+
+      // Save the post
+      await this.prisma.saved_posts.create({
+        data: {
+          user_id: userId,
+          post_id: postId,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Post saved successfully',
+        is_saved: true,
+      };
+    } catch (error) {
+      console.error('Error saving post:', error);
+      return {
+        success: false,
+        message: 'Failed to save post',
+        is_saved: false,
+      };
+    }
+  }
+
+  async unsavePost(userId: number, postId: number) {
+    try {
+      // Check if post is saved
+      const savedPost = await this.prisma.saved_posts.findUnique({
+        where: {
+          user_id_post_id: {
+            user_id: userId,
+            post_id: postId,
+          },
+        },
+      });
+
+      if (!savedPost) {
+        return {
+          success: false,
+          message: 'Post is not saved',
+          is_saved: false,
+        };
+      }
+
+      // Remove from saved posts
+      await this.prisma.saved_posts.delete({
+        where: {
+          user_id_post_id: {
+            user_id: userId,
+            post_id: postId,
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Post unsaved successfully',
+        is_saved: false,
+      };
+    } catch (error) {
+      console.error('Error unsaving post:', error);
+      return {
+        success: false,
+        message: 'Failed to unsave post',
+        is_saved: true,
+      };
+    }
+  }
+
+  async getSavedPosts(userId: number, query: QueryPostsDto) {
+    try {
+      const page = query.page || 1;
+      const limit = query.limit || 10;
+      const skip = (page - 1) * limit;
+
+      const where = {
+        user_id: userId,
+      };
+
+      // Get saved posts with full post data
+      const savedPosts = await this.prisma.saved_posts.findMany({
+        where,
+        include: {
+          post: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  full_name: true,
+                  avatar_url: true,
+                },
+              },
+              shop: {
+                select: {
+                  id: true,
+                  name: true,
+                  logo_url: true,
+                },
+              },
+              post_media: {
+                orderBy: { sort_order: 'asc' },
+              },
+              post_products: {
+                include: {
+                  product: {
+                    include: {
+                      product_variants: {
+                        take: 1,
+                        orderBy: { created_at: 'asc' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      });
+
+      // Get total count
+      const total = await this.prisma.saved_posts.count({
+        where,
+      });
+
+      // Transform posts
+      const posts = savedPosts.map((savedPost) => ({
+        ...this.normalizePostUrls(savedPost.post),
+        saved_at: savedPost.created_at,
+        is_saved: true, // All posts in this list are saved
+      }));
+
+      return {
+        success: true,
+        data: posts,
+        pagination: {
+          page,
+          limit,
+          total,
+          total_pages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error) {
+      console.error('Error fetching saved posts:', error);
+      return {
+        success: false,
+        message: 'Failed to fetch saved posts',
+        data: [],
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 0,
+          total_pages: 0,
+        },
+      };
+    }
+  }
+
+  async checkIfPostIsSaved(userId: number, postId: number) {
+    try {
+      const savedPost = await this.prisma.saved_posts.findUnique({
+        where: {
+          user_id_post_id: {
+            user_id: userId,
+            post_id: postId,
+          },
+        },
+      });
+
+      return {
+        success: true,
+        is_saved: !!savedPost,
+        post_id: postId,
+      };
+    } catch (error) {
+      console.error('Error checking if post is saved:', error);
+      return {
+        success: false,
+        is_saved: false,
+        post_id: postId,
+      };
+    }
+  }
 }

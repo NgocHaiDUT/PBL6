@@ -23,6 +23,10 @@ export class CreateMessageDto {
   postId?: number;
 
   @IsOptional()
+  @IsInt()
+  sharedProfileId?: number;
+
+  @IsOptional()
   messageType?: message_type;
 
   @IsOptional()

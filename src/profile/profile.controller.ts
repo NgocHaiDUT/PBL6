@@ -10,7 +10,7 @@ import { Permission } from '../auth/constants/Permission.enum';
 
 @Controller('users')
 export class ProfileController {
-  constructor(private readonly profileService: ProfileService) {}
+  constructor(private readonly profileService: ProfileService) { }
 
   @UseGuards(AuthGuard('jwt'))
   @Get()
@@ -18,11 +18,12 @@ export class ProfileController {
     return this.profileService.getProfile(req.user.userId);
   }
 
-    @UseGuards(AuthGuard('jwt'))
-    @Get('me')
-    getMyProfile(@Req() req: any) {
-        return this.profileService.getProfile(req.user.userId);
-    }
+  @UseGuards(AuthGuard('jwt'))
+  @Get('me')
+  async getMyProfile(@Req() req: any) {
+    const profile = await this.profileService.getProfile(req.user.userId);
+    return profile;
+  }
 
   @Get(':userId/permissions')
   @UseGuards(AuthGuard('jwt'))
@@ -32,62 +33,62 @@ export class ProfileController {
     return this.profileService.getPermissionbyuserid(userId);
   }
 
-    @Get('user-info')
-    @UseGuards(AuthGuard('jwt'))
-    async getUserInfo(
-        @Query('userId') userIdRaw?: string,
-        @Req() req?: any
-    ) {
-        console.log('🔍 [getUserInfo] Received raw userId:', userIdRaw, 'Type:', typeof userIdRaw);
-        
-        let userId: number | undefined;
-        
-        if (userIdRaw) {
-            const parsed = parseInt(userIdRaw, 10);
-            if (!isNaN(parsed)) {
-                userId = parsed;
-            }
-        }
-        
-        if (!userId) {
-            userId = req?.user?.sub || req?.user?.userId;
-            console.log('🔍 [getUserInfo] Using JWT userId:', userId);
-        }
-        
-        if (!userId || isNaN(userId)) {
-            console.error('❌ [getUserInfo] Invalid userId:', { userIdRaw, userId, user: req?.user });
-            throw new BadRequestException(`Invalid or missing userId. Received: ${userIdRaw}`);
-        }
-        
-        console.log('✅ [getUserInfo] Fetching user info for userId:', userId);
-        return this.profileService.getUserInfo(userId);
+  @Get('user-info')
+  @UseGuards(AuthGuard('jwt'))
+  async getUserInfo(
+    @Query('userId') userIdRaw?: string,
+    @Req() req?: any
+  ) {
+    console.log('🔍 [getUserInfo] Received raw userId:', userIdRaw, 'Type:', typeof userIdRaw);
+
+    let userId: number | undefined;
+
+    if (userIdRaw) {
+      const parsed = parseInt(userIdRaw, 10);
+      if (!isNaN(parsed)) {
+        userId = parsed;
+      }
     }
 
-    @Get('user-info-v2')
-    @UseGuards(AuthGuard('jwt'))
-    async getUserInfoV2(
-        @Query('userId', new ParseIntPipe({ optional: true })) userId?: number,
-        @Req() req?: any
-    ) {
-        console.log('🔍 [getUserInfoV2] ===== V2 ENDPOINT =====');
-        console.log('🔍 [getUserInfoV2] Received userId:', userId, 'Type:', typeof userId);
-        
-        if (!userId) {
-            userId = req?.user?.sub || req?.user?.userId;
-        }
-        
-        if (!userId || isNaN(userId)) {
-            throw new BadRequestException(`Invalid or missing userId. Received: ${userId}`);
-        }
-        
-        console.log('✅ [getUserInfoV2] Fetching user info for userId:', userId);
-        return this.profileService.getUserInfo(userId);
+    if (!userId) {
+      userId = req?.user?.sub || req?.user?.userId;
+      console.log('🔍 [getUserInfo] Using JWT userId:', userId);
     }
 
-    @Get(':id')
-    getProfileById(@Param('id', ParseIntPipe) id: number) {
-        return this.profileService.getProfile(id);
+    if (!userId || isNaN(userId)) {
+      console.error('❌ [getUserInfo] Invalid userId:', { userIdRaw, userId, user: req?.user });
+      throw new BadRequestException(`Invalid or missing userId. Received: ${userIdRaw}`);
     }
+
+    console.log('✅ [getUserInfo] Fetching user info for userId:', userId);
+    return this.profileService.getUserInfo(userId);
+  }
+
+  @Get('user-info-v2')
+  @UseGuards(AuthGuard('jwt'))
+  async getUserInfoV2(
+    @Query('userId', new ParseIntPipe({ optional: true })) userId?: number,
+    @Req() req?: any
+  ) {
+    console.log('🔍 [getUserInfoV2] ===== V2 ENDPOINT =====');
+    console.log('🔍 [getUserInfoV2] Received userId:', userId, 'Type:', typeof userId);
+
+    if (!userId) {
+      userId = req?.user?.sub || req?.user?.userId;
+    }
+
+    if (!userId || isNaN(userId)) {
+      throw new BadRequestException(`Invalid or missing userId. Received: ${userId}`);
+    }
+
+    console.log('✅ [getUserInfoV2] Fetching user info for userId:', userId);
+    return this.profileService.getUserInfo(userId);
+  }
+
+  @Get(':id')
+  getProfileById(@Param('id', ParseIntPipe) id: number) {
+    return this.profileService.getProfile(id);
+  }
 
   @Patch('me/full-name')
   @UseGuards(AuthGuard('jwt'))
@@ -99,70 +100,70 @@ export class ProfileController {
     return this.profileService.updatefullname(userId, fullName);
   }
 
-    @Patch('me/phone')
-    @UseGuards(AuthGuard('jwt'))
-    async updatePhone(@Body('phone') phone: string, @Req() req: any) {
-        if (!phone) {
-            throw new BadRequestException('phone is required');
-        }
-        const userId = req.user.userId;
-        return this.profileService.updatephone(userId, phone);
+  @Patch('me/phone')
+  @UseGuards(AuthGuard('jwt'))
+  async updatePhone(@Body('phone') phone: string, @Req() req: any) {
+    if (!phone) {
+      throw new BadRequestException('phone is required');
     }
+    const userId = req.user.userId;
+    return this.profileService.updatephone(userId, phone);
+  }
 
-    @Patch('me/story')
-    @UseGuards(AuthGuard('jwt'))
-    async updateStory(@Body('story') story: string, @Req() req: any) {
-        const userId = req.user.userId;
-        return this.profileService.updatestory(userId, story || '');
-    }
+  @Patch('me/story')
+  @UseGuards(AuthGuard('jwt'))
+  async updateStory(@Body('story') story: string, @Req() req: any) {
+    const userId = req.user.userId;
+    return this.profileService.updatestory(userId, story || '');
+  }
 
-    @Patch('me/avatar')
-    @UseGuards(AuthGuard('jwt'))
-    @UseInterceptors(FileInterceptor('file', getMulterOptions('avatars')))
-    async updateAvatar(
-        @UploadedFile() file: any,
-        @Req() req: any
-    ) {
-        if (!file) {
-            throw new BadRequestException('file is required');
-        }
-        const userId = req.user.userId;
-        const avatarUrl = file.location || `/uploads/avatars/${file.filename}`;
-        return this.profileService.updateavatar(userId, avatarUrl);
+  @Post('me/avatar') // ✅ Changed from @Patch to @Post for file upload
+  @UseGuards(AuthGuard('jwt'))
+  @UseInterceptors(FileInterceptor('file', getMulterOptions('avatars')))
+  async updateAvatar(
+    @UploadedFile() file: any,
+    @Req() req: any
+  ) {
+    if (!file) {
+      throw new BadRequestException('file is required');
     }
+    const userId = req.user.userId;
+    const avatarUrl = file.location || `/uploads/avatars/${file.filename}`;
+    return this.profileService.updateavatar(userId, avatarUrl);
+  }
 
-    @Post('me/addresses')
-    @UseGuards(AuthGuard('jwt'))
-    async addAddress(@Body() body: { label: string, receiver_name: string, phone: string, province: string, district: string, ward: string, street: string, is_default: boolean}, @Req() req: any) {
-        const userId = req.user.userId;
-        return this.profileService.addaddress(userId, body.label, body.receiver_name, body.phone, body.province, body.district, body.ward, body.street, body.is_default);
-    }
+  @Post('me/addresses')
+  @UseGuards(AuthGuard('jwt'))
+  async addAddress(@Body() body: { label: string, receiver_name: string, phone: string, province: string, district: string, ward: string, street: string, is_default: boolean }, @Req() req: any) {
+    const userId = req.user.userId;
+    return this.profileService.addaddress(userId, body.label, body.receiver_name, body.phone, body.province, body.district, body.ward, body.street, body.is_default);
+  }
 
-    @Put('me/addresses/:addressId')
-    @UseGuards(AuthGuard('jwt'))
-    async updateAddress(
-        @Param('addressId', ParseIntPipe) addressId: number,
-        @Body() body: { label: string, receiver_name: string, phone: string, province: string, district: string, ward: string, street: string, is_default: boolean},
-        @Req() req: any
-    ) {
-        return this.profileService.updateaddress(addressId, body.label, body.receiver_name, body.phone, body.province, body.district, body.ward, body.street, body.is_default);
-    }
+  @Put('me/addresses/:addressId')
+  @UseGuards(AuthGuard('jwt'))
+  async updateAddress(
+    @Param('addressId', ParseIntPipe) addressId: number,
+    @Body() body: { label: string, receiver_name: string, phone: string, province: string, district: string, ward: string, street: string, is_default: boolean },
+    @Req() req: any
+  ) {
+    return this.profileService.updateaddress(addressId, body.label, body.receiver_name, body.phone, body.province, body.district, body.ward, body.street, body.is_default);
+  }
 
-    @Get('me/addresses')
-    @UseGuards(AuthGuard('jwt'))
-    async getAllAddress(@Req() req: any) {
-        const userId = req.user.userId;
-        return this.profileService.getaddresses(userId);
-    }
+  @Get('me/addresses')
+  @UseGuards(AuthGuard('jwt'))
+  async getAllAddress(@Req() req: any) {
+    const userId = req.user.userId;
+    return this.profileService.getaddresses(userId);
+  }
 
-    @Delete('me/addresses/:addressId')
-    @UseGuards(AuthGuard('jwt'))
-    async deleteAddress(
-        @Param('addressId', ParseIntPipe) addressId: number,
-        @Req() req: any
-    ) {
-        return this.profileService.deleteaddress(addressId);
-    }
+  @Delete('me/addresses/:addressId')
+  @UseGuards(AuthGuard('jwt'))
+  async deleteAddress(
+    @Param('addressId', ParseIntPipe) addressId: number,
+    @Req() req: any
+  ) {
+    return this.profileService.deleteaddress(addressId);
+  }
 
   @Post('me/shop')
   @UseGuards(AuthGuard('jwt'))
@@ -223,12 +224,12 @@ export class ProfileController {
     );
   }
 
-    @Get('me/shop')
-    @UseGuards(AuthGuard('jwt'))
-    async getShop(@Req() req: any) {
-        const userId = req.user.userId;
-        return this.profileService.getshopbyuserid(userId);
-    }
+  @Get('me/shop')
+  @UseGuards(AuthGuard('jwt'))
+  async getShop(@Req() req: any) {
+    const userId = req.user.userId;
+    return this.profileService.getshopbyuserid(userId);
+  }
 
   @Patch('shops/:shopId/logo')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
