@@ -83,17 +83,75 @@ This module provides the foundational REST API for the application's messaging s
 
 ---
 
+### 2.1. Find or Create a Shop Conversation
+
+-   **Endpoint:** `POST /messages/conversations/shop/:shopId`
+-   **Description:** Start a chat with a shop. Finds an existing user-shop conversation or creates a new one.
+-   **Auth:** Required (JWT).
+-   **Params:**
+    -   `shopId` (number): The ID of the shop you want to chat with.
+-   **Request Body (Optional):**
+    -   `userId` can be passed for testing.
+    ```json
+    {
+      "userId": 1
+    }
+    ```
+-   **Response (200 or 201):** The full conversation object.
+    ```json
+    {
+      "id": 5,
+      "type": "user_shop",
+      "created_at": "2025-11-17T14:00:00.000Z",
+      "participants": [
+        { 
+          "user_id": 1, 
+          "entity_type": "user",
+          "user": { "id": 1, "full_name": "You", "avatar_url": "..." } 
+        },
+        { 
+          "shop_id": 10, 
+          "entity_type": "shop",
+          "shop": { "id": 10, "name": "Fashion Store", "logo_url": "..." } 
+        }
+      ]
+    }
+    ```
+
+---
+
 ### 3. Get Messages in a Conversation
 
 -   **Endpoint:** `GET /messages/conversations/:conversationId/messages`
--   **Description:** Retrieves a paginated history of messages for a specific conversation.
+-   **Description:** Retrieves message history for a specific conversation. Supports both **cursor-based pagination** (recommended for infinite scroll) and **offset-based pagination** (traditional).
 -   **Auth:** Required (JWT).
 -   **Params:**
     -   `conversationId` (number): The ID of the conversation.
 -   **Query Parameters:**
-    -   `page` (number, optional): Page number (default: 1).
-    -   `limit` (number, optional): Items per page (default: 20).
--   **Response (200):**
+
+    #### **Cursor-Based Pagination (Recommended for Infinite Scroll)**
+    - `limit` (number, optional): Messages per request (default: 30).
+    - `before` (number, optional): Message ID - load messages BEFORE this ID (scroll up to load older messages).
+    - `after` (number, optional): Message ID - load messages AFTER this ID (scroll down to load newer messages).
+    - `cursor` (number, optional): Message ID - load messages up to and including this ID.
+
+    **Usage Examples:**
+    ```
+    # Initial load (latest 30 messages)
+    GET /messages/conversations/1/messages?limit=30
+
+    # Scroll up - load older messages (before message ID 100)
+    GET /messages/conversations/1/messages?before=100&limit=30
+
+    # Scroll down - load newer messages (after message ID 150)
+    GET /messages/conversations/1/messages?after=150&limit=30
+    ```
+
+    #### **Offset-Based Pagination (Traditional)**
+    - `page` (number, optional): Page number (default: 1).
+    - `limit` (number, optional): Messages per page (default: 30).
+
+-   **Response (200) - Cursor-Based:**
     ```json
     {
       "data": [
@@ -101,24 +159,45 @@ This module provides the foundational REST API for the application's messaging s
           "id": 122,
           "conversation_id": 1,
           "sender_id": 1,
+          "sender_type": "user",
           "content": "Hello!",
           "created_at": "2025-11-10T12:29:00.000Z",
           "sender": { "id": 1, "full_name": "You", "avatar_url": "..." },
+          "sender_shop": null,
           "message_reads": [{ "user_id": 1, "read_at": "..." }]
         },
         {
           "id": 123,
           "conversation_id": 1,
-          "sender_id": 2,
-          "content": "See you then!",
+          "sender_shop_id": 5,
+          "sender_type": "shop",
+          "content": "Thank you for your order!",
           "created_at": "2025-11-10T12:30:00.000Z",
-          "sender": { "id": 2, "full_name": "Jane Doe", "avatar_url": "..." },
+          "sender": null,
+          "sender_shop": { "id": 5, "name": "Fashion Store", "logo_url": "..." },
           "message_reads": []
         }
       ],
-      "pagination": { "page": 1, "limit": 20, "total": 2, "pages": 1 }
+      "cursor": {
+        "next": 100,
+        "previous": 123,
+        "hasMore": true
+      }
     }
     ```
+
+-   **Response (200) - Offset-Based:**
+    ```json
+    {
+      "data": [...],
+      "pagination": { "page": 1, "limit": 30, "total": 52, "pages": 2 }
+    }
+    ```
+
+**Best Practices:**
+- Use **cursor-based** for chat UI with infinite scroll (smoother, more efficient).
+- Use **offset-based** only if you need traditional page numbers.
+- Messages are returned in chronological order (oldest first in the array).
 
 ---
 

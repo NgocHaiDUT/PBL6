@@ -53,94 +53,84 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit('joined', { userId, message: 'Successfully joined chat' });
   }
 
+  @SubscribeMessage('joinShop')
+  handleJoinShop(@MessageBody() data: { shopId: number; userId: number }, @ConnectedSocket() client: Socket) {
+    if (!data.shopId || !data.userId) return;
+    // Join shop room for receiving messages
+    client.join(`shop_${data.shopId}`);
+    // Also join user room for personal notifications
+    client.join(`${data.userId}`);
+    this.logger.log(`User ${data.userId} joined shop ${data.shopId} room`);
+    client.emit('joinedShop', { shopId: data.shopId, message: 'Successfully joined shop chat' });
+  }
+
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
-    @MessageBody() data: { 
-      senderId: number; 
-      receiverId: number; 
-      content: string; 
-      postId?: number; 
+    @MessageBody() data: {
+      senderId: number;
+      receiverId: number;
+      senderShopId?: number;
+      content: string;
+      postId?: number;
       messageType?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHARE_POST' | 'SHARE_PRODUCT';
+      type?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHARE_POST' | 'SHARE_PRODUCT';
+      payload?: any;
     },
     @ConnectedSocket() client: Socket,
   ) {
     try {
       this.logger.log(
-        `Message from ${data.senderId} to ${data.receiverId}: ${data.content}`,
+        `Message from ${data.senderShopId ? `shop ${data.senderShopId}` : `user ${data.senderId}`} to ${data.receiverId}: ${data.content}`,
       );
 
-      // 1. Find existing conversation between two users
-      const conversations = await this.prisma.conversations.findMany({
-        where: {
-          type: 'private'
-        },
-        include: {
-          participants: true
-        }
-      });
+      // 1. Determine conversation based on sender type
+      let conversation;
 
-      let conversation = conversations.find(conv => {
-        const userIds = conv.participants.map(p => p.user_id).sort();
-        const targetIds = [data.senderId, data.receiverId].sort();
-        return userIds.length === 2 && 
-               userIds[0] === targetIds[0] && 
-               userIds[1] === targetIds[1];
-      });
+      if (data.senderShopId) {
+        // Shop sending to user
+        conversation = await this.messagesService.findOrCreateShopConversation(
+          data.receiverId, // receiverId is the user
+          data.senderShopId,
+        );
+      } else {
+        // User sending to user or user sending to shop
+        conversation = await this.messagesService.findOrCreateConversation(
+          data.senderId,
+          data.receiverId,
+        );
+      }
 
       if (!conversation) {
-        // Create new conversation
-        conversation = await this.prisma.conversations.create({
-          data: {
-            type: 'private',
-            participants: {
-              create: [
-                { user_id: data.senderId },
-                { user_id: data.receiverId }
-              ]
-            }
-          },
-          include: {
-            participants: true
-          }
-        });
+        throw new Error('Failed to create or find conversation');
       }
 
       // 2. Determine message type
       let messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHARE_POST' | 'SHARE_PRODUCT' = 'TEXT';
-      
+
       if (data.postId) {
         messageType = 'SHARE_POST';
-      } else if (data.messageType) {
-        messageType = data.messageType;
+      } else if (data.messageType || data.type) {
+        messageType = data.messageType || data.type || 'TEXT';
       }
 
-      // 3. Create message
-      const message = await this.prisma.messages.create({
-        data: {
+      // 3. Create message using MessagesService
+      const message = await this.messagesService.sendMessage(
+        data.senderId,
+        {
           conversation_id: conversation.id,
-          sender_id: data.senderId,
           content: data.content,
-          post_id: data.postId, // ✅ Include postId
-          type: messageType, // ✅ Use enum value
+          messageType: messageType,
+          payload: data.payload || (data.postId ? { postId: data.postId } : null),
         },
-        include: {
-          sender: {
-            select: {
-              id: true,
-              full_name: true,
-              avatar_url: true,
-            }
-          }
-        }
-      });
+        data.senderShopId // Pass shopId if sending as shop
+      );
 
-      // Debug log để kiểm tra dữ liệu
+      // Debug log
       this.logger.log(`Created message with data:`, {
         id: message.id,
-        post_id: (message as any).post_id,
+        post_id: data.postId,
         type: message.type,
-        postId: data.postId,
-        messageType: data.messageType
+        senderShopId: data.senderShopId,
       });
 
       // 4. Format message for frontend
@@ -148,17 +138,27 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         id: message.id,
         conversationId: message.conversation_id,
         senderId: message.sender_id,
-        receiverId: data.receiverId, // Keep receiverId for frontend convenience
+        senderShopId: message.sender_shop_id,
+        senderType: message.sender_type,
+        receiverId: data.receiverId,
         content: message.content,
         type: message.type,
         payload: message.payload,
         createdAt: message.created_at.toISOString(),
         sharedPostId: (message as any).post_id || null, // ✅ Include shared post ID
         messageType: message.type, // ✅ Use the enum type
-        sender: {
-          Id: message.sender?.id || message.sender_id,
-          Fullname: message.sender?.full_name || 'Unknown User',
-          Avatar: message.sender?.avatar_url || null,
+        sender: message.sender ? {
+          id: message.sender.id,
+          fullName: message.sender.full_name || 'Unknown User',
+          avatarUrl: message.sender.avatar_url,
+        } : message.sender_shop ? {
+          id: message.sender_shop.id,
+          fullName: message.sender_shop.name,
+          avatarUrl: message.sender_shop.logo_url,
+        } : {
+          Id: message.sender_id,
+          Fullname: 'Unknown User',
+          Avatar: null,
         }
       };
 
@@ -169,6 +169,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         type: message.type,
         originalPostId: data.postId,
         originalMessageType: data.messageType
+      });
+
+      // 4. Send message to all participants in the conversation
+      conversation.participants.forEach(participant => {
+        if (participant.user_id) {
+          this.server
+            .to(`${participant.user_id}`)
+            .emit('newMessage', formattedMessage);
+        }
+        // También podríamos enviar a shops si implementamos shop rooms
+        if (participant.shop_id) {
+          this.server
+            .to(`shop_${participant.shop_id}`)
+            .emit('newMessage', formattedMessage);
+        }
       });
 
       // 5. Send message to both users
@@ -215,10 +230,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (conversation) {
           // Notify all participants about the deletion
           conversation.participants.forEach((p) => {
-            this.server.to(`${p.user_id}`).emit('messageDeleted', {
-              messageId: data.messageId,
-              conversationId: conversation.id,
-            });
+            if (p.user_id) {
+              this.server.to(`${p.user_id}`).emit('messageDeleted', {
+                messageId: data.messageId,
+                conversationId: conversation.id,
+              });
+            }
+            if (p.shop_id) {
+              this.server.to(`shop_${p.shop_id}`).emit('messageDeleted', {
+                messageId: data.messageId,
+                conversationId: conversation.id,
+              });
+            }
           });
         }
       }
@@ -245,14 +268,31 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         `User ${data.openerId} opening chat with ${data.targetId}`,
       );
 
-      // 1. Get target user info
+      // 1. Find or create conversation
+      const conversation = await this.messagesService.findOrCreateConversation(
+        data.openerId,
+        data.targetId,
+      );
+
+      if (!conversation) {
+        throw new Error('Failed to create or find conversation');
+      }
+
+      // 2. Get conversation messages
+      const messageHistory = await this.messagesService.getMessages(
+        conversation.id,
+        data.openerId,
+        { page: 1, limit: 50 }, // Load last 50 messages
+      );
+
+      // 3. Get target user info
       const targetUser = await this.prisma.users.findUnique({
         where: { id: data.targetId },
         select: {
           id: true,
           full_name: true,
           avatar_url: true,
-        }
+        },
       });
 
       if (!targetUser) {
@@ -263,96 +303,73 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
-      // 2. Find conversation between users
-      const conversations = await this.prisma.conversations.findMany({
-        where: {
-          type: 'private'
-        },
-        include: {
-          participants: true,
-          messages: {
-            orderBy: { created_at: 'asc' },
-            include: {
-              sender: {
-                select: {
-                  id: true,
-                  full_name: true,
-                  avatar_url: true,
-                }
-              },
-              message_reactions: true,
-              message_media: true, // ✅ Include media files
-            }
+      // 4. Format messages for frontend
+      const formattedMessages = messageHistory.data.map((msg) => {
+        // ✅ Debug log raw reactions from database
+        this.logger.log(`🔍 Message ${msg.id} raw message_reactions from DB:`, (msg as any).message_reactions);
+        
+        // Group reactions by emoji
+        const reactionsGrouped = ((msg as any).message_reactions || []).reduce((acc: any, r: any) => {
+          if (!acc[r.emoji]) {
+            acc[r.emoji] = { emoji: r.emoji, count: 0, users: [] };
           }
-        }
+          acc[r.emoji].count++;
+          acc[r.emoji].users.push(r.user_id);
+          return acc;
+        }, {} as Record<string, { emoji: string; count: number; users: number[] }>);
+
+        const formattedReactions = Object.values(reactionsGrouped);
+
+        // ✅ Debug log formatted reactions
+        this.logger.log(`📊 Message ${msg.id} formatted reactions (${formattedReactions.length}):`, formattedReactions);
+
+        // ✅ Format media files
+        const mediaFiles = ((msg as any).message_media || []).map((media: any) => ({
+          id: media.id,
+          url: media.media_url,
+          type: media.media_type,
+          fileName: media.file_name,
+          fileSize: media.file_size,
+          duration: media.duration,
+          thumbnailUrl: media.thumbnail_url,
+        }));
+
+        this.logger.log(`📎 Message ${msg.id} has ${mediaFiles.length} media files:`, mediaFiles);
+
+        return {
+          id: msg.id,
+          conversationId: msg.conversation_id,
+          senderId: msg.sender_id,
+          senderShopId: msg.sender_shop_id,
+          senderType: msg.sender_type,
+          receiverId: data.targetId === msg.sender_id ? data.openerId : data.targetId,
+          content: msg.content,
+          type: msg.type,
+          payload: msg.payload,
+          createdAt: msg.created_at.toISOString(),
+          sharedPostId: (msg as any).post_id, // ✅ Include shared post ID
+          messageType: msg.type, // ✅ Use 'type' field (enum message_type)
+          reactions: formattedReactions, // ✅ Include reactions
+          mediaFiles: mediaFiles, // ✅ Include media files
+          sender: msg.sender
+            ? {
+                id: msg.sender.id,
+                fullName: msg.sender.full_name || 'Unknown User',
+                avatarUrl: msg.sender.avatar_url,
+              }
+            : msg.sender_shop
+              ? {
+                  id: msg.sender_shop.id,
+                  fullName: msg.sender_shop.name,
+                  avatarUrl: msg.sender_shop.logo_url,
+                }
+              : {
+                  Id: msg.sender_id,
+                  Fullname: 'Unknown User',
+                  Avatar: null,
+                }
+        };
       });
-
-      const conversation = conversations.find(conv => {
-        const userIds = conv.participants.map(p => p.user_id).sort();
-        const targetIds = [data.openerId, data.targetId].sort();
-        return userIds.length === 2 && 
-               userIds[0] === targetIds[0] && 
-               userIds[1] === targetIds[1];
-      });
-
-      // 3. Format messages
-      let formattedMessages: any[] = [];
-      if (conversation) {
-        formattedMessages = conversation.messages.map(msg => {
-          // ✅ Debug log raw reactions from database
-          this.logger.log(`🔍 Message ${msg.id} raw message_reactions from DB:`, msg.message_reactions);
-          
-          // Group reactions by emoji
-          const reactionsGrouped = (msg.message_reactions || []).reduce((acc, r) => {
-            if (!acc[r.emoji]) {
-              acc[r.emoji] = { emoji: r.emoji, count: 0, users: [] };
-            }
-            acc[r.emoji].count++;
-            acc[r.emoji].users.push(r.user_id);
-            return acc;
-          }, {} as Record<string, { emoji: string; count: number; users: number[] }>);
-
-          const formattedReactions = Object.values(reactionsGrouped);
-
-          // ✅ Debug log formatted reactions
-          this.logger.log(`📊 Message ${msg.id} formatted reactions (${formattedReactions.length}):`, formattedReactions);
-
-          // ✅ Format media files
-          const mediaFiles = ((msg as any).message_media || []).map((media: any) => ({
-            id: media.id,
-            url: media.media_url,
-            type: media.media_type,
-            fileName: media.file_name,
-            fileSize: media.file_size,
-            duration: media.duration,
-            thumbnailUrl: media.thumbnail_url,
-          }));
-
-          this.logger.log(`📎 Message ${msg.id} has ${mediaFiles.length} media files:`, mediaFiles);
-
-          const formattedMessage = {
-            id: msg.id,
-            senderId: msg.sender_id,
-            receiverId: data.targetId === msg.sender_id ? data.openerId : data.targetId,
-            content: msg.content,
-            createdAt: msg.created_at.toISOString(),
-            sharedPostId: (msg as any).post_id, // ✅ Include shared post ID
-            messageType: msg.type, // ✅ Use 'type' field (enum message_type)
-            reactions: formattedReactions, // ✅ Include reactions
-            mediaFiles: mediaFiles, // ✅ Include media files
-            sender: {
-              Id: msg.sender?.id,
-              Fullname: msg.sender?.full_name || 'Unknown User',
-              Avatar: msg.sender?.avatar_url,
-            }
-          };
-          
-          // ✅ Debug final formatted message
-          this.logger.log(`✉️ Final formatted message ${msg.id}:`, JSON.stringify(formattedMessage, null, 2));
-          
-          return formattedMessage;
-        });
-      }
 
       // 4. Notify target user (optional)
       this.server.to(`${data.targetId}`).emit('openChat', { 
@@ -733,8 +750,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             type: 'private',
             participants: {
               create: [
-                { user_id: data.senderId },
-                { user_id: data.receiverId }
+                { user_id: data.senderId, entity_type: 'user' },
+                { user_id: data.receiverId, entity_type: 'user' }
               ]
             }
           },
@@ -757,10 +774,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // 3. Create message
       const message = await this.prisma.messages.create({
         data: {
-          conversation_id: conversation.id,
+          conversation_id: conversation?.id || 0,
           sender_id: data.senderId,
           content: data.content || '',
           type: messageType, // ✅ Use 'type' field with enum value
+          sender_type: 'user',
         },
         include: {
           sender: {
@@ -808,9 +826,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           thumbnailUrl: m.thumbnail_url,
         })),
         sender: {
-          Id: message.sender?.id,
-          Fullname: message.sender?.full_name || 'Unknown User',
-          Avatar: message.sender?.avatar_url,
+          Id: message.sender_id,
+          Fullname: 'Unknown User',
+          Avatar: null,
         }
       };
 

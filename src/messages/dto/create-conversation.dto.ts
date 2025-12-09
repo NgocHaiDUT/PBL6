@@ -1,11 +1,17 @@
-import { IsInt, IsArray, IsOptional, IsString } from 'class-validator';
+import { IsInt, IsArray, IsOptional, IsString, IsEnum } from 'class-validator';
 
 export class CreateConversationDto {
   @IsArray()
   @IsInt({ each: true })
-  participant_ids: number[];
+  @IsOptional()
+  participant_ids?: number[];
+
+  @IsOptional()
+  @IsInt()
+  shop_id?: number; // Shop ID nếu muốn chat với shop
 
   @IsOptional()
   @IsString()
+  @IsEnum(['private', 'group', 'user_shop'])
   type?: string = 'private';
 }
