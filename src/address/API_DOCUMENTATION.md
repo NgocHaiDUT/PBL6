@@ -331,17 +331,6 @@ GET /address/wards?district_id=1442
 
 ---
 
-### 🔄 Legacy Endpoints (Deprecated - Tương thích ngược)
-
-Các endpoint sau vẫn hoạt động nhưng nên sử dụng các endpoint mới ở trên:
-
-- `POST /address/add-address` → Sử dụng `POST /address/user/add`
-- `POST /address/update-address` → Sử dụng `PUT /address/user/update/:id`
-- `GET /address/all-address` → Sử dụng `GET /address/user/all`
-- `POST /address/delete-address` → Sử dụng `DELETE /address/user/delete/:id`
-
----
-
 ## Error Responses
 
 ### 400 Bad Request
