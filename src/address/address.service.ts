@@ -401,95 +401,232 @@ export class AddressService {
     });
   }
 
-  // ==================== LEGACY METHODS (For backward compatibility) ====================
+  // ==================== ADMIN METHODS ====================
 
-  async addaddress(
-    userid: number,
-    label: string | undefined,
-    receiver_name: string,
-    phone: string,
-    province: string,
-    district: string,
-    ward: string,
-    street: string,
-    is_default: boolean | undefined,
-    ghn_province_id?: number,
-    ghn_district_id?: number,
-    ghn_ward_code?: string,
-  ) {
-    const dto: CreateAddressDto = {
-      label,
-      receiver_name,
-      phone,
-      province,
-      district,
-      ward,
-      street,
-      is_default,
-      ghn_province_id,
-      ghn_district_id,
-      ghn_ward_code,
-    };
-    return this.addUserAddress(userid, dto);
-  }
-
-  async updateaddress(
-    addressid: number,
-    label: string | undefined,
-    receiver_name: string | undefined,
-    phone: string | undefined,
-    province: string | undefined,
-    district: string | undefined,
-    ward: string | undefined,
-    street: string | undefined,
-    is_default: boolean | undefined,
-    ghn_province_id?: number,
-    ghn_district_id?: number,
-    ghn_ward_code?: string,
-  ) {
-    // Get the address to find the user_id
-    const address = await this.prisma.addresses.findUnique({
-      where: { id: addressid },
+  /**
+   * Admin: Update user address without ownership check
+   */
+  async adminUpdateUserAddress(addressId: number, dto: UpdateAddressDto) {
+    const existingAddress = await this.prisma.addresses.findUnique({
+      where: { id: addressId },
     });
 
-    if (!address) {
+    if (!existingAddress) {
       throw new NotFoundException('Địa chỉ không tồn tại');
     }
 
-    const dto: UpdateAddressDto = {
-      addressid,
-      label,
-      receiver_name,
-      phone,
-      province,
-      district,
-      ward,
-      street,
-      is_default,
-      ghn_province_id,
-      ghn_district_id,
-      ghn_ward_code,
-    };
+    const dataToUpdate: any = {};
+    if (dto.label !== undefined) dataToUpdate.label = dto.label;
+    if (dto.receiver_name !== undefined) dataToUpdate.recipient = dto.receiver_name;
+    if (dto.phone !== undefined) dataToUpdate.phone = dto.phone;
+    if (dto.street !== undefined) dataToUpdate.street = dto.street;
 
-    return this.updateUserAddress(addressid, address.user_id, dto);
-  }
+    // Handle GHN location resolution
+    if (dto.ghn_province_id && dto.ghn_district_id && dto.ghn_ward_code) {
+      const resolvedNames = await this.resolveGHNLocationNames(
+        dto.ghn_province_id,
+        dto.ghn_district_id,
+        dto.ghn_ward_code,
+      );
+      dataToUpdate.province = resolvedNames.province || dto.province;
+      dataToUpdate.district = resolvedNames.district || dto.district;
+      dataToUpdate.ward = resolvedNames.ward || dto.ward;
+      dataToUpdate.ghn_province_id = dto.ghn_province_id;
+      dataToUpdate.ghn_district_id = dto.ghn_district_id;
+      dataToUpdate.ghn_ward_code = dto.ghn_ward_code;
+    } else {
+      if (dto.province !== undefined) dataToUpdate.province = dto.province;
+      if (dto.district !== undefined) dataToUpdate.district = dto.district;
+      if (dto.ward !== undefined) dataToUpdate.ward = dto.ward;
+    }
 
-  async deleteaddress(addressid: number) {
-    const address = await this.prisma.addresses.findUnique({
-      where: { id: addressid },
+    // Handle is_default flag
+    if (dto.is_default !== undefined) {
+      if (dto.is_default) {
+        await this.prisma.addresses.updateMany({
+          where: { 
+            user_id: existingAddress.user_id, 
+            is_default: true, 
+            id: { not: addressId } 
+          },
+          data: { is_default: false },
+        });
+      }
+      dataToUpdate.is_default = dto.is_default;
+    }
+
+    const updatedAddress = await this.prisma.addresses.update({
+      where: { id: addressId },
+      data: dataToUpdate,
     });
 
-    if (!address) {
+    return {
+      message: 'Admin: Cập nhật địa chỉ nhận hàng thành công',
+      data: updatedAddress,
+    };
+  }
+
+  /**
+   * Admin: Delete user address without ownership check
+   */
+  async adminDeleteUserAddress(addressId: number) {
+    const existingAddress = await this.prisma.addresses.findUnique({
+      where: { id: addressId },
+    });
+
+    if (!existingAddress) {
       throw new NotFoundException('Địa chỉ không tồn tại');
     }
 
     await this.prisma.addresses.delete({
-      where: { id: addressid },
+      where: { id: addressId },
     });
-    return { message: 'Xoá địa chỉ thành công' };
+
+    return { message: 'Admin: Xóa địa chỉ thành công' };
   }
 
-  async getaddresses(userid: number) {
-    return this.getUserAddresses(userid);
+  /**
+   * Admin: Add shop address without ownership check
+   */
+  async adminAddShopAddress(
+    shopId: number,
+    dto: Omit<CreateShopAddressDto, 'shop_id'>,
+  ) {
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopId },
+    });
+
+    if (!shop) {
+      throw new NotFoundException('Shop không tồn tại');
+    }
+
+    let officialProvinceName = dto.province;
+    let officialDistrictName = dto.district;
+    let officialWardName = dto.ward;
+
+    if (dto.ghn_province_id && dto.ghn_district_id && dto.ghn_ward_code) {
+      const resolvedNames = await this.resolveGHNLocationNames(
+        dto.ghn_province_id,
+        dto.ghn_district_id,
+        dto.ghn_ward_code,
+      );
+      if (resolvedNames.province) officialProvinceName = resolvedNames.province;
+      if (resolvedNames.district) officialDistrictName = resolvedNames.district;
+      if (resolvedNames.ward) officialWardName = resolvedNames.ward;
+    }
+
+    if (dto.is_default) {
+      await this.prisma.shop_addresses.updateMany({
+        where: { shop_id: shopId, is_default: true },
+        data: { is_default: false },
+      });
+    }
+
+    const address = await this.prisma.shop_addresses.create({
+      data: {
+        shop_id: shopId,
+        name: dto.name,
+        phone: dto.phone,
+        email: dto.email,
+        province: officialProvinceName,
+        district: officialDistrictName,
+        ward: officialWardName,
+        street: dto.street,
+        is_default: dto.is_default || false,
+        ghn_province_id: dto.ghn_province_id,
+        ghn_district_id: dto.ghn_district_id,
+        ghn_ward_code: dto.ghn_ward_code,
+      },
+    });
+
+    return {
+      message: 'Admin: Thêm địa chỉ shop thành công',
+      data: address,
+    };
+  }
+
+  /**
+   * Admin: Update shop address without ownership check
+   */
+  async adminUpdateShopAddress(
+    addressId: number,
+    dto: UpdateShopAddressDto,
+  ) {
+    const existingAddress = await this.prisma.shop_addresses.findUnique({
+      where: { id: addressId },
+    });
+
+    if (!existingAddress) {
+      throw new NotFoundException('Địa chỉ shop không tồn tại');
+    }
+
+    const dataToUpdate: any = {};
+    if (dto.name !== undefined) dataToUpdate.name = dto.name;
+    if (dto.phone !== undefined) dataToUpdate.phone = dto.phone;
+    if (dto.email !== undefined) dataToUpdate.email = dto.email;
+    if (dto.street !== undefined) dataToUpdate.street = dto.street;
+
+    // Handle GHN location resolution
+    if (dto.ghn_province_id && dto.ghn_district_id && dto.ghn_ward_code) {
+      const resolvedNames = await this.resolveGHNLocationNames(
+        dto.ghn_province_id,
+        dto.ghn_district_id,
+        dto.ghn_ward_code,
+      );
+      dataToUpdate.province = resolvedNames.province || dto.province;
+      dataToUpdate.district = resolvedNames.district || dto.district;
+      dataToUpdate.ward = resolvedNames.ward || dto.ward;
+      dataToUpdate.ghn_province_id = dto.ghn_province_id;
+      dataToUpdate.ghn_district_id = dto.ghn_district_id;
+      dataToUpdate.ghn_ward_code = dto.ghn_ward_code;
+    } else {
+      if (dto.province !== undefined) dataToUpdate.province = dto.province;
+      if (dto.district !== undefined) dataToUpdate.district = dto.district;
+      if (dto.ward !== undefined) dataToUpdate.ward = dto.ward;
+    }
+
+    // Handle is_default flag
+    if (dto.is_default !== undefined) {
+      if (dto.is_default) {
+        await this.prisma.shop_addresses.updateMany({
+          where: {
+            shop_id: existingAddress.shop_id,
+            is_default: true,
+            id: { not: addressId },
+          },
+          data: { is_default: false },
+        });
+      }
+      dataToUpdate.is_default = dto.is_default;
+    }
+
+    const updatedAddress = await this.prisma.shop_addresses.update({
+      where: { id: addressId },
+      data: dataToUpdate,
+    });
+
+    return {
+      message: 'Admin: Cập nhật địa chỉ shop thành công',
+      data: updatedAddress,
+    };
+  }
+
+  /**
+   * Admin: Delete shop address without ownership check
+   */
+  async adminDeleteShopAddress(addressId: number) {
+    const existingAddress = await this.prisma.shop_addresses.findUnique({
+      where: { id: addressId },
+    });
+
+    if (!existingAddress) {
+      throw new NotFoundException('Địa chỉ shop không tồn tại');
+    }
+
+    await this.prisma.shop_addresses.delete({
+      where: { id: addressId },
+    });
+
+    return { message: 'Admin: Xóa địa chỉ shop thành công' };
   }
 }
