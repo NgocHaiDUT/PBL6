@@ -59,7 +59,8 @@ export class ShopService {
       select: { owner_id: true },
     });
 
-    if (!isshopowner) {
+    // If the target user is an owner of any shop, they cannot be added as staff
+    if (isshopowner) {
       return {
         success: false,
         message: 'Không thể thêm chủ shop làm nhân viên',

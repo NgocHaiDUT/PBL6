@@ -7,14 +7,7 @@ export class AddStaffDto {
     example: 'staff@example.com',
   })
   @IsEmail()
-  staffemail: string;
-
-  @ApiProperty({
-    description: 'ID của shop',
-    example: 1,
-  })
-  @IsInt()
-  shopid: number;
+  staffEmail: string;
 
   @ApiProperty({
     description: 'Có phải là quản lý shop hay không',
@@ -23,5 +16,5 @@ export class AddStaffDto {
   })
   @IsBoolean()
   @IsOptional()
-  is_manager?: boolean;
+  isManager?: boolean;
 }

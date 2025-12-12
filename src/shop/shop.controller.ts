@@ -133,7 +133,7 @@ export class ShopController {
     @Req() req: any,
   ) {
     const userId = req.user.userId;
-    return this.shopService.removestaff(userId, staffEmail, shopId);
+    return this.shopService.removestaff(userId, body.staffEmail, body.shopId);
   }
 
   // Get shop staff list
@@ -236,6 +236,8 @@ export class ShopController {
     description: 'Staff not found or does not belong to this shop',
   })
   async updateStaffPermissions(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Param('staffEmail') staffEmail: string,
     @Body()
     body: UpdateStaffPermissionsDto,
     @Req() req: any,
@@ -295,7 +297,7 @@ export class ShopController {
     @Param('shopid', ParseIntPipe) shopid: number,
     @Param('staffemail') staffemail: string,
   ) {
-    return this.shopService.getpermissionstaff(shopId, staffEmail);
+    return this.shopService.getpermissionstaff(shopid, staffemail);
   }
 
   // Xóa quyền của nhân viên
@@ -339,6 +341,8 @@ export class ShopController {
     description: 'Staff not found or does not belong to this shop',
   })
   async deleteStaffPermissions(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Param('staffEmail') staffEmail: string,
     @Body()
     body: UpdateStaffPermissionsDto,
     @Req() req: any,

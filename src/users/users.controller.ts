@@ -16,9 +16,76 @@ import { GetAllPermissionsResponseDto } from './dto/get-all-permissions-response
 
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')
-@Controller('users')
+@Controller('admin/users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  /**
+   * Get all permissions grouped by category
+   * GET /users/permissions/all
+   */
+  @Get('permissions/all')
+  @ApiOperation({ 
+    summary: 'Get all permissions grouped by category',
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Returns permissions grouped by category with metadata',
+    type: GetAllPermissionsResponseDto,
+    schema: {
+      example: {
+        success: true,
+        data: [
+          {
+            group: 'USER',
+            groupName: 'User Management',
+            groupDescription: 'Quản lý người dùng',
+            permissions: [
+              { id: 1, name: 'view_users' },
+              { id: 2, name: 'create_user' },
+              { id: 3, name: 'update_user' },
+              { id: 4, name: 'delete_user' }
+            ]
+          },
+          {
+            group: 'PRODUCT',
+            groupName: 'Product Management',
+            groupDescription: 'Quản lý sản phẩm',
+            permissions: [
+              { id: 5, name: 'create_product' },
+              { id: 6, name: 'edit_product' }
+            ]
+          }
+        ],
+        metadata: {
+          total: 17,
+          groups: 5
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Requires manage_users permission' })
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_USERS)
+  getAllPermissions() {
+    return this.usersService.getAllPermissions();
+  }
+
+  /**
+   * Get all roles with their permissions
+   * GET /users/roles/all
+   */
+  @Get('roles/all')
+  @ApiOperation({ summary: 'Get all roles with their permissions' })
+  @ApiResponse({ status: 200, description: 'Returns list of all roles with permissions' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Requires manage_users permission' })
+  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_USERS)
+  getAllRoles() {
+    return this.usersService.getAllRoles();
+  }
 
   @Get('page-info')
   @ApiOperation({ summary: 'Get page information for users management' })
@@ -175,58 +242,6 @@ export class UsersController {
   }
 
   /**
-   * Get all permissions grouped by category
-   * GET /users/permissions/all
-   */
-  @Get('permissions/all')
-  @ApiOperation({ 
-    summary: 'Get all permissions grouped by category',
-  })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Returns permissions grouped by category with metadata',
-    type: GetAllPermissionsResponseDto,
-    schema: {
-      example: {
-        success: true,
-        data: [
-          {
-            group: 'USER',
-            groupName: 'User Management',
-            groupDescription: 'Quản lý người dùng',
-            permissions: [
-              { id: 1, name: 'view_users' },
-              { id: 2, name: 'create_user' },
-              { id: 3, name: 'update_user' },
-              { id: 4, name: 'delete_user' }
-            ]
-          },
-          {
-            group: 'PRODUCT',
-            groupName: 'Product Management',
-            groupDescription: 'Quản lý sản phẩm',
-            permissions: [
-              { id: 5, name: 'create_product' },
-              { id: 6, name: 'edit_product' }
-            ]
-          }
-        ],
-        metadata: {
-          total: 17,
-          groups: 5
-        }
-      }
-    }
-  })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Requires manage_users permission' })
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions(Permission.MANAGE_USERS)
-  getAllPermissions() {
-    return this.usersService.getAllPermissions();
-  }
-
-  /**
    * Set permissions for a role
    * PUT /users/roles/:roleId/permissions
    */
@@ -244,20 +259,5 @@ export class UsersController {
     @Body() setRolePermissionDto: SetRolePermissionDto,
   ) {
     return this.usersService.setRolePermissions(roleId, setRolePermissionDto.permission_ids);
-  }
-
-  /**
-   * Get all roles with their permissions
-   * GET /users/roles/all
-   */
-  @Get('roles/all')
-  @ApiOperation({ summary: 'Get all roles with their permissions' })
-  @ApiResponse({ status: 200, description: 'Returns list of all roles with permissions' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Requires manage_users permission' })
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
-  @RequirePermissions(Permission.MANAGE_USERS)
-  getAllRoles() {
-    return this.usersService.getAllRoles();
   }
 }

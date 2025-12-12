@@ -63,6 +63,10 @@ export const RolePermissions: Record<Role, Permission[]> = {
     Permission.DELETE_PRODUCT,
     Permission.MANAGE_BRANDS,
     Permission.MANAGE_CATEGORYS,
+
+    // Shop management
+    Permission.MANAGE_SHOP_ADMIN,
+    Permission.MANAGE_SHOP_STAFF,
   ],
 
   [Role.STAFF]: [

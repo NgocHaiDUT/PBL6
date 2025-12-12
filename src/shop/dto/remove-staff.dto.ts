@@ -7,12 +7,12 @@ export class RemoveStaffDto {
     example: 'staff@example.com',
   })
   @IsEmail()
-  staffemail: string;
+  staffEmail: string;
 
   @ApiProperty({
     description: 'ID của shop',
     example: 1,
   })
   @IsInt()
-  shopid: number;
+  shopId: number;
 }
