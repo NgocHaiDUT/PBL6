@@ -24,7 +24,6 @@ import { join } from 'path';
 import { ShopModule } from './shop/shop.module';
 import { OrderModule } from './order/order.module';
 import { AddressModule } from './address/address.module';
-import { ShopAddressModule } from './shop-address/shop-address.module';
 import { DeliveryModule } from './delivery/delivery.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { UsersModule } from './users/users.module';
@@ -83,7 +82,6 @@ import { PaymentModule } from './payment/payment.module';
     OrderModule,
     DataInitModule,
     AddressModule,
-    ShopAddressModule,
     SearchModule, // ✅ Add SearchModule
     ReviewsModule, // ✅ Add ReviewsModule
 

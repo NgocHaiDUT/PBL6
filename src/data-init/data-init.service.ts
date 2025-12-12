@@ -4,6 +4,8 @@ import { S3UploadService } from './s3-upload.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as bcrypt from 'bcrypt';
+import { getAllPermissions } from '../auth/constants/Permission.enum';
+import { getAllRoles, RolePermissions, Role } from '../auth/constants/Role.enum';
 
 @Injectable()
 export class DataInitService implements OnModuleInit {
@@ -148,35 +150,27 @@ export class DataInitService implements OnModuleInit {
   }
 
   private async seedRoles() {
-    const existingRoles = await this.prisma.role.count();
-    if (existingRoles > 0) {
-      this.logger.log('Role đã tồn tại không tạo mới');
+    const allRoles = getAllRoles();
+
+    const existing = await this.prisma.role.findMany({ select: { name: true } });
+    const existingNames = existing.map(r => r.name);
+
+    const missingRoles = allRoles.filter(r => !existingNames.includes(r));
+
+    if (missingRoles.length === 0) {
+      this.logger.log('Tất cả roles đã tồn tại, không có role mới để tạo');
       return;
     }
 
-    const rolesFilePath = path.join(
-      process.cwd(),
-      'src',
-      'data-init',
-      'roles.json',
-    );
-    const rolesDataRaw = fs.readFileSync(rolesFilePath, 'utf8');
-    const rolesData = JSON.parse(rolesDataRaw);
-
-    if (!Array.isArray(rolesData)) {
-      this.logger.log('Dữ liệu role không phải array');
-      return;
-    }
-
-    for (const role of rolesData) {
+    for (const roleName of missingRoles) {
       await this.prisma.role.create({
         data: {
-          name: role.name,
+          name: roleName,
         },
       });
     }
 
-    this.logger.log(`Đã tạo ${rolesData.length} role`);
+    this.logger.log(`Đã tạo ${missingRoles.length} role từ Role.enum: ${missingRoles.join(', ')}`);
   }
 
   private async seedPermissions() {
@@ -186,27 +180,15 @@ export class DataInitService implements OnModuleInit {
       return;
     }
 
-    const permissionsFilePath = path.join(
-      process.cwd(),
-      'src',
-      'data-init',
-      'permissions.json',
-    );
-    const permissionsDataRaw = fs.readFileSync(permissionsFilePath, 'utf8');
-    const permissionsData = JSON.parse(permissionsDataRaw);
+    const allPermissions = getAllPermissions();
 
-    if (!Array.isArray(permissionsData)) {
-      this.logger.log('Dữ liệu permission không phải là array');
-      return;
-    }
-
-    for (const permission of permissionsData) {
+    for (const permissionName of allPermissions) {
       await this.prisma.permission.create({
-        data: { name: permission.name },
+        data: { name: permissionName },
       });
     }
 
-    this.logger.log(`Đã tạo ${permissionsData.length} permission`);
+    this.logger.log(`Đã tạo ${allPermissions.length} permission từ Permission.enum`);
   }
 
   private async seedRolePermissions() {
@@ -216,63 +198,63 @@ export class DataInitService implements OnModuleInit {
       return;
     }
 
-    const rolePermissionsFilePath = path.join(
-      process.cwd(),
-      'src',
-      'data-init',
-      'role_permissions.json',
-    );
-    const rolePermissionsDataRaw = fs.readFileSync(
-      rolePermissionsFilePath,
-      'utf8',
-    );
-    const rolePermissionsData = JSON.parse(rolePermissionsDataRaw);
+    let totalCreated = 0;
 
-    if (!Array.isArray(rolePermissionsData)) {
-      this.logger.error('Dữ liệu role permissions không phải là array');
-      return;
-    }
-
-    for (const rolePermission of rolePermissionsData) {
+    // Duyệt qua từng role trong RolePermissions mapping
+    for (const [roleName, permissions] of Object.entries(RolePermissions)) {
       try {
-        const permission = await this.prisma.permission.findUnique({
-          where: { name: rolePermission.permission_name },
-        });
-
-        if (!permission) {
-          this.logger.warn(
-            `Permission "${rolePermission.permission_name}" không tìm thấy, bỏ qua`,
-          );
-          continue;
-        }
-
+        // Tìm role trong database theo tên
         const role = await this.prisma.role.findUnique({
-          where: { id: rolePermission.role_id },
+          where: { name: roleName },
         });
 
         if (!role) {
-          this.logger.warn(
-            `Role với ID ${rolePermission.role_id} không tìm thấy, bỏ qua`,
-          );
+          this.logger.warn(`Role "${roleName}" không tìm thấy, bỏ qua`);
           continue;
         }
 
-        await this.prisma.rolepermission.create({
-          data: {
-            role_id: rolePermission.role_id,
-            permission_id: permission.id,
-          },
-        });
+        // Duyệt qua các permissions của role này
+        for (const permissionName of permissions) {
+          try {
+            const permission = await this.prisma.permission.findUnique({
+              where: { name: permissionName },
+            });
+
+            if (!permission) {
+              this.logger.warn(
+                `Permission "${permissionName}" không tìm thấy, bỏ qua`,
+              );
+              continue;
+            }
+
+            await this.prisma.rolepermission.create({
+              data: {
+                role_id: role.id,
+                permission_id: permission.id,
+              },
+            });
+            totalCreated++;
+          } catch (error) {
+            this.logger.error(
+              `Lỗi khi tạo role permission cho role "${roleName}", permission "${permissionName}":`,
+              error,
+            );
+          }
+        }
+
+        this.logger.log(
+          `Đã gán ${permissions.length} permissions cho role "${roleName}"`,
+        );
       } catch (error) {
         this.logger.error(
-          `Lỗi khi tạo role permission cho role_id ${rolePermission.role_id}, permission ${rolePermission.permission_name}:`,
+          `Lỗi khi xử lý role "${roleName}":`,
           error,
         );
       }
     }
 
     this.logger.log(
-      `Đã tạo ${rolePermissionsData.length} liên kết role-permission thành công`,
+      `Đã tạo ${totalCreated} liên kết role-permission từ RolePermissions mapping`,
     );
   }
 

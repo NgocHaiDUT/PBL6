@@ -13,24 +13,10 @@ export class ProfileController {
   constructor(private readonly profileService: ProfileService) { }
 
   @UseGuards(AuthGuard('jwt'))
-  @Get()
-  getProfile(@Req() req: any) {
-    return this.profileService.getProfile(req.user.userId);
-  }
-
-  @UseGuards(AuthGuard('jwt'))
   @Get('me')
   async getMyProfile(@Req() req: any) {
     const profile = await this.profileService.getProfile(req.user.userId);
     return profile;
-  }
-
-  @Get(':userId/permissions')
-  @UseGuards(AuthGuard('jwt'))
-  async getUserPermissions(
-    @Param('userId', ParseIntPipe) userId: number,
-  ) {
-    return this.profileService.getPermissionbyuserid(userId);
   }
 
   @Get('user-info')
@@ -83,11 +69,6 @@ export class ProfileController {
 
     console.log('✅ [getUserInfoV2] Fetching user info for userId:', userId);
     return this.profileService.getUserInfo(userId);
-  }
-
-  @Get(':id')
-  getProfileById(@Param('id', ParseIntPipe) id: number) {
-    return this.profileService.getProfile(id);
   }
 
   @Patch('me/full-name')
@@ -303,6 +284,25 @@ export class ProfileController {
       shopId,
       description,
     );
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get()
+  getProfile(@Req() req: any) {
+    return this.profileService.getProfile(req.user.userId);
+  }
+
+  @Get(':userId/permissions')
+  @UseGuards(AuthGuard('jwt'))
+  async getUserPermissions(
+    @Param('userId', ParseIntPipe) userId: number,
+  ) {
+    return this.profileService.getPermissionbyuserid(userId);
+  }
+
+  @Get(':id')
+  getProfileById(@Param('id', ParseIntPipe) id: number) {
+    return this.profileService.getProfile(id);
   }
 }
 
