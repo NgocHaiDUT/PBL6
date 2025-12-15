@@ -12,6 +12,8 @@ import {
   UseInterceptors,
   UploadedFile,
   ParseIntPipe,
+  BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -20,6 +22,8 @@ import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { QueryReviewsDto } from './dto/query-reviews.dto';
 import { getMulterOptions, getFileUrl } from '../config/storage.config';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 @Controller('reviews')
 export class ReviewsController {
@@ -119,6 +123,79 @@ export class ReviewsController {
       success: true,
       message: 'File uploaded successfully',
       data: { url: mediaUrl },
+    };
+  }
+
+  /**
+   * POST /reviews/presigned-url - Generate presigned URL for review media
+   * ⚡ FAST: Direct S3 upload for review images
+   */
+  @Post('presigned-url')
+  @UseGuards(AuthGuard('jwt'))
+  async generatePresignedUrl(
+    @Request() req,
+    @Body() body: {
+      fileName: string;
+      fileType: string;
+    },
+  ) {
+    const userId = req.user.userId || req.user.id;
+
+    console.log('🔑 [ReviewsController] Generating presigned URL:', {
+      userId,
+      fileName: body.fileName,
+      fileType: body.fileType,
+    });
+
+    // Validate
+    if (!body.fileName || !body.fileType) {
+      throw new BadRequestException('fileName and fileType are required');
+    }
+
+    // Only work with S3
+    const storageDriver = process.env.STORAGE_DRIVER || 'local';
+    if (storageDriver !== 's3') {
+      throw new ForbiddenException('Presigned URL only available for S3 storage');
+    }
+
+    const s3Client = new S3Client({
+      region: process.env.AWS_REGION || 'ap-southeast-1',
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      },
+    });
+
+    // Generate unique key
+    const timestamp = Date.now();
+    const randomId = Math.round(Math.random() * 1e9);
+    const extension = body.fileName.split('.').pop();
+    const key = `reviews/review-${userId}-${timestamp}-${randomId}.${extension}`;
+
+    // Create presigned URL (valid for 10 minutes)
+    const command = new PutObjectCommand({
+      Bucket: process.env.AWS_S3_BUCKET_NAME!,
+      Key: key,
+      ContentType: body.fileType,
+      Metadata: {
+        userId: userId.toString(),
+        uploadedAt: new Date().toISOString(),
+      },
+    });
+
+    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 600 });
+    const s3Url = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'ap-southeast-1'}.amazonaws.com/${key}`;
+
+    console.log('✅ [ReviewsController] Presigned URL generated');
+
+    return {
+      success: true,
+      data: {
+        uploadUrl,
+        s3Url,
+        key,
+        expiresIn: 600,
+      },
     };
   }
 }

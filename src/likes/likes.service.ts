@@ -71,9 +71,12 @@ export class LikesService {
   }
 
   async getTotalLikesByUser(userId: number): Promise<{ total_likes: number }> {
-    // 1. Lấy tất cả post của user
+    // 1. Lấy tất cả post của user (exclude stories)
     const userPosts = await this.prisma.posts.findMany({
-      where: { user_id: userId },
+      where: { 
+        user_id: userId,
+        is_story: false, // Exclude stories from like count
+      },
       select: { id: true }
     });
 

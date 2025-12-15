@@ -21,6 +21,9 @@ export class SearchService {
             ],
           },
           {
+            is_story: false, // Exclude stories from search
+          },
+          {
             post_type: {
               in: ['post', 'image', 'text'], // Include 'post' type which is used in database
             },
@@ -269,6 +272,7 @@ export class SearchService {
       }),
       this.prisma.posts.findMany({
         where: {
+          is_story: false, // Exclude stories from suggestions
           title: { contains: query, mode: 'insensitive' },
         },
         select: {

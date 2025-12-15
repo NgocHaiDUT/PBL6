@@ -13,6 +13,7 @@ import {
   UseInterceptors,
   UploadedFiles,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FilesInterceptor } from '@nestjs/platform-express';
@@ -22,6 +23,8 @@ import { CreateConversationDto } from './dto/create-conversation.dto';
 import { QueryMessagesDto } from './dto/query-messages.dto';
 import { QueryConversationsDto } from './dto/query-conversations.dto';
 import { getMulterOptions } from '../config/storage.config';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 
@@ -264,5 +267,92 @@ export class MessagesController {
       console.error('❌ [uploadMessageMedia] Error stack:', error.stack);
       throw new BadRequestException('Failed to upload media files');
     }
+  }
+
+  /**
+   * POST /messages/presigned-url - Generate presigned URL for chat media
+   * ⚡ FAST: Direct S3 upload for images/videos in chat
+   */
+  @Post('presigned-url')
+  @UseGuards(AuthGuard('jwt'))
+  async generatePresignedUrl(
+    @Req() req: any,
+    @Body() body: {
+      fileName: string;
+      fileType: string;
+      mediaType: 'image' | 'video' | 'audio' | 'file';
+    },
+  ) {
+    const userId = req.user.userId || req.user.sub;
+
+    console.log('🔑 [MessagesController] Generating presigned URL:', {
+      userId,
+      fileName: body.fileName,
+      fileType: body.fileType,
+      mediaType: body.mediaType,
+    });
+
+    // Validate
+    if (!body.fileName || !body.fileType || !body.mediaType) {
+      throw new BadRequestException('fileName, fileType, and mediaType are required');
+    }
+
+    // Only work with S3
+    const storageDriver = process.env.STORAGE_DRIVER || 'local';
+    if (storageDriver !== 's3') {
+      throw new ForbiddenException('Presigned URL only available for S3 storage');
+    }
+
+    const s3Client = new S3Client({
+      region: process.env.AWS_REGION || 'ap-southeast-1',
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      },
+    });
+
+    // Generate unique key
+    const timestamp = Date.now();
+    const randomId = Math.round(Math.random() * 1e9);
+    const extension = body.fileName.split('.').pop();
+    let directory = 'chat-media';
+
+    if (body.mediaType === 'image') {
+      directory = 'chat-media/images';
+    } else if (body.mediaType === 'video') {
+      directory = 'chat-media/videos';
+    } else if (body.mediaType === 'audio') {
+      directory = 'chat-media/audio';
+    } else if (body.mediaType === 'file') {
+      directory = 'chat-media/files';
+    }
+
+    const key = `${directory}/msg-${userId}-${timestamp}-${randomId}.${extension}`;
+
+    // Create presigned URL (valid for 10 minutes)
+    const command = new PutObjectCommand({
+      Bucket: process.env.AWS_S3_BUCKET_NAME!,
+      Key: key,
+      ContentType: body.fileType,
+      Metadata: {
+        userId: userId.toString(),
+        uploadedAt: new Date().toISOString(),
+      },
+    });
+
+    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 600 });
+    const s3Url = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'ap-southeast-1'}.amazonaws.com/${key}`;
+
+    console.log('✅ [MessagesController] Presigned URL generated');
+
+    return {
+      success: true,
+      data: {
+        uploadUrl,
+        s3Url,
+        key,
+        expiresIn: 600,
+      },
+    };
   }
 }
