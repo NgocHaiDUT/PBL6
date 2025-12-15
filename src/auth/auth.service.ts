@@ -103,7 +103,8 @@ export class AuthService {
         id: user.id,
         email: user.email,
         full_name: user.full_name,
-        avatar: user.avatar_url,
+        avatar: user.avatar_url, // For backward compatibility
+        avatar_url: user.avatar_url, // For story feature
         role: user.role?.name || 'user', // ✅ Return only role name, not entire object
         requiresPasswordChange,
       },
