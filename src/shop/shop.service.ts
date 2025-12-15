@@ -59,7 +59,8 @@ export class ShopService {
       select: { owner_id: true },
     });
 
-    if (!isshopowner) {
+    // If the target user is an owner of any shop, they cannot be added as staff
+    if (isshopowner) {
       return {
         success: false,
         message: 'Không thể thêm chủ shop làm nhân viên',
@@ -411,4 +412,52 @@ export class ShopService {
       where: { shop_id: shopid },
     });
   }
+
+  async getShopDetails(shopid: number) {
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopid },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            email: true,
+            full_name: true,
+            avatar_url: true,
+            phone: true,
+          },
+        },
+        _count: {
+          select: {
+            shop_staffs: true,
+            products: true,
+          },
+        },
+      },
+    });
+
+    if (!shop) {
+      return { success: false, message: 'Shop not found' };
+    }
+
+    return {
+      success: true,
+      data: {
+        id: shop.id,
+        name: shop.name,
+        slug: shop.slug,
+        description: shop.description,
+        logo_url: shop.logo_url,
+        cover_url: shop.cover_url,
+        phone: shop.phone,
+        email: shop.email,
+        is_verified: shop.is_verified,
+        created_at: shop.created_at,
+        updated_at: shop.updated_at,
+        owner: shop.owner,
+        staff_count: shop._count.shop_staffs,
+        product_count: shop._count.products,
+      },
+    };
+  }
 }
+
