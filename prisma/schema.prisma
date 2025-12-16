@@ -114,6 +114,7 @@ model users {
   saved_posts               saved_posts[]
   skin_analyses             skin_analyses[]
   tryon_sessions            tryon_sessions[]
+  chatbot_sessions         chatbot_sessions[]
   recommendations           recommendations[]
   moderation_logs           moderation_logs[]
   notifications             notifications[]
@@ -800,4 +801,32 @@ model message_media {
   thumbnail_url String? // For videos
   created_at    DateTime @default(now())
   message       messages @relation(fields: [message_id], references: [id], onDelete: Cascade)
+}
+
+// Chatbot session and messages storage
+model chatbot_sessions {
+  id                    Int                 @id @default(autoincrement())
+  user_id               Int?
+  coze_conversation_id  String?
+  title                 String?
+  created_at            DateTime            @default(now())
+  updated_at            DateTime            @default(now())
+
+  messages              chatbot_messages[]
+  user                  users?              @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([coze_conversation_id])
+}
+
+model chatbot_messages {
+  id         Int      @id @default(autoincrement())
+  session_id Int
+  sender     String   // 'user' or 'bot' (free text allowed)
+  content    String
+  created_at DateTime @default(now())
+
+  session    chatbot_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade)
+
+  @@index([session_id])
 }

@@ -11,7 +11,7 @@ import {
   VerifyReturnResponse,
 } from './payment.strategy';
 import { CreatePaymentUrlDto, VnpayReturnDto } from '../dto/payment.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { ProductCode } from 'vnpay';
 
 @Injectable()

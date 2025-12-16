@@ -3,8 +3,8 @@ import { OrderController } from './order.controller';
 import { OrderService } from './order.service';
 import { AddressModule } from '../address/address.module';
 import { PrismaModule } from '../prisma/prisma.module';
-import { PaymentModule } from 'src/payment/payment.module';
-import { DeliveryModule } from 'src/delivery/delivery.module';
+import { PaymentModule } from '../payment/payment.module';
+import { DeliveryModule } from '../delivery/delivery.module';
 
 @Module({
   imports: [AddressModule, PrismaModule, DeliveryModule, PaymentModule],

@@ -180,51 +180,119 @@ async function main() {
   // --- 6. Tạo Categories ---
   // Bảng 'categories' có quan hệ cha-con (parent_id)
   console.log('Tạo categories...');
-  const catSkincare = await prisma.categories.create({
-    data: {
-      name: 'Chăm sóc da',
-      slug: 'cham-soc-da',
-    },
-  });
-  const catMakeup = await prisma.categories.create({
-    data: {
-      name: 'Trang điểm',
-      slug: 'trang-diem',
-    },
-  });
+  
+  // Import dữ liệu từ categorys.json
+  const fs = require('fs');
+  const path = require('path');
+  const categoryFilePath = path.join(__dirname, '..', 'src', 'data-init', 'categorys.json');
+  const categoryDataRaw = fs.readFileSync(categoryFilePath, 'utf8');
+  const categoryData = JSON.parse(categoryDataRaw);
 
-  const subCatNames = {
-    skincare: ['Sữa rửa mặt', 'Kem chống nắng', 'Serum', 'Toner'],
-    makeup: ['Son môi', 'Kem nền', 'Phấn phủ'],
-  };
+  const allCategories: any[] = [];
+  
+  for (const parentCategory of categoryData) {
+    const createdParent = await prisma.categories.create({
+      data: {
+        name: parentCategory.name,
+        slug: parentCategory.slug,
+        parent_id: null,
+      },
+    });
+    
+    allCategories.push(createdParent);
+    
+    if (parentCategory.children && Array.isArray(parentCategory.children)) {
+      for (const childCategory of parentCategory.children) {
+        const createdChild = await prisma.categories.create({
+          data: {
+            name: childCategory.name,
+            slug: childCategory.slug,
+            parent_id: createdParent.id,
+          },
+        });
+        allCategories.push(createdChild);
+      }
+    }
+  }
 
-  const skincareSubCats = await Promise.all(
-    subCatNames.skincare.map((name) =>
-      prisma.categories.create({
-        data: {
-          name: name,
-          slug: faker.helpers.slugify(name).toLowerCase(),
-          parent_id: catSkincare.id,
-        },
-      })
-    )
-  );
+  // --- 7. Tạo Products từ products.json ---
+  console.log('Tạo sản phẩm từ products.json...');
+  const productsFilePath = path.join(__dirname, '..', 'src', 'data-init', 'products.json');
+  const productsDataRaw = fs.readFileSync(productsFilePath, 'utf8');
+  const productsData = JSON.parse(productsDataRaw);
 
-  const makeupSubCats = await Promise.all(
-    subCatNames.makeup.map((name) =>
-      prisma.categories.create({
-        data: {
-          name: name,
-          slug: faker.helpers.slugify(name).toLowerCase(),
-          parent_id: catMakeup.id,
-        },
-      })
-    )
-  );
-  const allCategories = [...skincareSubCats, ...makeupSubCats];
+  if (Array.isArray(productsData)) {
+    for (const productData of productsData) {
+      try {
+        const product = await prisma.products.create({
+          data: {
+            name: productData.name,
+            slug: productData.slug,
+            description: productData.description,
+            how_to_use: productData.how_to_use,
+            skin_type_compat: productData.skin_type_compat || 'normal',
+            is_published: productData.is_published,
+            moderation_status: productData.moderation_status,
+            avg_rating: productData.avg_rating,
+            review_count: productData.review_count,
+            brand_id: productData.brand_id,
+            shop_id: productData.shop_id,
+            created_at: new Date(),
+          },
+        });
 
-  // --- 7. Tạo 100 Products ---
-  console.log('Tạo 100 sản phẩm...');
+        if (productData.category_id) {
+          await prisma.product_categories.create({
+            data: {
+              product_id: product.id,
+              category_id: productData.category_id,
+            },
+          });
+        }
+
+        if (productData.variants && Array.isArray(productData.variants)) {
+          for (const variantData of productData.variants) {
+            await prisma.product_variants.create({
+              data: {
+                product_id: product.id,
+                name: variantData.name,
+                price: variantData.price,
+                compare_at_price: variantData.compare_price,
+                sku: variantData.sku,
+                stock: variantData.stock_quantity,
+                is_active: true,
+                shade_hex: variantData.shade_hex || null,
+                created_at: new Date(),
+                weight: variantData.weight,
+                length: variantData.length,
+                width: variantData.width,
+                height: variantData.height,
+              },
+            });
+          }
+        }
+
+        if (productData.media && Array.isArray(productData.media)) {
+          for (const mediaData of productData.media) {
+            await prisma.product_media.create({
+              data: {
+                product_id: product.id,
+                url: mediaData.url,
+                type: mediaData.type,
+                sort_order: mediaData.is_primary ? 0 : 1,
+                created_at: new Date(),
+              },
+            });
+          }
+        }
+      } catch (error) {
+        console.log(`Lỗi tạo sản phẩm ${productData.name}:`, error);
+      }
+    }
+  }
+
+  // --- 8. Tạo 100 sản phẩm faker (bổ sung) ---
+  console.log('Tạo 100 sản phẩm faker bổ sung...');
   for (let i = 0; i < 100; i++) {
     const randomShop = getRandomElement(shops);
     const randomBrand = getRandomElement(brands);
@@ -278,12 +346,14 @@ async function main() {
               name: 'Màu 01 / Size M',
               price: faker.number.int({ min: 100000, max: 1000000 }),
               stock: faker.number.int({ min: 10, max: 100 }),
+              shade_hex: faker.helpers.maybe(() => faker.color.rgb(), { probability: 0.5 }) || null,
             },
             {
               sku: `SKU-${faker.string.alphanumeric(10).toUpperCase()}`,
               name: 'Màu 02 / Size L',
               price: faker.number.int({ min: 100000, max: 1000000 }),
               stock: faker.number.int({ min: 10, max: 100 }),
+              shade_hex: faker.helpers.maybe(() => faker.color.rgb(), { probability: 0.5 }) || null,
             },
           ],
         },

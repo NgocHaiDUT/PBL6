@@ -33,6 +33,45 @@
       { "id": 16, "name": "Son tint", "slug": "son-tint" },
       { "id": 17, "name": "Son dưỡng có màu", "slug": "son-duong-mau" }
     ]
+  },
+  {
+    "id": 18,
+    "name": "Chăm sóc da",
+    "slug": "cham-soc-da",
+    "children": [
+      { "id": 19, "name": "Toner", "slug": "toner" },
+      { "id": 20, "name": "Serum", "slug": "serum" },
+      { "id": 21, "name": "Kem dưỡng", "slug": "kem-duong" },
+      { "id": 22, "name": "Mặt nạ", "slug": "mat-na" },
+      { "id": 23, "name": "Sữa rửa mặt", "slug": "sua-rua-mat" }
+    ]
+  },
+  {
+    "id": 24,
+    "name": "Chống nắng",
+    "slug": "chong-nang",
+    "children": [
+      { "id": 25, "name": "Kem chống nắng", "slug": "kem-chong-nang" },
+      { "id": 26, "name": "Xịt chống nắng", "slug": "xit-chong-nang" }
+    ]
+  },
+  {
+    "id": 27,
+    "name": "Cọ và dụng cụ",
+    "slug": "co-va-dung-cu",
+    "children": [
+      { "id": 28, "name": "Cọ trang điểm", "slug": "co-trang-diem" },
+      { "id": 29, "name": "Dụng cụ làm đẹp", "slug": "dung-cu-lam-dep" }
+    ]
+  },
+  {
+    "id": 30,
+    "name": "Nước hoa",
+    "slug": "nuoc-hoa",
+    "children": [
+      { "id": 31, "name": "Nước hoa nữ", "slug": "nuoc-hoa-nu" },
+      { "id": 32, "name": "Nước hoa nam", "slug": "nuoc-hoa-nam" },
+      { "id": 33, "name": "Nước hoa unisex", "slug": "nuoc-hoa-unisex" }
+    ]
   }
-  
 ]

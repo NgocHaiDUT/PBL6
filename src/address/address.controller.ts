@@ -20,7 +20,7 @@ import { CreateShopAddressDto } from './dto/create-shop-address.dto';
 import { UpdateShopAddressDto } from './dto/update-shop-address.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { GetDistrictsDto, GetWardsDto } from '../delivery/dto/ghn.dto';
-import { DeliveryService } from 'src/delivery/delivery.service';
+import { DeliveryService } from '../delivery/delivery.service';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/constants/Permission.enum';

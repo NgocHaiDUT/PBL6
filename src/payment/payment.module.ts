@@ -4,7 +4,7 @@ import { VnpayModule } from 'nestjs-vnpay';
 import { PaymentController } from './payment.controller';
 import { PaymentFactory } from './payment.factory';
 import { VnpayService } from './strategies/vnpay.service';
-import { PrismaModule } from 'src/prisma/prisma.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
   imports: [
