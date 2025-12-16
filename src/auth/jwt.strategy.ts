@@ -15,7 +15,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: any) {
     console.log('🔍 [JWT Strategy] Validating payload:', payload);
-    
+
     const user = await this.prisma.users.findUnique({
       where: { id: Number(payload.sub) },
       include: {
@@ -37,15 +37,22 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
 
     if (!user) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException({
+        code: 'USER_NOT_FOUND',
+      });
     }
 
     // Lấy permissions từ role
-    const rolePermissions = user.role?.rolePermissions?.map((rp) => rp.permission.name) || [];
+    const rolePermissions =
+      user.role?.rolePermissions?.map((rp) => rp.permission.name) || [];
     // Lấy permissions trực tiếp từ user
-    const userPermissions = user.userPermissions.map((up) => up.permission.name);
+    const userPermissions = user.userPermissions.map(
+      (up) => up.permission.name,
+    );
     // Merge và loại bỏ duplicate
-    const allPermissions = [...new Set([...rolePermissions, ...userPermissions])];
+    const allPermissions = [
+      ...new Set([...rolePermissions, ...userPermissions]),
+    ];
 
     console.log('🔍 [JWT Strategy] User ID:', user.id);
     console.log('🔍 [JWT Strategy] User role:', user.role?.name);

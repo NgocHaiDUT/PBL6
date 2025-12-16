@@ -1,9 +1,21 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Request, Headers, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Request,
+  Headers,
+  UseGuards,
+} from '@nestjs/common';
 import { CartService } from '../cart/cart.service';
 import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('cart')
-@UseGuards(AuthGuard('jwt')) // ✅ Require JWT authentication
+@UseGuards(JwtAuthGuard) // ✅ Require JWT authentication
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 
@@ -11,26 +23,26 @@ export class CartController {
   async getCart(@Request() req) {
     // ✅ Lấy userId từ JWT token
     const userId = req.user?.sub || req.user?.userId;
-    
+
     if (!userId) {
       return { success: false, error: 'User ID is required' };
     }
-    
+
     return this.cartService.getCart(Number(userId));
   }
 
   @Post('add')
   async addToCart(
     @Request() req,
-    @Body() body: { product_id: number; variant_id?: number; quantity: number }
+    @Body() body: { product_id: number; variant_id?: number; quantity: number },
   ) {
     // ✅ Lấy userId từ JWT token
     const userId = req.user?.sub || req.user?.userId;
-    
+
     if (!userId) {
       return { success: false, error: 'User ID is required' };
     }
-    
+
     return this.cartService.addToCart(Number(userId), body);
   }
 
@@ -38,30 +50,31 @@ export class CartController {
   async updateCartItem(
     @Request() req,
     @Param('id') id: string,
-    @Body() body: { quantity: number }
+    @Body() body: { quantity: number },
   ) {
     // ✅ Lấy userId từ JWT token
     const userId = req.user?.sub || req.user?.userId;
-    
+
     if (!userId) {
       return { success: false, error: 'User ID is required' };
     }
-    
-    return this.cartService.updateCartItem(Number(userId), Number(id), body.quantity);
+
+    return this.cartService.updateCartItem(
+      Number(userId),
+      Number(id),
+      body.quantity,
+    );
   }
 
   @Delete('item/:id')
-  async removeFromCart(
-    @Request() req,
-    @Param('id') id: string
-  ) {
+  async removeFromCart(@Request() req, @Param('id') id: string) {
     // ✅ Lấy userId từ JWT token
     const userId = req.user?.sub || req.user?.userId;
-    
+
     if (!userId) {
       return { success: false, error: 'User ID is required' };
     }
-    
+
     return this.cartService.removeFromCart(Number(userId), Number(id));
   }
 
@@ -69,11 +82,11 @@ export class CartController {
   async clearCart(@Request() req) {
     // ✅ Lấy userId từ JWT token
     const userId = req.user?.sub || req.user?.userId;
-    
+
     if (!userId) {
       return { success: false, error: 'User ID is required' };
     }
-    
+
     return this.cartService.clearCart(Number(userId));
   }
 }

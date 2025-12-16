@@ -33,6 +33,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { PaymentController } from './payment/payment.controller';
 import { PaymentModule } from './payment/payment.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
+import { StoryModule } from './story/story.module';
 @Module({
   imports: [
     AuthModule,
@@ -99,6 +100,8 @@ import { ChatbotModule } from './chatbot/chatbot.module';
     UsersModule,
     PaymentModule,
     ChatbotModule,
+    StoryModule, // ✅ Add StoryModule
+
   ],
   controllers: [AppController, PaymentController],
   providers: [AppService, PrismaService],

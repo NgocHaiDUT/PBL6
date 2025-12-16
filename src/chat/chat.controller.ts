@@ -9,11 +9,12 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
 import { getMulterOptions, getFileUrl } from '../config/storage.config';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('chat')
 export class ChatController {
   @Post('upload')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('file', getMulterOptions('chat_media', 'media')),
   )

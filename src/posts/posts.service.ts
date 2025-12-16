@@ -160,6 +160,144 @@ export class PostsService {
     };
   }
 
+  /**
+   * Create post with S3 URLs (already uploaded)
+   * Used by presigned URL upload flow
+   */
+  async createPostWithS3Urls(
+    userId: number,
+    createPostDto: CreatePostDto,
+    mediaUrls: string[],
+    coverUrl?: string,
+    videoUrl?: string,
+  ) {
+    const { product_ids, tags, ...postData } = createPostDto;
+
+    // Validate content
+    const rawMd = (postData as any)?.content_md as string | undefined;
+    const trimmedMd = typeof rawMd === 'string' ? rawMd.trim() : '';
+    const hasMedia = mediaUrls.length > 0 || coverUrl || videoUrl;
+    
+    if (!trimmedMd && !hasMedia) {
+      throw new Error('content_md is required when no media is provided');
+    }
+
+    // Sanitize data
+    const sanitizedBase = Object.fromEntries(
+      Object.entries({
+        ...postData,
+        post_type: (postData as any)?.post_type ?? 'post',
+        visibility: (postData as any)?.visibility ?? 'public',
+        content_md: trimmedMd,
+      }).filter(([, v]) => v !== undefined),
+    );
+
+    // Create post record
+    const post = await this.prisma.posts.create({
+      data: {
+        content_md: trimmedMd,
+        ...sanitizedBase,
+        user_id: userId,
+        moderation_status: 'pending',
+      },
+    });
+
+    console.log('✅ [PostsService] Post created:', post.id);
+
+    // Create media records from S3 URLs
+    let sortOrder = 0;
+
+    // Add cover image first (sort_order: 0)
+    if (coverUrl) {
+      await this.prisma.post_media.create({
+        data: {
+          post_id: post.id,
+          media_url: coverUrl,
+          media_type: 'image',
+          sort_order: sortOrder++,
+        },
+      });
+      console.log('✅ [PostsService] Cover image added');
+    }
+
+    // Add other images
+    for (const mediaUrl of mediaUrls) {
+      await this.prisma.post_media.create({
+        data: {
+          post_id: post.id,
+          media_url: mediaUrl,
+          media_type: 'image',
+          sort_order: sortOrder++,
+        },
+      });
+    }
+
+    if (mediaUrls.length > 0) {
+      console.log(`✅ [PostsService] ${mediaUrls.length} media files added`);
+    }
+
+    // Add video
+    if (videoUrl) {
+      await this.prisma.post_media.create({
+        data: {
+          post_id: post.id,
+          media_url: videoUrl,
+          media_type: 'video',
+          sort_order: sortOrder++,
+        },
+      });
+      console.log('✅ [PostsService] Video added');
+    }
+
+    // Handle product tags
+    if (product_ids && product_ids.length > 0) {
+      for (const productId of product_ids) {
+        await this.prisma.post_products.create({
+          data: {
+            post_id: post.id,
+            product_id: productId,
+          },
+        });
+      }
+      console.log(`✅ [PostsService] ${product_ids.length} products tagged`);
+    }
+
+    // Handle tags
+    if (tags && tags.length > 0) {
+      for (const tagName of tags) {
+        // Create slug from tag name
+        const slug = tagName.toLowerCase().replace(/\s+/g, '-');
+        
+        // Find or create tag
+        let tag = await this.prisma.tags.findUnique({
+          where: { slug },
+        });
+
+        if (!tag) {
+          tag = await this.prisma.tags.create({
+            data: { name: tagName, slug },
+          });
+        }
+
+        // Create post_tags relation
+        await this.prisma.post_tags.create({
+          data: {
+            post_id: post.id,
+            tag_id: tag.id,
+          },
+        });
+      }
+      console.log(`✅ [PostsService] ${tags.length} tags added`);
+    }
+
+    const createdPost = await this.getPostById(post.id);
+    return {
+      success: true,
+      message: 'Post created successfully with S3 media',
+      data: createdPost.data,
+    };
+  }
+
   async getPosts(queryDto: QueryPostsDto) {
     const {
       page = 1,
@@ -173,6 +311,7 @@ export class PostsService {
     const skip = (page - 1) * limit;
 
     const where: any = {
+      is_story: false, // Exclude stories from posts list
       // moderation_status: 'approved', // Temporary comment for testing
     };
 
@@ -765,6 +904,9 @@ export class PostsService {
 
       const where = {
         user_id: userId,
+        post: {
+          is_story: false, // Exclude stories from saved posts
+        },
       };
 
       // Get saved posts with full post data

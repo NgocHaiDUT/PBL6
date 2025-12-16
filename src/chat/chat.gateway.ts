@@ -336,7 +336,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       // 4. Format messages for frontend
-      const formattedMessages = messageHistory.data.map((msg) => {
+      const formattedMessages = await Promise.all(messageHistory.data.map(async (msg) => {
         // ✅ Debug log raw reactions from database
         this.logger.log(`🔍 Message ${msg.id} raw message_reactions from DB:`, (msg as any).message_reactions);
         
@@ -367,6 +367,55 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }));
 
         this.logger.log(`📎 Message ${msg.id} has ${mediaFiles.length} media files:`, mediaFiles);
+        this.logger.log(`📦 Message ${msg.id} payload:`, msg.payload);
+        this.logger.log(`📋 Message ${msg.id} type:`, msg.type);
+
+        // ✅ Enrich payload with story details if STORY_REPLY
+        let enrichedPayload = msg.payload;
+        if (msg.type === 'STORY_REPLY' && msg.payload) {
+          const payloadData = msg.payload as any;
+          if (payloadData.story_id) {
+            try {
+              // Load story from posts table
+              const story = await this.prisma.posts.findFirst({
+                where: {
+                  id: payloadData.story_id,
+                  is_story: true,
+                },
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      full_name: true,
+                      avatar_url: true,
+                    },
+                  },
+                },
+              });
+
+              if (story) {
+                // Enrich payload with full story data
+                enrichedPayload = {
+                  story_id: story.id,
+                  story_type: story.story_type,
+                  story_media_url: story.media_url,
+                  story_thumbnail_url: story.thumbnail_url,
+                  story_caption: story.caption,
+                  story_owner: {
+                    id: story.user.id,
+                    full_name: story.user.full_name,
+                    avatar_url: story.user.avatar_url,
+                  },
+                  story_created_at: story.created_at.toISOString(),
+                  story_expires_at: story.expires_at?.toISOString(),
+                };
+                this.logger.log(`✅ Enriched story payload for message ${msg.id}:`, enrichedPayload);
+              }
+            } catch (error) {
+              this.logger.error(`❌ Failed to load story for message ${msg.id}:`, error);
+            }
+          }
+        }
 
         return {
           id: msg.id,
@@ -377,7 +426,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           receiverId: data.targetId === msg.sender_id ? data.openerId : data.targetId,
           content: msg.content,
           type: msg.type,
-          payload: msg.payload,
+          payload: enrichedPayload,
           createdAt: msg.created_at.toISOString(),
           sharedPostId: (msg as any).post_id, // ✅ Include shared post ID
           messageType: msg.type, // ✅ Use 'type' field (enum message_type)
@@ -401,7 +450,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
                   Avatar: null,
                 }
         };
-      });
+      }));
 
       // 4. Notify target user (optional)
       this.server.to(`${data.targetId}`).emit('openChat', { 

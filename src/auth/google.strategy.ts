@@ -10,30 +10,25 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     super({
       clientID: process.env.GOOGLE_CLIENT_WEB_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_WEB_SECRET!,
-      callbackURL:
-        process.env.GOOGLE_CALLBACK_URL ||
-        'http://localhost:3000/auth/google/callback',
+      callbackURL: process.env.GOOGLE_CALLBACK_URL!,
       scope: ['email', 'profile'],
       passReqToCallback: false,
     });
   }
 
-  // 👇 Thêm hàm này để chèn prompt=select_account
   authorizationParams(): Record<string, string> {
     return {
       prompt: 'select_account',
-      access_type: 'offline', // tùy chọn: để có refresh token
-      include_granted_scopes: 'true', // tùy chọn: reuse permission
     };
   }
 
-  async validate(accessToken: string, refreshToken: string, profile: any) {
+  async validate(_: string, __: string, profile: any) {
     const provider = auth_provider.google;
     const providerUserId = profile.id as string;
     const rawEmail = profile.emails?.[0]?.value as string | undefined;
     const email = rawEmail ?? `google_${providerUserId}@example.local`;
-    const fullName = (profile.displayName as string) ?? null;
-    const avatarUrl = (profile.photos?.[0]?.value as string) ?? null;
+    const fullName = profile.displayName as string;
+    const avatarUrl = profile.photos?.[0]?.value ?? null;
 
     let identity = await this.prisma.auth_identities.findUnique({
       where: {
@@ -46,10 +41,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     });
 
     if (identity) {
-      await this.prisma.auth_identities.update({
-        where: { id: identity.id },
-        data: { access_token: accessToken, refresh_token: refreshToken },
-      });
       return identity.user;
     }
 
@@ -67,9 +58,10 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       user = await this.prisma.users.create({
         data: {
           email,
-          full_name: fullName ?? undefined,
-          avatar_url: avatarUrl ?? undefined,
+          full_name: fullName,
+          avatar_url: avatarUrl,
           role_id: defaultRole?.id,
+          firstlogin: false,
         },
       });
 
@@ -88,8 +80,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         user_id: user.id,
         provider,
         provider_user_id: providerUserId,
-        access_token: accessToken,
-        refresh_token: refreshToken,
       },
       include: { user: true },
     });

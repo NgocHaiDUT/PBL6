@@ -14,7 +14,7 @@ describe('UsersController', () => {
     remove: jest.fn(),
   };
 
-  const JwtAuthGuard = AuthGuard('jwt');
+  const JwtAuthGuard = JwtAuthGuard;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
