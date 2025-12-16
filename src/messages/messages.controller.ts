@@ -27,6 +27,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('messages')
 @UseGuards(JwtAuthGuard) // ✅ Require JWT for all endpoints
@@ -119,7 +120,7 @@ export class MessagesController {
 
   // Lấy danh sách conversations của shop
   @Get('shop/:shopId/conversations')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('chat_with_customer')
   getShopConversations(
     @Param('shopId', ParseIntPipe) shopId: number,
@@ -135,7 +136,7 @@ export class MessagesController {
 
   // Lấy tin nhắn trong conversation cụ thể của shop
   @Get('shop/:shopId/conversations/:conversationId/messages')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('chat_with_customer')
   getShopConversationMessages(
     @Param('shopId', ParseIntPipe) shopId: number,
@@ -154,7 +155,7 @@ export class MessagesController {
 
   // Đánh dấu tất cả tin nhắn trong conversation của shop là đã đọc
   @Patch('shop/:shopId/conversations/:conversationId/read-all')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('chat_with_customer')
   markShopConversationAsRead(
     @Param('shopId', ParseIntPipe) shopId: number,

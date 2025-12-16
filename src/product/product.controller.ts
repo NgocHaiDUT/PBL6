@@ -46,7 +46,7 @@ export class ProductController {
   }
 
   @Post('brands')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_BRANDS)
   @UseInterceptors(FileInterceptor('file', brandMulterConfig))
   async createBrand(
@@ -67,7 +67,7 @@ export class ProductController {
   }
 
   @Patch('brands/:brandId/name')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_BRANDS)
   async updateBrandName(
     @Param('brandId', ParseIntPipe) brandId: number,
@@ -82,7 +82,7 @@ export class ProductController {
   }
 
   @Patch('brands/:brandId/slug')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_BRANDS)
   async updateBrandSlug(
     @Param('brandId', ParseIntPipe) brandId: number,
@@ -97,7 +97,7 @@ export class ProductController {
   }
 
   @Patch('brands/:brandId/logo')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_BRANDS)
   @UseInterceptors(FileInterceptor('file', brandMulterConfig))
   async updateBrandLogo(
@@ -122,7 +122,7 @@ export class ProductController {
   }
 
   @Post('categories')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_CATEGORYS)
   async createCategory(
     @Body() body: { parent_id?: string; name: string; slug: string },
@@ -140,7 +140,7 @@ export class ProductController {
   }
 
   @Patch('categories/:categoryId/name')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_CATEGORYS)
   async updateCategoryName(
     @Param('categoryId', ParseIntPipe) categoryId: number,
@@ -153,7 +153,7 @@ export class ProductController {
   }
 
   @Patch('categories/:categoryId/slug')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('manage_categorys')
   async updateCategorySlug(
     @Param('categoryId', ParseIntPipe) categoryId: number,
@@ -202,7 +202,7 @@ export class ProductController {
   async getProductById(@Param('productId', ParseIntPipe) productId: number) {
     return this.productservice.getProductById(productId);
   }
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('manage_brands')
   @UseInterceptors(FileInterceptor('file', brandMulterConfig))
   async addbrand(
@@ -222,7 +222,7 @@ export class ProductController {
   }
 
   @Post('edit-brand-name')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('manage_brands')
   async editbrandname(
     @Body() body: { id: string; name: string },
@@ -240,7 +240,7 @@ export class ProductController {
   }
 
   @Post('edit-brand-slug')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_CATEGORYS)
   async editbrandslug(
     @Body() body: { id: string; slug: string },
@@ -258,7 +258,7 @@ export class ProductController {
   }
 
   @Post('edit-brand-logo')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('manage_brands')
   @UseInterceptors(FileInterceptor('file', brandMulterConfig))
   async editbrandlogo(
@@ -283,7 +283,7 @@ export class ProductController {
 
   // Product CRUD
   @Post()
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.CREATE_PRODUCT)
   async createProduct(
     @Body()
@@ -342,7 +342,7 @@ export class ProductController {
   }
 
   @Put(':productId')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_PRODUCT)
   async updateProduct(
     @Param('productId', ParseIntPipe) productId: number,
@@ -397,7 +397,7 @@ export class ProductController {
   }
 
   @Delete(':productId')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.DELETE_PRODUCT)
   async deleteProduct(
     @Param('productId', ParseIntPipe) productId: number,
@@ -409,7 +409,7 @@ export class ProductController {
 
   // Product Variants
   @Post('variants')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('create_product')
   async createProductVariant(
     @Body()
@@ -442,7 +442,7 @@ export class ProductController {
   }
 
   @Put('variants/:variantId')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_PRODUCT)
   async updateProductVariant(
     @Param('variantId', ParseIntPipe) variantId: number,
@@ -475,7 +475,7 @@ export class ProductController {
   }
 
   @Delete('variants/:variantId')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.DELETE_PRODUCT)
   async deleteProductVariant(
     @Param('variantId', ParseIntPipe) variantId: number,
@@ -487,7 +487,7 @@ export class ProductController {
 
   // Product Media
   @Post(':productId/media')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('edit_product')
   @UseInterceptors(FileInterceptor('file', productMediaMulterConfig))
   async addProductMedia(

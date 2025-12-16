@@ -27,6 +27,7 @@ import { getMulterOptions, getFileUrl } from '../config/storage.config';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/constants/Permission.enum';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('users')
 export class ProfileController {
@@ -288,7 +289,7 @@ export class ProfileController {
   }
 
   @Patch('shops/:shopId/logo')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   @UseInterceptors(FileInterceptor('file', getMulterOptions('shops')))
   async updateShopLogo(
@@ -305,7 +306,7 @@ export class ProfileController {
   }
 
   @Patch('shops/:shopId/banner')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   @UseInterceptors(FileInterceptor('file', getMulterOptions('shops')))
   async updateShopBanner(
@@ -322,7 +323,7 @@ export class ProfileController {
   }
 
   @Patch('shops/:shopId/phone')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   async updateShopPhone(
     @Param('shopId', ParseIntPipe) shopId: number,
@@ -334,7 +335,7 @@ export class ProfileController {
   }
 
   @Patch('shops/:shopId/email')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   async updateShopEmail(
     @Param('shopId', ParseIntPipe) shopId: number,
@@ -346,7 +347,7 @@ export class ProfileController {
   }
 
   @Patch('shops/:shopId/description')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   async updateShopDescription(
     @Param('shopId', ParseIntPipe) shopId: number,

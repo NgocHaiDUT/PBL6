@@ -450,8 +450,6 @@ export class AuthService {
         avatar_url: true,
         phone: true,
         story: true,
-        created_at: true,
-        updated_at: true,
         firstlogin: true,
         role: {
           select: {
@@ -459,12 +457,19 @@ export class AuthService {
             name: true,
           },
         },
+        userPermissions: {
+          select: {
+            permission: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    if (!user) {
-      return null;
-    }
+    if (!user) return null;
 
     return {
       id: user.id,
@@ -474,11 +479,11 @@ export class AuthService {
       phone: user.phone,
       story: user.story,
       role: user.role?.name || 'user',
-      created_at: user.created_at,
-      updated_at: user.updated_at,
+      permissions: user.userPermissions.map((up) => up.permission.name),
       firstlogin: user.firstlogin,
     };
   }
+
   private generateOtp(length = 6): string {
     const min = Math.pow(10, length - 1);
     const max = Math.pow(10, length) - 1;

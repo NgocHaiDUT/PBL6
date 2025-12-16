@@ -32,13 +32,14 @@ import { AuthGuard } from '@nestjs/passport';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/constants/Permission.enum';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Post()
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.CREATE_POST)
   @UseInterceptors(FilesInterceptor('media', 10, s3PostMediaConfig))
   create(
@@ -69,7 +70,7 @@ export class PostsController {
   }
 
   @Patch(':id')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_POST)
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -81,7 +82,7 @@ export class PostsController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.DELETE_POST)
   remove(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     const userId = req.user.userId;
@@ -89,7 +90,7 @@ export class PostsController {
   }
 
   @Post(':id/upload-cover')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_POST)
   @UseInterceptors(FileInterceptor('cover', s3PostCoverConfig))
   uploadCoverImage(
@@ -102,7 +103,7 @@ export class PostsController {
   }
 
   @Post(':id/upload-video')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_POST)
   @UseInterceptors(FileInterceptor('video', s3PostVideoConfig))
   uploadVideo(
@@ -115,7 +116,7 @@ export class PostsController {
   }
 
   @Post(':id/upload-media')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_POST)
   @UseInterceptors(FilesInterceptor('media', 10, s3PostMediaConfig))
   uploadAdditionalMedia(
@@ -134,7 +135,7 @@ export class PostsController {
   }
 
   @Delete('media/:mediaId')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_POST)
   deleteMedia(
     @Param('mediaId', ParseIntPipe) mediaId: number,
@@ -279,7 +280,7 @@ export class PostsController {
    * POST /posts/complete-upload - Lưu post sau khi upload media lên S3
    */
   @Post('complete-upload')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.CREATE_POST)
   async completeUpload(
     @Req() req: any,

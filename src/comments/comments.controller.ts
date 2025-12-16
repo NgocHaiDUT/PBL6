@@ -22,6 +22,7 @@ import {
   PaginatedCommentsResponse,
 } from './interfaces/comment.interface';
 import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('comments')
 export class CommentsController {

@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { CartService } from '../cart/cart.service';
 import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('cart')
 @UseGuards(JwtAuthGuard) // ✅ Require JWT authentication

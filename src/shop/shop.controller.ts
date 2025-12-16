@@ -29,6 +29,7 @@ import {
   RemoveStaffDto,
   UpdateStaffPermissionsDto,
 } from './dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @ApiTags('Shop Management')
 @Controller('shop')
@@ -36,7 +37,7 @@ export class ShopController {
   constructor(private readonly shopService: ShopService) {}
   // Thêm nhân viên
   @Post(':shopId/staff')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_SHOP_STAFF)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -94,7 +95,7 @@ export class ShopController {
 
   // Remove staff from shop
   @Delete('staff')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_SHOP_STAFF)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -138,7 +139,7 @@ export class ShopController {
 
   // Get shop staff list
   @Get(':shopid/staffs')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_SHOP_STAFF)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -198,7 +199,7 @@ export class ShopController {
 
   // Cập nhật quyền của nhân viên
   @Put(':shopId/staff/:staffEmail/permissions')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_SHOP_STAFF)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -252,7 +253,7 @@ export class ShopController {
   }
 
   @Get(':shopid/staff/:staffemail/permissions')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_SHOP_STAFF)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -302,7 +303,7 @@ export class ShopController {
 
   // Xóa quyền của nhân viên
   @Delete(':shopId/staff/:staffEmail/permissions')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_SHOP_STAFF)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -357,7 +358,7 @@ export class ShopController {
   }
 
   @Get(':shopid/details')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_SHOP_ADMIN)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({

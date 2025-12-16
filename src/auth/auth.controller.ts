@@ -332,4 +332,14 @@ export class AuthController {
 
     return this.authService.refreshToken(dto);
   }
+
+  @Get('me')
+  @ApiOperation({ summary: 'Refresh access token using refresh token' })
+  @ApiResponse({ status: 200, description: 'Get information success' })
+  @ApiResponse({ status: 401, description: 'Invalid access_token' })
+  @UseGuards(JwtAuthGuard)
+  async getCurentUser(@Req() req: any) {
+    const userId = req.user.userId;
+    return this.authService.getCurrentUser(userId);
+  }
 }

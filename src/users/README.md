@@ -1,10 +1,12 @@
 # Users Module API Documentation
 
 ## Base URL
+
 All endpoints are prefixed with `/users`
 
 ## Authentication & Authorization
-- 🔐 All endpoints require JWT authentication (`AuthGuard('jwt')`)
+
+- 🔐 All endpoints require JWT authentication (`JwtAuthGuard`)
 - 🛡️ Permission-based authorization using `PermissionsGuard`
 - Each endpoint requires specific permissions as listed below
 
@@ -13,6 +15,7 @@ All endpoints are prefixed with `/users`
 ## 📋 User Management APIs
 
 ### 1. Get Page Info
+
 Get statistics and metadata for users page
 
 **Endpoint:** `GET /users/page-info`
@@ -20,6 +23,7 @@ Get statistics and metadata for users page
 **Permission Required:** `view_users`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -38,6 +42,7 @@ Get statistics and metadata for users page
 ---
 
 ### 2. Create User
+
 Create a new user account
 
 **Endpoint:** `POST /users`
@@ -45,6 +50,7 @@ Create a new user account
 **Permission Required:** `create_user`
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -59,6 +65,7 @@ Create a new user account
 ```
 
 **Response:**
+
 ```json
 {
   "id": 1,
@@ -77,6 +84,7 @@ Create a new user account
 ---
 
 ### 3. Get All Users
+
 Get paginated list of users with optional filtering
 
 **Endpoint:** `GET /users`
@@ -84,6 +92,7 @@ Get paginated list of users with optional filtering
 **Permission Required:** `view_users`
 
 **Query Parameters:**
+
 - `page` (number, default: 1) - Page number
 - `limit` (number, default: 10) - Items per page
 - `search` (string, optional) - Search by name, email, or phone
@@ -93,6 +102,7 @@ Get paginated list of users with optional filtering
 **Example:** `GET /users?page=1&limit=10&search=john&is_active=true&role_id=2`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -124,6 +134,7 @@ Get paginated list of users with optional filtering
 ---
 
 ### 4. Get User by ID
+
 Get detailed information about a specific user
 
 **Endpoint:** `GET /users/:id`
@@ -131,6 +142,7 @@ Get detailed information about a specific user
 **Permission Required:** `view_users`
 
 **Response:**
+
 ```json
 {
   "id": 1,
@@ -148,6 +160,7 @@ Get detailed information about a specific user
 ---
 
 ### 5. Update User
+
 Update user information
 
 **Endpoint:** `PATCH /users/:id`
@@ -155,6 +168,7 @@ Update user information
 **Permission Required:** `update_user`
 
 **Request Body:** (All fields are optional)
+
 ```json
 {
   "email": "newemail@example.com",
@@ -169,6 +183,7 @@ Update user information
 ```
 
 **Response:**
+
 ```json
 {
   "id": 1,
@@ -185,6 +200,7 @@ Update user information
 ---
 
 ### 6. Delete User (Soft Delete)
+
 Mark a user as deleted
 
 **Endpoint:** `DELETE /users/:id`
@@ -192,6 +208,7 @@ Mark a user as deleted
 **Permission Required:** `delete_user`
 
 **Response:**
+
 ```json
 {
   "id": 1,
@@ -206,6 +223,7 @@ Mark a user as deleted
 ## 🔐 Role & Permission Management APIs
 
 ### 7. Set User Role
+
 Assign a role to a user
 
 **Endpoint:** `PATCH /users/:id/role`
@@ -213,6 +231,7 @@ Assign a role to a user
 **Permission Required:** `manage_roles`
 
 **Request Body:**
+
 ```json
 {
   "role_id": 2
@@ -220,6 +239,7 @@ Assign a role to a user
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -240,6 +260,7 @@ Assign a role to a user
 ---
 
 ### 8. Set User Permissions
+
 Set user-specific permissions (overrides role permissions)
 
 **Endpoint:** `PATCH /users/:id/permissions`
@@ -247,6 +268,7 @@ Set user-specific permissions (overrides role permissions)
 **Permission Required:** `manage_permissions`
 
 **Request Body:**
+
 ```json
 {
   "permission_ids": [1, 2, 3, 5, 8]
@@ -254,6 +276,7 @@ Set user-specific permissions (overrides role permissions)
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -274,6 +297,7 @@ Set user-specific permissions (overrides role permissions)
 ---
 
 ### 9. Get User Permissions
+
 Get all permissions for a user (combined from role and user-specific)
 
 **Endpoint:** `GET /users/:id/permissions`
@@ -281,6 +305,7 @@ Get all permissions for a user (combined from role and user-specific)
 **Permission Required:** `view_users`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -303,6 +328,7 @@ Get all permissions for a user (combined from role and user-specific)
 ---
 
 ### 10. Create Permission
+
 Create a new permission in the system
 
 **Endpoint:** `POST /users/permissions`
@@ -310,6 +336,7 @@ Create a new permission in the system
 **Permission Required:** `manage_permissions`
 
 **Request Body:**
+
 ```json
 {
   "name": "manage_products"
@@ -317,6 +344,7 @@ Create a new permission in the system
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -331,6 +359,7 @@ Create a new permission in the system
 ---
 
 ### 11. Get All Permissions
+
 Get list of all available permissions
 
 **Endpoint:** `GET /users/permissions/all`
@@ -338,6 +367,7 @@ Get list of all available permissions
 **Permission Required:** `view_users`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -355,6 +385,7 @@ Get list of all available permissions
 ---
 
 ### 12. Set Role Permissions
+
 Assign permissions to a role
 
 **Endpoint:** `PATCH /users/roles/:roleId/permissions`
@@ -362,6 +393,7 @@ Assign permissions to a role
 **Permission Required:** `manage_roles`
 
 **Request Body:**
+
 ```json
 {
   "permission_ids": [1, 2, 3, 4, 5]
@@ -369,6 +401,7 @@ Assign permissions to a role
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -390,6 +423,7 @@ Assign permissions to a role
 ---
 
 ### 13. Get All Roles
+
 Get list of all roles with their permissions
 
 **Endpoint:** `GET /users/roles/all`
@@ -397,6 +431,7 @@ Get list of all roles with their permissions
 **Permission Required:** `view_users`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -430,21 +465,21 @@ Get list of all roles with their permissions
 
 ## 📝 API Summary
 
-| Method | Endpoint | Description | Permission Required |
-|--------|----------|-------------|-------------------|
-| `GET` | `/users/page-info` | Get users page statistics | `view_users` |
-| `POST` | `/users` | Create a new user | `create_user` |
-| `GET` | `/users` | Get all users (paginated) | `view_users` |
-| `GET` | `/users/:id` | Get user by ID | `view_users` |
-| `PATCH` | `/users/:id` | Update user | `update_user` |
-| `DELETE` | `/users/:id` | Delete user (soft delete) | `delete_user` |
-| `PATCH` | `/users/:id/role` | Set user role | `manage_roles` |
-| `PATCH` | `/users/:id/permissions` | Set user permissions | `manage_permissions` |
-| `GET` | `/users/:id/permissions` | Get user permissions | `view_users` |
-| `POST` | `/users/permissions` | Create new permission | `manage_permissions` |
-| `GET` | `/users/permissions/all` | Get all permissions | `view_users` |
-| `PATCH` | `/users/roles/:roleId/permissions` | Set role permissions | `manage_roles` |
-| `GET` | `/users/roles/all` | Get all roles | `view_users` |
+| Method   | Endpoint                           | Description               | Permission Required  |
+| -------- | ---------------------------------- | ------------------------- | -------------------- |
+| `GET`    | `/users/page-info`                 | Get users page statistics | `view_users`         |
+| `POST`   | `/users`                           | Create a new user         | `create_user`        |
+| `GET`    | `/users`                           | Get all users (paginated) | `view_users`         |
+| `GET`    | `/users/:id`                       | Get user by ID            | `view_users`         |
+| `PATCH`  | `/users/:id`                       | Update user               | `update_user`        |
+| `DELETE` | `/users/:id`                       | Delete user (soft delete) | `delete_user`        |
+| `PATCH`  | `/users/:id/role`                  | Set user role             | `manage_roles`       |
+| `PATCH`  | `/users/:id/permissions`           | Set user permissions      | `manage_permissions` |
+| `GET`    | `/users/:id/permissions`           | Get user permissions      | `view_users`         |
+| `POST`   | `/users/permissions`               | Create new permission     | `manage_permissions` |
+| `GET`    | `/users/permissions/all`           | Get all permissions       | `view_users`         |
+| `PATCH`  | `/users/roles/:roleId/permissions` | Set role permissions      | `manage_roles`       |
+| `GET`    | `/users/roles/all`                 | Get all roles             | `view_users`         |
 
 ---
 
@@ -462,6 +497,7 @@ Get list of all roles with their permissions
 ## 📚 DTOs
 
 ### CreateUserDto
+
 ```typescript
 {
   email: string;
@@ -476,6 +512,7 @@ Get list of all roles with their permissions
 ```
 
 ### UpdateUserDto
+
 ```typescript
 {
   email?: string;
@@ -490,6 +527,7 @@ Get list of all roles with their permissions
 ```
 
 ### QueryUsersDto
+
 ```typescript
 {
   page?: number;
@@ -501,6 +539,7 @@ Get list of all roles with their permissions
 ```
 
 ### SetUserRoleDto
+
 ```typescript
 {
   role_id: number;
@@ -508,6 +547,7 @@ Get list of all roles with their permissions
 ```
 
 ### SetUserPermissionDto
+
 ```typescript
 {
   permission_ids: number[];
@@ -515,6 +555,7 @@ Get list of all roles with their permissions
 ```
 
 ### CreatePermissionDto
+
 ```typescript
 {
   name: string;
@@ -522,6 +563,7 @@ Get list of all roles with their permissions
 ```
 
 ### SetRolePermissionDto
+
 ```typescript
 {
   permission_ids: number[];
@@ -533,6 +575,7 @@ Get list of all roles with their permissions
 ## ⚠️ Error Responses
 
 ### 400 Bad Request
+
 ```json
 {
   "statusCode": 400,
@@ -542,6 +585,7 @@ Get list of all roles with their permissions
 ```
 
 ### 401 Unauthorized
+
 ```json
 {
   "statusCode": 401,
@@ -550,6 +594,7 @@ Get list of all roles with their permissions
 ```
 
 ### 403 Forbidden
+
 ```json
 {
   "statusCode": 403,
@@ -559,6 +604,7 @@ Get list of all roles with their permissions
 ```
 
 ### 404 Not Found
+
 ```json
 {
   "statusCode": 404,

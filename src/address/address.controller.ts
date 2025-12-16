@@ -136,7 +136,7 @@ export class AddressController {
   // ==================== ADMIN - USER ADDRESS MANAGEMENT ====================
 
   @Post('users/:userId')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_USERS)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -164,7 +164,7 @@ export class AddressController {
   }
 
   @Get('users/:userId')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_USERS)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -184,7 +184,7 @@ export class AddressController {
   }
 
   @Put('users/:userId/:id')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_USERS)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -213,7 +213,7 @@ export class AddressController {
   }
 
   @Delete('users/:userId/:id')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_USERS)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -358,7 +358,7 @@ export class AddressController {
   // ==================== ADMIN - SHOP ADDRESS MANAGEMENT ====================
 
   @Post('admin/shops/:shopId')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_USERS)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -386,7 +386,7 @@ export class AddressController {
   }
 
   @Get('admin/shops/:shopId')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_USERS)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -409,7 +409,7 @@ export class AddressController {
   }
 
   @Put('admin/shops/:shopId/:id')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_USERS)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -445,7 +445,7 @@ export class AddressController {
   }
 
   @Delete('admin/shops/:shopId/:id')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_USERS)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({

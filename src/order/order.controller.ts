@@ -21,6 +21,7 @@ import {
 } from '../delivery/dto/ghn-order.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { CalculateCartShippingDto } from './dto/calculate-shipping.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('order')
 export class OrderController {
