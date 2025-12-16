@@ -30,14 +30,14 @@ import { Permission } from '@/auth/constants/Permission.enum';
 @Controller('users')
 export class UsersController {
   @Get()
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.VIEW_USERS)
   findAll() {
     // ...
   }
 
   @Post()
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.CREATE_USER)
   create() {
     // ...
@@ -48,7 +48,10 @@ export class UsersController {
 ### 3. Sử dụng trong Service hoặc Logic
 
 ```typescript
-import { Permission, isValidPermission } from '@/auth/constants/Permission.enum';
+import {
+  Permission,
+  isValidPermission,
+} from '@/auth/constants/Permission.enum';
 
 // Kiểm tra permission có hợp lệ
 if (isValidPermission('view_users')) {
@@ -76,20 +79,24 @@ const productPermissions = PermissionGroups.PRODUCT;
 ## Danh sách Permissions hiện có
 
 ### User Permissions
+
 - `Permission.VIEW_USERS` - Xem danh sách và thông tin người dùng
 - `Permission.CREATE_USER` - Tạo người dùng mới
 - `Permission.UPDATE_USER` - Cập nhật thông tin người dùng
 - `Permission.DELETE_USER` - Xóa người dùng
 
 ### Role & Permission Management
+
 - `Permission.MANAGE_ROLES` - Quản lý vai trò (roles)
 - `Permission.MANAGE_PERMISSIONS` - Quản lý quyền hạn (permissions)
 
 ### Shop Permissions
+
 - `Permission.MANAGE_SHOP_STAFF` - Quản lý nhân viên shop
 - `Permission.EDIT_PROFILE_SHOP` - Chỉnh sửa thông tin shop
 
 ### Product Permissions
+
 - `Permission.CREATE_PRODUCT` - Tạo sản phẩm mới
 - `Permission.EDIT_PRODUCT` - Chỉnh sửa sản phẩm
 - `Permission.DELETE_PRODUCT` - Xóa sản phẩm
@@ -97,6 +104,7 @@ const productPermissions = PermissionGroups.PRODUCT;
 - `Permission.MANAGE_CATEGORYS` - Quản lý danh mục (categories)
 
 ### Post Permissions
+
 - `Permission.CREATE_POST` - Tạo bài viết mới
 - `Permission.EDIT_POST` - Chỉnh sửa bài viết
 - `Permission.DELETE_POST` - Xóa bài viết
@@ -111,7 +119,7 @@ Khi cần thêm permission mới, chỉ cần:
 ```typescript
 export enum Permission {
   // ... existing permissions
-  
+
   // Thêm permission mới
   /** Mô tả permission */
   NEW_PERMISSION = 'new_permission',
@@ -123,10 +131,8 @@ export enum Permission {
 ```typescript
 export const PermissionGroups = {
   // ... existing groups
-  
-  NEW_MODULE: [
-    Permission.NEW_PERMISSION,
-  ],
+
+  NEW_MODULE: [Permission.NEW_PERMISSION],
 } as const;
 ```
 
@@ -139,12 +145,14 @@ export const PermissionGroups = {
 ## Lợi ích
 
 ### Trước khi sử dụng Enum
+
 ```typescript
 @RequirePermissions('view_users') // ❌ Dễ typo, không có autocomplete
 @RequirePermissions('veiw_users') // ❌ Lỗi chính tả không được phát hiện
 ```
 
 ### Sau khi sử dụng Enum
+
 ```typescript
 @RequirePermissions(Permission.VIEW_USERS) // ✅ Autocomplete, type-safe
 @RequirePermissions(Permission.VEIW_USERS) // ✅ Lỗi compile-time ngay lập tức
@@ -180,7 +188,7 @@ import { getAllPermissions } from '@/auth/constants/Permission.enum';
 
 async function seedPermissions() {
   const permissions = getAllPermissions();
-  
+
   for (const permission of permissions) {
     await prisma.permission.upsert({
       where: { name: permission },

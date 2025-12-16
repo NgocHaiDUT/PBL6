@@ -1,5 +1,25 @@
-import { Controller, Post, Body, Get, Patch, Put, Delete, UploadedFile, BadRequestException, Query, UseGuards, Req, UploadedFiles, Param, ParseIntPipe, Optional } from '@nestjs/common';
-import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Patch,
+  Put,
+  Delete,
+  UploadedFile,
+  BadRequestException,
+  Query,
+  UseGuards,
+  Req,
+  UploadedFiles,
+  Param,
+  ParseIntPipe,
+  Optional,
+} from '@nestjs/common';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+} from '@nestjs/platform-express';
 import { UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProfileService } from './profile.service';
@@ -7,12 +27,13 @@ import { getMulterOptions, getFileUrl } from '../config/storage.config';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/constants/Permission.enum';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('users')
 export class ProfileController {
-  constructor(private readonly profileService: ProfileService) { }
+  constructor(private readonly profileService: ProfileService) {}
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Get('me')
   async getMyProfile(@Req() req: any) {
     const profile = await this.profileService.getProfile(req.user.userId);
@@ -20,12 +41,14 @@ export class ProfileController {
   }
 
   @Get('user-info')
-  @UseGuards(AuthGuard('jwt'))
-  async getUserInfo(
-    @Query('userId') userIdRaw?: string,
-    @Req() req?: any
-  ) {
-    console.log('🔍 [getUserInfo] Received raw userId:', userIdRaw, 'Type:', typeof userIdRaw);
+  @UseGuards(JwtAuthGuard)
+  async getUserInfo(@Query('userId') userIdRaw?: string, @Req() req?: any) {
+    console.log(
+      '🔍 [getUserInfo] Received raw userId:',
+      userIdRaw,
+      'Type:',
+      typeof userIdRaw,
+    );
 
     let userId: number | undefined;
 
@@ -42,8 +65,14 @@ export class ProfileController {
     }
 
     if (!userId || isNaN(userId)) {
-      console.error('❌ [getUserInfo] Invalid userId:', { userIdRaw, userId, user: req?.user });
-      throw new BadRequestException(`Invalid or missing userId. Received: ${userIdRaw}`);
+      console.error('❌ [getUserInfo] Invalid userId:', {
+        userIdRaw,
+        userId,
+        user: req?.user,
+      });
+      throw new BadRequestException(
+        `Invalid or missing userId. Received: ${userIdRaw}`,
+      );
     }
 
     console.log('✅ [getUserInfo] Fetching user info for userId:', userId);
@@ -51,20 +80,27 @@ export class ProfileController {
   }
 
   @Get('user-info-v2')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async getUserInfoV2(
     @Query('userId', new ParseIntPipe({ optional: true })) userId?: number,
-    @Req() req?: any
+    @Req() req?: any,
   ) {
     console.log('🔍 [getUserInfoV2] ===== V2 ENDPOINT =====');
-    console.log('🔍 [getUserInfoV2] Received userId:', userId, 'Type:', typeof userId);
+    console.log(
+      '🔍 [getUserInfoV2] Received userId:',
+      userId,
+      'Type:',
+      typeof userId,
+    );
 
     if (!userId) {
       userId = req?.user?.sub || req?.user?.userId;
     }
 
     if (!userId || isNaN(userId)) {
-      throw new BadRequestException(`Invalid or missing userId. Received: ${userId}`);
+      throw new BadRequestException(
+        `Invalid or missing userId. Received: ${userId}`,
+      );
     }
 
     console.log('✅ [getUserInfoV2] Fetching user info for userId:', userId);
@@ -72,7 +108,7 @@ export class ProfileController {
   }
 
   @Patch('me/full-name')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async updateFullname(@Body('fullName') fullName: string, @Req() req: any) {
     if (!fullName) {
       throw new BadRequestException('fullName is required');
@@ -82,7 +118,7 @@ export class ProfileController {
   }
 
   @Patch('me/phone')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async updatePhone(@Body('phone') phone: string, @Req() req: any) {
     if (!phone) {
       throw new BadRequestException('phone is required');
@@ -92,19 +128,16 @@ export class ProfileController {
   }
 
   @Patch('me/story')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async updateStory(@Body('story') story: string, @Req() req: any) {
     const userId = req.user.userId;
     return this.profileService.updatestory(userId, story || '');
   }
 
   @Post('me/avatar') // ✅ Changed from @Patch to @Post for file upload
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file', getMulterOptions('avatars')))
-  async updateAvatar(
-    @UploadedFile() file: any,
-    @Req() req: any
-  ) {
+  async updateAvatar(@UploadedFile() file: any, @Req() req: any) {
     if (!file) {
       throw new BadRequestException('file is required');
     }
@@ -114,40 +147,83 @@ export class ProfileController {
   }
 
   @Post('me/addresses')
-  @UseGuards(AuthGuard('jwt'))
-  async addAddress(@Body() body: { label: string, receiver_name: string, phone: string, province: string, district: string, ward: string, street: string, is_default: boolean }, @Req() req: any) {
+  @UseGuards(JwtAuthGuard)
+  async addAddress(
+    @Body()
+    body: {
+      label: string;
+      receiver_name: string;
+      phone: string;
+      province: string;
+      district: string;
+      ward: string;
+      street: string;
+      is_default: boolean;
+    },
+    @Req() req: any,
+  ) {
     const userId = req.user.userId;
-    return this.profileService.addaddress(userId, body.label, body.receiver_name, body.phone, body.province, body.district, body.ward, body.street, body.is_default);
+    return this.profileService.addaddress(
+      userId,
+      body.label,
+      body.receiver_name,
+      body.phone,
+      body.province,
+      body.district,
+      body.ward,
+      body.street,
+      body.is_default,
+    );
   }
 
   @Put('me/addresses/:addressId')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async updateAddress(
     @Param('addressId', ParseIntPipe) addressId: number,
-    @Body() body: { label: string, receiver_name: string, phone: string, province: string, district: string, ward: string, street: string, is_default: boolean },
-    @Req() req: any
+    @Body()
+    body: {
+      label: string;
+      receiver_name: string;
+      phone: string;
+      province: string;
+      district: string;
+      ward: string;
+      street: string;
+      is_default: boolean;
+    },
+    @Req() req: any,
   ) {
-    return this.profileService.updateaddress(addressId, body.label, body.receiver_name, body.phone, body.province, body.district, body.ward, body.street, body.is_default);
+    return this.profileService.updateaddress(
+      addressId,
+      body.label,
+      body.receiver_name,
+      body.phone,
+      body.province,
+      body.district,
+      body.ward,
+      body.street,
+      body.is_default,
+    );
   }
 
   @Get('me/addresses')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async getAllAddress(@Req() req: any) {
     const userId = req.user.userId;
     return this.profileService.getaddresses(userId);
   }
 
   @Delete('me/addresses/:addressId')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async deleteAddress(
     @Param('addressId', ParseIntPipe) addressId: number,
-    @Req() req: any
+    @Req() req: any,
   ) {
     return this.profileService.deleteaddress(addressId);
   }
 
   @Post('me/shop')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileFieldsInterceptor(
       [
@@ -206,14 +282,14 @@ export class ProfileController {
   }
 
   @Get('me/shop')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async getShop(@Req() req: any) {
     const userId = req.user.userId;
     return this.profileService.getshopbyuserid(userId);
   }
 
   @Patch('shops/:shopId/logo')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   @UseInterceptors(FileInterceptor('file', getMulterOptions('shops')))
   async updateShopLogo(
@@ -230,7 +306,7 @@ export class ProfileController {
   }
 
   @Patch('shops/:shopId/banner')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   @UseInterceptors(FileInterceptor('file', getMulterOptions('shops')))
   async updateShopBanner(
@@ -247,7 +323,7 @@ export class ProfileController {
   }
 
   @Patch('shops/:shopId/phone')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   async updateShopPhone(
     @Param('shopId', ParseIntPipe) shopId: number,
@@ -259,7 +335,7 @@ export class ProfileController {
   }
 
   @Patch('shops/:shopId/email')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   async updateShopEmail(
     @Param('shopId', ParseIntPipe) shopId: number,
@@ -271,7 +347,7 @@ export class ProfileController {
   }
 
   @Patch('shops/:shopId/description')
-  @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_PROFILE_SHOP)
   async updateShopDescription(
     @Param('shopId', ParseIntPipe) shopId: number,
@@ -286,17 +362,15 @@ export class ProfileController {
     );
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Get()
   getProfile(@Req() req: any) {
     return this.profileService.getProfile(req.user.userId);
   }
 
   @Get(':userId/permissions')
-  @UseGuards(AuthGuard('jwt'))
-  async getUserPermissions(
-    @Param('userId', ParseIntPipe) userId: number,
-  ) {
+  @UseGuards(JwtAuthGuard)
+  async getUserPermissions(@Param('userId', ParseIntPipe) userId: number) {
     return this.profileService.getPermissionbyuserid(userId);
   }
 
@@ -305,4 +379,3 @@ export class ProfileController {
     return this.profileService.getProfile(id);
   }
 }
-

@@ -13,8 +13,6 @@ import { JwtStrategy } from './jwt.strategy';
     PrismaModule,
     JwtModule.register({
       global: true,
-      secret: process.env.JWT_SECRET || 'your-fallback-secret-key',
-      signOptions: { expiresIn: '1d' },
     }),
   ],
   providers: [AuthService, GoogleStrategy, FacebookStrategy, JwtStrategy],

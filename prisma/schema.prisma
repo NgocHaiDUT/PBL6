@@ -45,7 +45,6 @@ enum payment_status {
   pending
 }
 
-
 enum shipment_status {
   pending
   packing
@@ -81,13 +80,13 @@ enum message_type {
   STORY_REPLY
 }
 
-
 ///////////////////////////////////////////////////////
 // USERS & AUTH
 ///////////////////////////////////////////////////////
 model users {
   id                        Int                         @id @default(autoincrement())
   email                     String                      @unique
+  device_register           String?
   password_hash             String?
   full_name                 String?
   avatar_url                String?
@@ -99,7 +98,7 @@ model users {
   is_deleted                Boolean                     @default(false)
   deleted_at                DateTime?
   created_at                DateTime                    @default(now())
-  updated_at                DateTime                    @default(now())
+  updated_at                DateTime                    @updatedAt
   auth_identities           auth_identities[]
   addresses                 addresses[]
   shops                     shops[]
@@ -126,6 +125,8 @@ model users {
   orders                    orders[]
   refresh_tokens            refresh_tokens[]
   shop_staffs               shop_staffs[]
+  oauth_login_codes         oauth_login_codes[]
+  deviceOtps                device_otps[]
   story_views               story_views[]
 }
 
@@ -134,26 +135,54 @@ model auth_identities {
   user_id          Int
   provider         auth_provider
   provider_user_id String
-  access_token     String?
-  refresh_token    String?
   created_at       DateTime      @default(now())
-  user             users         @relation(fields: [user_id], references: [id])
+  updated_at       DateTime      @updatedAt
+  user             users         @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@unique([provider, provider_user_id])
 }
 
-// ✅ Refresh Tokens Table - Lưu trữ refresh token để tự động gia hạn access token
+model device_otps {
+  id          Int       @id @default(autoincrement())
+  user_id     Int
+  device_id   String
+  otp_hash    String
+  expires_at  DateTime
+  created_at  DateTime  @default(now())
+  verified_at DateTime?
+
+  user users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, device_id])
+  @@index([expires_at])
+}
+
 model refresh_tokens {
-  id         Int      @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  device_id   String   @unique
+  device_name String
+  token       String   @unique
+  expires_at  DateTime
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  is_revoked  Boolean  @default(false)
+  user        users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, device_id])
+}
+
+model oauth_login_codes {
+  code       String   @id
   user_id    Int
-  token      String   @unique
+  device_id  String
   expires_at DateTime
-  created_at DateTime @default(now())
-  is_revoked Boolean  @default(false)
+  used       Boolean  @default(false)
   user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id])
-  @@index([token])
+  @@index([code, device_id])
+  @@index([expires_at])
 }
 
 model addresses {
@@ -743,9 +772,9 @@ model conversations {
 model conversation_participants {
   id              Int           @id @default(autoincrement())
   conversation_id Int
-  user_id         Int?          // Nullable khi participant là shop
-  shop_id         Int?          // Nullable khi participant là user
-  entity_type     String?        // 'user' hoặc 'shop'
+  user_id         Int? // Nullable khi participant là shop
+  shop_id         Int? // Nullable khi participant là user
+  entity_type     String? // 'user' hoặc 'shop'
   role            String?
   joined_at       DateTime      @default(now())
   conversation    conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
@@ -761,9 +790,9 @@ model conversation_participants {
 model messages {
   id                Int                 @id @default(autoincrement())
   conversation_id   Int
-  sender_id         Int?          // User ID nếu người gửi là user
-  sender_shop_id  Int?          // Shop ID nếu người gửi là shop
-  sender_type     String?        // 'user' hoặc 'shop'
+  sender_id         Int? // User ID nếu người gửi là user
+  sender_shop_id    Int? // Shop ID nếu người gửi là shop
+  sender_type       String? // 'user' hoặc 'shop'
   type              message_type        @default(TEXT)
   content           String?
   post_id           Int? // Shared post ID
@@ -776,16 +805,16 @@ model messages {
   created_at        DateTime            @default(now())
   conversation      conversations       @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
   sender            users?              @relation(fields: [sender_id], references: [id], onDelete: SetNull)
-  sender_shop     shops?          @relation(fields: [sender_shop_id], references: [id], onDelete: SetNull)
+  sender_shop       shops?              @relation(fields: [sender_shop_id], references: [id], onDelete: SetNull)
   payload           Json?
   message_reads     message_reads[]
-
-  @@index([sender_id])
-  @@index([sender_shop_id])
   message_reactions message_reactions[]
   message_media     message_media[]
   replies           messages[]          @relation("MessageReplies")
   reply_to          messages?           @relation("MessageReplies", fields: [reply_to_id], references: [id])
+
+  @@index([sender_id])
+  @@index([sender_shop_id])
 }
 
 model message_reads {

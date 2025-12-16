@@ -1,24 +1,14 @@
 import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class LoginDto {
+export class ExchangeTokenDto {
   @ApiProperty({
-    description: 'Email address',
-    example: 'user@example.com',
+    description: 'OAuth Code to Exchange AccessToken and Refresh Token',
+    example: '122132',
   })
   @IsEmail()
   @IsNotEmpty()
   email: string;
-
-  @ApiProperty({
-    description: 'User password',
-    example: 'password123',
-    minLength: 6,
-  })
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(6)
-  password: string;
 
   @ApiProperty({
     description: 'UUID of device',
@@ -29,9 +19,18 @@ export class LoginDto {
   device_id: string;
 
   @ApiProperty({
+    description: 'Device type',
+    example: 'mobile/web',
+  })
+  @IsString()
+  @IsNotEmpty()
+  device_type: string;
+
+  @ApiProperty({
     description: 'Device name',
     example: 'Chrome on Windows',
   })
   @IsString()
+  @IsNotEmpty()
   device_name: string;
 }
