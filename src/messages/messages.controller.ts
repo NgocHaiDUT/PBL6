@@ -29,21 +29,24 @@ import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 
 @Controller('messages')
-@UseGuards(AuthGuard('jwt')) // ✅ Require JWT for all endpoints
+@UseGuards(JwtAuthGuard) // ✅ Require JWT for all endpoints
 export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
 
   @Post('conversations')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   createConversation(
     @Body() createConversationDto: CreateConversationDto,
     @Req() req: any,
   ) {
-    return this.messagesService.createConversation(req.user.userId, createConversationDto);
+    return this.messagesService.createConversation(
+      req.user.userId,
+      createConversationDto,
+    );
   }
 
   @Get('conversations')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   getUserConversations(
     @Query() queryDto: QueryConversationsDto,
     @Req() req: any,
@@ -53,26 +56,26 @@ export class MessagesController {
   }
 
   @Get('conversations/:id')
-  @UseGuards(AuthGuard('jwt'))
-  getConversation(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
-  ) {
+  @UseGuards(JwtAuthGuard)
+  getConversation(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     const userId = req.user?.sub || req.user?.userId;
     return this.messagesService.getConversationById(id, userId);
   }
 
   @Post('conversations/find-or-create/:otherUserId')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   findOrCreateConversation(
     @Param('otherUserId', ParseIntPipe) otherUserId: number,
     @Req() req: any,
   ) {
-    return this.messagesService.findOrCreateConversation(req.user.userId, otherUserId);
+    return this.messagesService.findOrCreateConversation(
+      req.user.userId,
+      otherUserId,
+    );
   }
 
   @Post('conversations/shop/:shopId')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   findOrCreateShopConversation(
     @Param('shopId', ParseIntPipe) shopId: number,
     @Req() req: any,
@@ -80,34 +83,38 @@ export class MessagesController {
     const userId = req.user?.sub || req.user?.userId;
     console.log('📞 [findOrCreateShopConversation] userId from JWT:', userId);
     console.log('📞 [findOrCreateShopConversation] shopId from param:', shopId);
-    
+
     if (!userId || !shopId) {
       throw new Error('Missing userId or shopId');
     }
-    
-    return this.messagesService.findOrCreateShopConversation(req.user.userId, shopId);
+
+    return this.messagesService.findOrCreateShopConversation(
+      req.user.userId,
+      shopId,
+    );
   }
 
   // Gửi tin nhắn từ user
   @Post()
-  @UseGuards(AuthGuard('jwt'))
-  sendMessage(
-    @Body() createMessageDto: CreateMessageDto,
-    @Req() req: any,
-  ) {
+  @UseGuards(JwtAuthGuard)
+  sendMessage(@Body() createMessageDto: CreateMessageDto, @Req() req: any) {
     return this.messagesService.sendMessage(req.user.userId, createMessageDto);
   }
 
   // Gửi tin nhắn từ shop
   @Post('shop/:shopId')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   sendMessageAsShop(
     @Param('shopId', ParseIntPipe) shopId: number,
     @Body() createMessageDto: CreateMessageDto,
     @Req() req: any,
   ) {
     // Kiểm tra user có quyền quản lý shop này không sẽ được xử lý trong service
-    return this.messagesService.sendMessage(req.user.userId, createMessageDto, shopId);
+    return this.messagesService.sendMessage(
+      req.user.userId,
+      createMessageDto,
+      shopId,
+    );
   }
 
   // Lấy danh sách conversations của shop
@@ -119,7 +126,11 @@ export class MessagesController {
     @Query() queryDto: QueryConversationsDto,
     @Req() req: any,
   ) {
-    return this.messagesService.getShopConversations(shopId, req.user.userId, queryDto);
+    return this.messagesService.getShopConversations(
+      shopId,
+      req.user.userId,
+      queryDto,
+    );
   }
 
   // Lấy tin nhắn trong conversation cụ thể của shop
@@ -133,7 +144,12 @@ export class MessagesController {
     @Req() req: any,
   ) {
     // Verify user có quyền quản lý shop này
-    return this.messagesService.getShopMessages(shopId, conversationId, req.user.userId, queryDto);
+    return this.messagesService.getShopMessages(
+      shopId,
+      conversationId,
+      req.user.userId,
+      queryDto,
+    );
   }
 
   // Đánh dấu tất cả tin nhắn trong conversation của shop là đã đọc
@@ -145,21 +161,29 @@ export class MessagesController {
     @Param('conversationId', ParseIntPipe) conversationId: number,
     @Req() req: any,
   ) {
-    return this.messagesService.markShopMessagesAsRead(shopId, conversationId, req.user.userId);
+    return this.messagesService.markShopMessagesAsRead(
+      shopId,
+      conversationId,
+      req.user.userId,
+    );
   }
 
   @Get('conversations/:conversationId/messages')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   getMessages(
     @Param('conversationId', ParseIntPipe) conversationId: number,
     @Query() queryDto: QueryMessagesDto,
     @Req() req: any,
   ) {
-    return this.messagesService.getMessages(conversationId, req.user.userId, queryDto);
+    return this.messagesService.getMessages(
+      conversationId,
+      req.user.userId,
+      queryDto,
+    );
   }
 
   @Patch(':messageId/read')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   markMessageAsRead(
     @Param('messageId', ParseIntPipe) messageId: number,
     @Req() req: any,
@@ -168,25 +192,31 @@ export class MessagesController {
   }
 
   @Patch('conversations/:conversationId/read-all')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   markAllMessagesAsRead(
     @Param('conversationId', ParseIntPipe) conversationId: number,
     @Req() req: any,
   ) {
-    return this.messagesService.markAllMessagesAsRead(conversationId, req.user.userId);
+    return this.messagesService.markAllMessagesAsRead(
+      conversationId,
+      req.user.userId,
+    );
   }
 
   @Get('conversations/:conversationId/unread-count')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   getUnreadCount(
     @Param('conversationId', ParseIntPipe) conversationId: number,
     @Req() req: any,
   ) {
-    return this.messagesService.getUnreadMessagesCount(conversationId, req.user.userId);
+    return this.messagesService.getUnreadMessagesCount(
+      conversationId,
+      req.user.userId,
+    );
   }
 
   @Delete(':messageId')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   deleteMessage(
     @Param('messageId', ParseIntPipe) messageId: number,
     @Req() req: any,
@@ -197,30 +227,39 @@ export class MessagesController {
   // ✅ Upload media files for chat messages
   // Note: Using type 'image' instead of 'media' to prevent dynamicPath (all files go to chat-media folder)
   @Post('upload-media')
-  @UseInterceptors(FilesInterceptor('files', 10, {
-    ...getMulterOptions('chat-media', 'image'),
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB for videos
-    fileFilter: (req, file, cb) => {
-      // Accept both images and videos
-      const isImage = /image\/(jpg|jpeg|png|gif|webp)|application\/octet-stream/.test(file.mimetype) || 
-                      file.originalname.match(/\.(heic|heif)$/i);
-      const isVideo = /video\/(mp4|mov|avi|quicktime|x-matroska)/.test(file.mimetype);
-      if (isImage || isVideo) {
-        cb(null, true);
-      } else {
-        cb(new Error('Only image or video files are allowed!'), false);
-      }
-    },
-  }))
+  @UseInterceptors(
+    FilesInterceptor('files', 10, {
+      ...getMulterOptions('chat-media', 'image'),
+      limits: { fileSize: 50 * 1024 * 1024 }, // 50MB for videos
+      fileFilter: (req, file, cb) => {
+        // Accept both images and videos
+        const isImage =
+          /image\/(jpg|jpeg|png|gif|webp)|application\/octet-stream/.test(
+            file.mimetype,
+          ) || file.originalname.match(/\.(heic|heif)$/i);
+        const isVideo = /video\/(mp4|mov|avi|quicktime|x-matroska)/.test(
+          file.mimetype,
+        );
+        if (isImage || isVideo) {
+          cb(null, true);
+        } else {
+          cb(new Error('Only image or video files are allowed!'), false);
+        }
+      },
+    }),
+  )
   async uploadMessageMedia(
     @UploadedFiles() files: Array<Express.Multer.File>,
     @Req() req: any,
   ) {
     try {
-      console.log('📤 [uploadMessageMedia] Received files:', files?.length || 0);
+      console.log(
+        '📤 [uploadMessageMedia] Received files:',
+        files?.length || 0,
+      );
       console.log('📤 [uploadMessageMedia] Request headers:', req.headers);
       console.log('📤 [uploadMessageMedia] Request body:', req.body);
-      
+
       if (!files || files.length === 0) {
         console.error('❌ [uploadMessageMedia] No files received');
         throw new BadRequestException('No files uploaded');
@@ -239,11 +278,11 @@ export class MessagesController {
           path: file.path,
         });
 
-        const mediaType = file.mimetype.startsWith('image/') 
-          ? 'image' 
-          : file.mimetype.startsWith('video/') 
-          ? 'video' 
-          : 'file';
+        const mediaType = file.mimetype.startsWith('image/')
+          ? 'image'
+          : file.mimetype.startsWith('video/')
+            ? 'video'
+            : 'file';
 
         // S3: file.location, Local: /uploads/chat-media/
         const urlPath = file.location || `/uploads/chat-media/${file.filename}`;
@@ -274,10 +313,11 @@ export class MessagesController {
    * ⚡ FAST: Direct S3 upload for images/videos in chat
    */
   @Post('presigned-url')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async generatePresignedUrl(
     @Req() req: any,
-    @Body() body: {
+    @Body()
+    body: {
       fileName: string;
       fileType: string;
       mediaType: 'image' | 'video' | 'audio' | 'file';
@@ -294,13 +334,17 @@ export class MessagesController {
 
     // Validate
     if (!body.fileName || !body.fileType || !body.mediaType) {
-      throw new BadRequestException('fileName, fileType, and mediaType are required');
+      throw new BadRequestException(
+        'fileName, fileType, and mediaType are required',
+      );
     }
 
     // Only work with S3
     const storageDriver = process.env.STORAGE_DRIVER || 'local';
     if (storageDriver !== 's3') {
-      throw new ForbiddenException('Presigned URL only available for S3 storage');
+      throw new ForbiddenException(
+        'Presigned URL only available for S3 storage',
+      );
     }
 
     const s3Client = new S3Client({

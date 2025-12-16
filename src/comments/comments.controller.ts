@@ -27,7 +27,7 @@ import { AuthGuard } from '@nestjs/passport';
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
@@ -64,7 +64,7 @@ export class CommentsController {
     return this.commentsService.getReplies(id);
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -75,7 +75,7 @@ export class CommentsController {
     return this.commentsService.update(id, updateCommentDto, userId);
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(

@@ -1,15 +1,39 @@
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
 // Import S3 config instead of local file config
-import { s3BrandConfig, STORAGE_TYPE, generateBrandImageUrl, USE_S3 } from './config/product.config';
-import { Controller, Body, Post, Get, UploadedFile, Query, UseInterceptors, BadRequestException, Param, ParseIntPipe, Put, Delete, UseGuards, Req , Patch } from '@nestjs/common';
+import {
+  s3BrandConfig,
+  STORAGE_TYPE,
+  generateBrandImageUrl,
+  USE_S3,
+} from './config/product.config';
+import {
+  Controller,
+  Body,
+  Post,
+  Get,
+  UploadedFile,
+  Query,
+  UseInterceptors,
+  BadRequestException,
+  Param,
+  ParseIntPipe,
+  Put,
+  Delete,
+  UseGuards,
+  Req,
+  Patch,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/constants/Permission.enum';
 // Import local file config for local testing
 // import { s3BrandConfig } from './config/s3-product.config';
-import { brandMulterConfig, productMediaMulterConfig } from './config/product-multer.config';
+import {
+  brandMulterConfig,
+  productMediaMulterConfig,
+} from './config/product-multer.config';
 
 @Controller('products')
 export class ProductController {
@@ -35,8 +59,9 @@ export class ProductController {
     }
     const userId = req.user.userId;
     // S3: file.location or file.key, Local: file.filename
-    const brandUrl = USE_S3 
-      ? file.location || `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
+    const brandUrl = USE_S3
+      ? file.location ||
+        `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
       : `/uploads/brands/${file.filename}`;
     return this.productservice.addbrand(userId, body.name, body.slug, brandUrl);
   }
@@ -84,8 +109,9 @@ export class ProductController {
       return { success: false, message: 'Thiếu file ảnh' };
     }
     const userId = req.user.userId;
-    const brandUrl = USE_S3 
-      ? file.location || `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
+    const brandUrl = USE_S3
+      ? file.location ||
+        `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
       : `/uploads/brands/${file.filename}`;
     return this.productservice.editbrandslogo(userId, brandId, brandUrl);
   }
@@ -121,8 +147,7 @@ export class ProductController {
     @Body('name') name: string,
     @Req() req: any,
   ) {
-    if (!name)
-      return { success: false, message: 'Thiếu trường name' };
+    if (!name) return { success: false, message: 'Thiếu trường name' };
     const userId = req.user.userId;
     return this.productservice.editnamecategory(userId, categoryId, name);
   }
@@ -135,11 +160,11 @@ export class ProductController {
     @Body('slug') slug: string,
     @Req() req: any,
   ) {
-    if (!slug)
-      return { success: false, message: 'Thiếu trường slug' };
+    if (!slug) return { success: false, message: 'Thiếu trường slug' };
     const userId = req.user.userId;
     return this.productservice.editslugcategory(userId, categoryId, slug);
-  }points
+  }
+  points;
   @Get()
   async getAllProducts(
     @Query('page') page?: string,
@@ -189,8 +214,9 @@ export class ProductController {
       throw new BadRequestException('Thiếu file ảnh');
     }
     const userId = req.user.userId;
-    const brandUrl = USE_S3 
-      ? file.location || `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
+    const brandUrl = USE_S3
+      ? file.location ||
+        `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
       : `/uploads/brands/${file.filename}`;
     return this.productservice.addbrand(userId, body.name, body.slug, brandUrl);
   }
@@ -244,8 +270,9 @@ export class ProductController {
       return { success: false, message: 'Thiếu trường hoặc file ảnh' };
     }
     const userId = req.user.userId;
-    const brandUrl = USE_S3 
-      ? file.location || `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
+    const brandUrl = USE_S3
+      ? file.location ||
+        `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
       : `/uploads/brands/${file.filename}`;
     return this.productservice.editbrandslogo(
       userId,
@@ -474,8 +501,9 @@ export class ProductController {
       return { success: false, message: 'Thiếu file ảnh' };
     }
 
-    const mediaUrl = USE_S3 
-      ? file.location || `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
+    const mediaUrl = USE_S3
+      ? file.location ||
+        `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
       : `/uploads/products/${file.filename}`;
 
     return this.productservice.addProductMedia(
@@ -546,21 +574,24 @@ export class ProductController {
 
   // Wishlist
   @Get('wishlist')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async getWishlist(@Req() req: any) {
     const userId = req.user.userId;
     return this.productservice.getWishlist(userId);
   }
 
   @Post('wishlist')
-  @UseGuards(AuthGuard('jwt'))
-  async addToWishlist(@Body('productId', ParseIntPipe) productId: number, @Req() req: any) {
+  @UseGuards(JwtAuthGuard)
+  async addToWishlist(
+    @Body('productId', ParseIntPipe) productId: number,
+    @Req() req: any,
+  ) {
     const userId = req.user.userId;
     return this.productservice.addToWishlist(productId, userId);
   }
 
   @Delete('wishlist/:productId')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async removeFromWishlist(
     @Param('productId', ParseIntPipe) productId: number,
     @Req() req: any,
@@ -571,14 +602,14 @@ export class ProductController {
 
   // Cart
   @Get('cart')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async getCart(@Req() req: any) {
     const userId = req.user.userId;
     return this.productservice.getCart(userId);
   }
 
   @Post('cart')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async addToCart(
     @Body() body: { productId: number; variantId?: number; quantity: number },
     @Req() req: any,
@@ -593,7 +624,7 @@ export class ProductController {
   }
 
   @Put('cart/items/:itemId')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async updateCartItem(
     @Param('itemId', ParseIntPipe) itemId: number,
     @Body('quantity', ParseIntPipe) quantity: number,
@@ -603,7 +634,7 @@ export class ProductController {
   }
 
   @Delete('cart/items/:itemId')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async removeFromCart(
     @Param('itemId', ParseIntPipe) itemId: number,
     @Req() req: any,

@@ -31,7 +31,7 @@ export class ReviewsController {
 
   // Create review
   @Post()
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async createReview(@Request() req, @Body() createReviewDto: CreateReviewDto) {
     console.log('🔍 [ReviewsController] User from JWT:', req.user);
     console.log('🔍 [ReviewsController] Review DTO:', createReviewDto);
@@ -48,7 +48,9 @@ export class ReviewsController {
 
   // Get product rating summary
   @Get('products/:productId/summary')
-  async getProductRatingSummary(@Param('productId', ParseIntPipe) productId: number) {
+  async getProductRatingSummary(
+    @Param('productId', ParseIntPipe) productId: number,
+  ) {
     return this.reviewsService.getProductRatingSummary(productId);
   }
 
@@ -60,7 +62,7 @@ export class ReviewsController {
 
   // Update review
   @Put(':id')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async updateReview(
     @Param('id', ParseIntPipe) id: number,
     @Request() req,
@@ -71,26 +73,33 @@ export class ReviewsController {
 
   // Delete review
   @Delete(':id')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async deleteReview(@Param('id', ParseIntPipe) id: number, @Request() req) {
     return this.reviewsService.deleteReview(id, req.user.id);
   }
 
   // Upload review media
   @Post(':id/media')
-  @UseGuards(AuthGuard('jwt'))
-  @UseInterceptors(FileInterceptor('media', getMulterOptions('reviews', 'image')))
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FileInterceptor('media', getMulterOptions('reviews', 'image')),
+  )
   async uploadReviewMedia(
     @Param('id', ParseIntPipe) id: number,
     @Request() req,
     @UploadedFile() file: any,
   ) {
-    console.log('🖼️ [ReviewsController] Upload review media - File received:', file ? {
-      filename: file.filename,
-      originalname: file.originalname,
-      size: file.size,
-      mimetype: file.mimetype
-    } : 'No file received');
+    console.log(
+      '🖼️ [ReviewsController] Upload review media - File received:',
+      file
+        ? {
+            filename: file.filename,
+            originalname: file.originalname,
+            size: file.size,
+            mimetype: file.mimetype,
+          }
+        : 'No file received',
+    );
 
     const userId = req.user.userId || req.user.id;
     return this.reviewsService.uploadReviewMedia(id, userId, file);
@@ -98,18 +107,22 @@ export class ReviewsController {
 
   // Upload temp image for new reviews
   @Post('upload-temp')
-  @UseGuards(AuthGuard('jwt'))
-  @UseInterceptors(FileInterceptor('media', getMulterOptions('reviews', 'image')))
-  async uploadTempMedia(
-    @Request() req,
-    @UploadedFile() file: any,
-  ) {
-    console.log('🖼️ [ReviewsController] Upload temp media - File received:', file ? {
-      filename: file.filename,
-      originalname: file.originalname,
-      size: file.size,
-      mimetype: file.mimetype
-    } : 'No file received');
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FileInterceptor('media', getMulterOptions('reviews', 'image')),
+  )
+  async uploadTempMedia(@Request() req, @UploadedFile() file: any) {
+    console.log(
+      '🖼️ [ReviewsController] Upload temp media - File received:',
+      file
+        ? {
+            filename: file.filename,
+            originalname: file.originalname,
+            size: file.size,
+            mimetype: file.mimetype,
+          }
+        : 'No file received',
+    );
 
     if (!file) {
       return {
@@ -131,10 +144,11 @@ export class ReviewsController {
    * ⚡ FAST: Direct S3 upload for review images
    */
   @Post('presigned-url')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async generatePresignedUrl(
     @Request() req,
-    @Body() body: {
+    @Body()
+    body: {
       fileName: string;
       fileType: string;
     },
@@ -155,7 +169,9 @@ export class ReviewsController {
     // Only work with S3
     const storageDriver = process.env.STORAGE_DRIVER || 'local';
     if (storageDriver !== 's3') {
-      throw new ForbiddenException('Presigned URL only available for S3 storage');
+      throw new ForbiddenException(
+        'Presigned URL only available for S3 storage',
+      );
     }
 
     const s3Client = new S3Client({

@@ -12,7 +12,7 @@ export class SearchController {
    * GET /search?q=beauty&type=post&limit=20
    */
   @Get()
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async search(@Query() dto: SearchQueryDto) {
     console.log('🔍 [SearchController] Search query:', dto);
     return this.searchService.searchAll(dto);
@@ -23,7 +23,7 @@ export class SearchController {
    * GET /search/posts?q=skincare&limit=20
    */
   @Get('posts')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async searchPosts(@Query() dto: SearchQueryDto) {
     console.log('🔍 [SearchController] Search posts:', dto.q);
     const results = await this.searchService.searchPosts(dto.q, dto.limit);
@@ -41,7 +41,7 @@ export class SearchController {
    * GET /search/users?q=john&limit=20
    */
   @Get('users')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async searchUsers(@Query() dto: SearchQueryDto) {
     console.log('🔍 [SearchController] Search users:', dto.q);
     const results = await this.searchService.searchUsers(dto.q, dto.limit);
@@ -59,7 +59,7 @@ export class SearchController {
    * GET /search/shops?q=beauty&limit=20
    */
   @Get('shops')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async searchShops(@Query() dto: SearchQueryDto) {
     console.log('🔍 [SearchController] Search shops:', dto.q);
     const results = await this.searchService.searchShops(dto.q, dto.limit);
@@ -77,7 +77,7 @@ export class SearchController {
    * GET /search/hashtags?q=makeup&limit=20
    */
   @Get('hashtags')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async searchHashtags(@Query() dto: SearchQueryDto) {
     console.log('🔍 [SearchController] Search hashtags:', dto.q);
     const results = await this.searchService.searchHashtags(dto.q, dto.limit);
@@ -95,7 +95,7 @@ export class SearchController {
    * GET /search/autocomplete?q=bea&limit=5
    */
   @Get('autocomplete')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async autocomplete(@Query() dto: AutocompleteDto) {
     console.log('🔍 [SearchController] Autocomplete:', dto.q);
     return this.searchService.autocomplete(dto.q, dto.limit);

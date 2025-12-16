@@ -27,7 +27,7 @@ export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
   @Post('calculate-cart-shipping')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async calculateCartShipping(
     @Body() body: CalculateCartShippingDto,
     @Req() req: any,
@@ -40,91 +40,94 @@ export class OrderController {
   }
 
   @Post('create')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async createOrder(@Body() body: CheckoutDto, @Req() req: any) {
     const userId = req.user.userId;
     if (!body.shipping_address_id) {
       throw new BadRequestException('Thiếu địa chỉ giao hàng');
     }
 
-        return this.orderService.createOrdersFromItems(
-            userId,
-            body.shipping_address_id,
-            body.items,
-            body.note,
-            body.payment_method
-        );
+    return this.orderService.createOrdersFromItems(
+      userId,
+      body.shipping_address_id,
+      body.items,
+      body.note,
+      body.payment_method,
+    );
+  }
+
+  @Post('create-from-product')
+  async createOrderFromProduct(
+    @Body()
+    body: {
+      userId?: number;
+      product_id: number;
+      variant_id?: number;
+      quantity: number;
+      shipping_address_id: number;
+      note?: string;
+      payment_method?: string;
+    },
+  ) {
+    if (!body.userId) {
+      return { success: false, message: 'Vui lòng đăng nhập' };
     }
 
-    @Post('create-from-product')
-    async createOrderFromProduct(
-        @Body() body: {
-            userId?: number;
-            product_id: number;
-            variant_id?: number;
-            quantity: number;
-            shipping_address_id: number;
-            note?: string;
-            payment_method?: string;
-        }
-    ) {
-        if (!body.userId) {
-            return { success: false, message: 'Vui lòng đăng nhập' };
-        }
-
-        if (!body.product_id || !body.quantity || !body.shipping_address_id) {
-            throw new BadRequestException('Thiếu thông tin sản phẩm hoặc địa chỉ giao hàng');
-        }
-
-        return this.orderService.createOrderFromProduct(
-            body.userId,
-            body.product_id,
-            body.variant_id || null,
-            body.quantity,
-            body.shipping_address_id,
-            body.note,
-            body.payment_method
-        );
+    if (!body.product_id || !body.quantity || !body.shipping_address_id) {
+      throw new BadRequestException(
+        'Thiếu thông tin sản phẩm hoặc địa chỉ giao hàng',
+      );
     }
 
-    // Shipping Calculation Endpoints (Proxy to GhnService)
-    @Post('shipping/services')
-    async getAvailableServices(@Body() body: GetServicesDto) {
-        return this.orderService.getAvailableServices(body);
-    }
+    return this.orderService.createOrderFromProduct(
+      body.userId,
+      body.product_id,
+      body.variant_id || null,
+      body.quantity,
+      body.shipping_address_id,
+      body.note,
+      body.payment_method,
+    );
+  }
+
+  // Shipping Calculation Endpoints (Proxy to GhnService)
+  @Post('shipping/services')
+  async getAvailableServices(@Body() body: GetServicesDto) {
+    return this.orderService.getAvailableServices(body);
+  }
 
   @Post('shipping/preview')
   async previewShippingOrder(@Body() body: CreateOrderDto) {
     return this.orderService.previewShippingOrder(body);
   }
 
-    @Post('shipping/leadtime')
-    async getLeadtime(@Body() body: GetLeadtimeDto, @Query('shopId', ParseIntPipe) shopId: number) {
-        if (!shopId) {
-            throw new BadRequestException('shopId is required as a query parameter');
-        }
-        return this.orderService.getLeadtime(body, shopId);
+  @Post('shipping/leadtime')
+  async getLeadtime(
+    @Body() body: GetLeadtimeDto,
+    @Query('shopId', ParseIntPipe) shopId: number,
+  ) {
+    if (!shopId) {
+      throw new BadRequestException('shopId is required as a query parameter');
     }
-    
-    @Get('my-orders')
-    @UseGuards(AuthGuard('jwt'))
-    async getMyOrders(
-        @Req() req: any,
-        @Query() query?: QueryOrdersDto
-    ) {
-        const userId = req.user.userId;
-        return this.orderService.getMyOrders(userId, query);
-    }
+    return this.orderService.getLeadtime(body, shopId);
+  }
+
+  @Get('my-orders')
+  @UseGuards(JwtAuthGuard)
+  async getMyOrders(@Req() req: any, @Query() query?: QueryOrdersDto) {
+    const userId = req.user.userId;
+    return this.orderService.getMyOrders(userId, query);
+  }
 
   @Get(':id')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async getOrderById(@Param('id') id: string, @Req() req: any) {
     const userId = req.user.userId;
     return this.orderService.getOrderById(Number(id), userId);
   }
 
   @Post(':id/cancel')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async cancelOrder(@Param('id') id: string, @Req() req: any) {
     const userId = req.user.userId;
     return this.orderService.cancelOrder(Number(id), userId);
@@ -166,21 +169,21 @@ export class OrderController {
 
   // GHN Order Management Endpoints
   @Get(':id/ghn/track')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async trackGhnOrder(@Param('id') id: string, @Req() req: any) {
     const userId = req.user.userId;
     return this.orderService.trackGhnOrder(Number(id), userId);
   }
 
   @Post(':id/ghn/cancel')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async cancelGhnOrder(@Param('id') id: string, @Req() req: any) {
     const userId = req.user.userId;
     return this.orderService.cancelGhnOrder(Number(id), userId);
   }
 
   @Patch(':id/ghn/update')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async updateGhnOrder(
     @Param('id') id: string,
     @Body() updateData: any,
@@ -191,7 +194,7 @@ export class OrderController {
   }
 
   @Post(':id/ghn/return')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async returnGhnOrder(@Param('id') id: string, @Req() req: any) {
     const userId = req.user.userId;
     return this.orderService.returnGhnOrder(Number(id), userId);

@@ -21,7 +21,11 @@ import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { QueryPostsDto } from './dto/query-posts.dto';
-import { s3PostCoverConfig, s3PostVideoConfig, s3PostMediaConfig } from './config/s3-post.config';
+import {
+  s3PostCoverConfig,
+  s3PostVideoConfig,
+  s3PostMediaConfig,
+} from './config/s3-post.config';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { AuthGuard } from '@nestjs/passport';
@@ -31,14 +35,12 @@ import { Permission } from '../auth/constants/Permission.enum';
 
 @Controller('posts')
 export class PostsController {
-  constructor(private readonly postsService: PostsService) { }
+  constructor(private readonly postsService: PostsService) {}
 
   @Post()
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   @RequirePermissions(Permission.CREATE_POST)
-  @UseInterceptors(
-    FilesInterceptor('media', 10, s3PostMediaConfig),
-  )
+  @UseInterceptors(FilesInterceptor('media', 10, s3PostMediaConfig))
   create(
     @Body() createPostDto: CreatePostDto,
     @Req() req: any,
@@ -55,11 +57,8 @@ export class PostsController {
 
   // Save/Unsave Posts Endpoints - Must be before :id route
   @Get('saved')
-  @UseGuards(AuthGuard('jwt'))
-  getSavedPosts(
-    @Query() query: QueryPostsDto,
-    @Req() req: any,
-  ) {
+  @UseGuards(JwtAuthGuard)
+  getSavedPosts(@Query() query: QueryPostsDto, @Req() req: any) {
     const userId = req.user.userId;
     return this.postsService.getSavedPosts(userId, query);
   }
@@ -92,9 +91,7 @@ export class PostsController {
   @Post(':id/upload-cover')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   @RequirePermissions(Permission.EDIT_POST)
-  @UseInterceptors(
-    FileInterceptor('cover', s3PostCoverConfig),
-  )
+  @UseInterceptors(FileInterceptor('cover', s3PostCoverConfig))
   uploadCoverImage(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile() file: any,
@@ -107,9 +104,7 @@ export class PostsController {
   @Post(':id/upload-video')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   @RequirePermissions(Permission.EDIT_POST)
-  @UseInterceptors(
-    FileInterceptor('video', s3PostVideoConfig),
-  )
+  @UseInterceptors(FileInterceptor('video', s3PostVideoConfig))
   uploadVideo(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile() file: any,
@@ -122,9 +117,7 @@ export class PostsController {
   @Post(':id/upload-media')
   @UseGuards(AuthGuard('jwt'), PermissionsGuard)
   @RequirePermissions(Permission.EDIT_POST)
-  @UseInterceptors(
-    FilesInterceptor('media', 10, s3PostMediaConfig),
-  )
+  @UseInterceptors(FilesInterceptor('media', 10, s3PostMediaConfig))
   uploadAdditionalMedia(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFiles() files: any[],
@@ -153,27 +146,21 @@ export class PostsController {
 
   // Save/Unsave Posts Endpoints
   @Post(':id/save')
-  @UseGuards(AuthGuard('jwt'))
-  savePost(
-    @Param('id', ParseIntPipe) postId: number,
-    @Req() req: any,
-  ) {
+  @UseGuards(JwtAuthGuard)
+  savePost(@Param('id', ParseIntPipe) postId: number, @Req() req: any) {
     const userId = req.user.userId;
     return this.postsService.savePost(userId, postId);
   }
 
   @Delete(':id/save')
-  @UseGuards(AuthGuard('jwt'))
-  unsavePost(
-    @Param('id', ParseIntPipe) postId: number,
-    @Req() req: any,
-  ) {
+  @UseGuards(JwtAuthGuard)
+  unsavePost(@Param('id', ParseIntPipe) postId: number, @Req() req: any) {
     const userId = req.user.userId;
     return this.postsService.unsavePost(userId, postId);
   }
 
   @Get(':id/is-saved')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   checkIfPostIsSaved(
     @Param('id', ParseIntPipe) postId: number,
     @Req() req: any,
@@ -187,10 +174,11 @@ export class PostsController {
    * ⚡ FAST UPLOAD: Client upload trực tiếp lên S3
    */
   @Post('presigned-url')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async generatePresignedUrl(
     @Req() req: any,
-    @Body() body: {
+    @Body()
+    body: {
       fileName: string;
       fileType: string;
       mediaType: 'cover' | 'image' | 'video';
@@ -208,17 +196,24 @@ export class PostsController {
 
     // Validate input
     if (!body.fileName || !body.fileType || !body.mediaType) {
-      throw new BadRequestException('fileName, fileType, and mediaType are required');
+      throw new BadRequestException(
+        'fileName, fileType, and mediaType are required',
+      );
     }
 
     if (!['cover', 'image', 'video'].includes(body.mediaType)) {
-      throw new BadRequestException('mediaType must be "cover", "image", or "video"');
+      throw new BadRequestException(
+        'mediaType must be "cover", "image", or "video"',
+      );
     }
 
     // Only work with S3 storage
     const storageDriver = process.env.STORAGE_DRIVER || 'local';
     if (storageDriver !== 's3') {
-      throw new ForbiddenException('Presigned URL only available for S3 storage. Current: ' + storageDriver);
+      throw new ForbiddenException(
+        'Presigned URL only available for S3 storage. Current: ' +
+          storageDriver,
+      );
     }
 
     const s3Client = new S3Client({
@@ -288,8 +283,9 @@ export class PostsController {
   @RequirePermissions(Permission.CREATE_POST)
   async completeUpload(
     @Req() req: any,
-    @Body() body: {
-      mediaUrls: string[];  // Array of S3 URLs
+    @Body()
+    body: {
+      mediaUrls: string[]; // Array of S3 URLs
       postData: CreatePostDto;
       coverUrl?: string;
       videoUrl?: string;

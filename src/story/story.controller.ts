@@ -23,10 +23,10 @@ import { UpdateStoryDto } from './dto/update-story.dto';
 import { QueryStoriesDto } from './dto/query-stories.dto';
 import { AddReactionDto } from './dto/add-reaction.dto';
 import { AddReplyDto } from './dto/add-reply.dto';
-import { 
-  s3StoryMediaConfig, 
-  getStoryFileUrl, 
-  STORY_IMAGE_MAX_SIZE, 
+import {
+  s3StoryMediaConfig,
+  getStoryFileUrl,
+  STORY_IMAGE_MAX_SIZE,
   STORY_VIDEO_MAX_SIZE,
   STORY_VIDEO_MAX_DURATION,
   getStorageDriver,
@@ -44,10 +44,8 @@ export class StoryController {
    * POST /story - Create a new story
    */
   @Post()
-  @UseGuards(AuthGuard('jwt'))
-  @UseInterceptors(
-    FileInterceptor('media', s3StoryMediaConfig),
-  )
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('media', s3StoryMediaConfig))
   async createStory(
     @Req() req: any,
     @UploadedFile() file: Express.Multer.File,
@@ -74,14 +72,21 @@ export class StoryController {
     }
 
     if (!['image', 'video'].includes(createStoryDto.story_type)) {
-      console.error('❌ [StoryController] Invalid story_type:', createStoryDto.story_type);
-      throw new BadRequestException('story_type must be either "image" or "video"');
+      console.error(
+        '❌ [StoryController] Invalid story_type:',
+        createStoryDto.story_type,
+      );
+      throw new BadRequestException(
+        'story_type must be either "image" or "video"',
+      );
     }
 
     // Parse product_ids if it's a string (from FormData)
     if (typeof createStoryDto.product_ids === 'string') {
       try {
-        createStoryDto.product_ids = JSON.parse(createStoryDto.product_ids as any);
+        createStoryDto.product_ids = JSON.parse(
+          createStoryDto.product_ids as any,
+        );
       } catch (e) {
         console.error('Error parsing product_ids:', e);
         createStoryDto.product_ids = [];
@@ -110,7 +115,6 @@ export class StoryController {
           }
           throw new BadRequestException('Image size exceeds 10MB limit');
         }
-
       } else if (file.mimetype.startsWith('video')) {
         // Validate video size
         if (file.size > STORY_VIDEO_MAX_SIZE) {
@@ -163,11 +167,8 @@ export class StoryController {
    * GET /story - Get active stories
    */
   @Get()
-  @UseGuards(AuthGuard('jwt'))
-  async getStories(
-    @Req() req: any,
-    @Query() queryDto: QueryStoriesDto,
-  ) {
+  @UseGuards(JwtAuthGuard)
+  async getStories(@Req() req: any, @Query() queryDto: QueryStoriesDto) {
     const userId = req.user.userId || req.user.sub;
     return this.storyService.getActiveStories(queryDto, userId);
   }
@@ -176,11 +177,8 @@ export class StoryController {
    * GET /story/:id - Get a specific story
    */
   @Get(':id')
-  @UseGuards(AuthGuard('jwt'))
-  async getStory(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
-  ) {
+  @UseGuards(JwtAuthGuard)
+  async getStory(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     const userId = req.user.userId || req.user.sub;
     return this.storyService.getStoryById(id, userId);
   }
@@ -189,7 +187,7 @@ export class StoryController {
    * PUT /story/:id - Update story
    */
   @Put(':id')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async updateStory(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: any,
@@ -203,11 +201,8 @@ export class StoryController {
    * DELETE /story/:id - Delete story
    */
   @Delete(':id')
-  @UseGuards(AuthGuard('jwt'))
-  async deleteStory(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
-  ) {
+  @UseGuards(JwtAuthGuard)
+  async deleteStory(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     const userId = req.user.userId || req.user.sub;
     return this.storyService.deleteStory(id, userId);
   }
@@ -216,11 +211,8 @@ export class StoryController {
    * POST /story/:id/view - Mark story as viewed
    */
   @Post(':id/view')
-  @UseGuards(AuthGuard('jwt'))
-  async markAsViewed(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
-  ) {
+  @UseGuards(JwtAuthGuard)
+  async markAsViewed(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     const userId = req.user.userId || req.user.sub;
     return this.storyService.markAsViewed(id, userId);
   }
@@ -229,7 +221,7 @@ export class StoryController {
    * POST /story/:id/reaction - Add reaction to story
    */
   @Post(':id/reaction')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async addReaction(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: any,
@@ -243,11 +235,8 @@ export class StoryController {
    * DELETE /story/:id/reaction - Remove reaction from story
    */
   @Delete(':id/reaction')
-  @UseGuards(AuthGuard('jwt'))
-  async removeReaction(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
-  ) {
+  @UseGuards(JwtAuthGuard)
+  async removeReaction(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     const userId = req.user.userId || req.user.sub;
     return this.storyService.removeReaction(id, userId);
   }
@@ -256,7 +245,7 @@ export class StoryController {
    * POST /story/:id/reply - Add reply to story
    */
   @Post(':id/reply')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async addReply(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: any,
@@ -270,11 +259,8 @@ export class StoryController {
    * GET /story/:id/viewers - Get list of viewers (only owner)
    */
   @Get(':id/viewers')
-  @UseGuards(AuthGuard('jwt'))
-  async getViewers(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: any,
-  ) {
+  @UseGuards(JwtAuthGuard)
+  async getViewers(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     const userId = req.user.userId || req.user.sub;
     return this.storyService.getViewers(id, userId);
   }
@@ -284,13 +270,14 @@ export class StoryController {
    * ⚡ FAST UPLOAD: Client upload trực tiếp lên S3, không qua backend
    */
   @Post('presigned-url')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async generatePresignedUrl(
     @Req() req: any,
-    @Body() body: { fileName: string; fileType: string; storyType: 'image' | 'video' },
+    @Body()
+    body: { fileName: string; fileType: string; storyType: 'image' | 'video' },
   ) {
     const userId = req.user.userId || req.user.sub;
-    
+
     console.log('🔑 [StoryController] Generating presigned URL:', {
       userId,
       fileName: body.fileName,
@@ -300,17 +287,24 @@ export class StoryController {
 
     // Validate input
     if (!body.fileName || !body.fileType || !body.storyType) {
-      throw new BadRequestException('fileName, fileType, and storyType are required');
+      throw new BadRequestException(
+        'fileName, fileType, and storyType are required',
+      );
     }
 
     if (!['image', 'video'].includes(body.storyType)) {
-      throw new BadRequestException('storyType must be either "image" or "video"');
+      throw new BadRequestException(
+        'storyType must be either "image" or "video"',
+      );
     }
 
     // Only work with S3 storage
     const storageDriver = getStorageDriver();
     if (storageDriver !== 's3') {
-      throw new ForbiddenException('Presigned URL only available for S3 storage. Current: ' + storageDriver);
+      throw new ForbiddenException(
+        'Presigned URL only available for S3 storage. Current: ' +
+          storageDriver,
+      );
     }
 
     const s3Client = new S3Client({
@@ -325,7 +319,8 @@ export class StoryController {
     const timestamp = Date.now();
     const randomId = Math.round(Math.random() * 1e9);
     const extension = body.fileName.split('.').pop();
-    const directory = body.storyType === 'video' ? 'stories/videos' : 'stories/images';
+    const directory =
+      body.storyType === 'video' ? 'stories/videos' : 'stories/images';
     const key = `${directory}/story-${userId}-${timestamp}-${randomId}.${extension}`;
 
     // Create presigned URL (valid for 10 minutes)
@@ -353,9 +348,9 @@ export class StoryController {
     return {
       success: true,
       data: {
-        uploadUrl,    // URL để upload
-        s3Url,        // URL sau khi upload xong
-        key,          // S3 key
+        uploadUrl, // URL để upload
+        s3Url, // URL sau khi upload xong
+        key, // S3 key
         expiresIn: 600, // 10 minutes
       },
     };
@@ -366,10 +361,11 @@ export class StoryController {
    * Được gọi SAU KHI mobile app đã upload trực tiếp lên S3
    */
   @Post('complete-upload')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async completeUpload(
     @Req() req: any,
-    @Body() body: {
+    @Body()
+    body: {
       s3Url: string;
       story_type: 'image' | 'video';
       caption?: string;
@@ -382,7 +378,7 @@ export class StoryController {
     },
   ) {
     const userId = req.user.userId || req.user.sub;
-    
+
     console.log('💾 [StoryController] Complete upload:', {
       userId,
       s3Url: body.s3Url,
@@ -397,7 +393,9 @@ export class StoryController {
     }
 
     if (!['image', 'video'].includes(body.story_type)) {
-      throw new BadRequestException('story_type must be either "image" or "video"');
+      throw new BadRequestException(
+        'story_type must be either "image" or "video"',
+      );
     }
 
     // Validate video duration
@@ -406,7 +404,9 @@ export class StoryController {
         throw new BadRequestException('duration is required for video stories');
       }
       if (body.duration > STORY_VIDEO_MAX_DURATION) {
-        throw new BadRequestException(`Video duration cannot exceed ${STORY_VIDEO_MAX_DURATION} seconds`);
+        throw new BadRequestException(
+          `Video duration cannot exceed ${STORY_VIDEO_MAX_DURATION} seconds`,
+        );
       }
     }
 
@@ -428,7 +428,10 @@ export class StoryController {
       body.thumbnail_url, // Optional thumbnail
     );
 
-    console.log('✅ [StoryController] Story created:', story.data?.id || 'unknown');
+    console.log(
+      '✅ [StoryController] Story created:',
+      story.data?.id || 'unknown',
+    );
 
     return story;
   }

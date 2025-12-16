@@ -13,7 +13,7 @@ import { getMulterOptions, getFileUrl } from '../config/storage.config';
 @Controller('chat')
 export class ChatController {
   @Post('upload')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('file', getMulterOptions('chat_media', 'media')),
   )

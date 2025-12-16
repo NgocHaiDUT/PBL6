@@ -25,7 +25,7 @@ import {
 } from './interfaces/notification.interface';
 
 @Controller('notifications')
-@UseGuards(AuthGuard('jwt')) // ✅ Require JWT for all endpoints
+@UseGuards(JwtAuthGuard) // ✅ Require JWT for all endpoints
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
@@ -36,7 +36,10 @@ export class NotificationsController {
     @Request() req: any,
   ): Promise<NotificationResponse> {
     const userId = req.user?.sub || req.user?.userId;
-    return this.notificationsService.createForUser(userId, createNotificationDto);
+    return this.notificationsService.createForUser(
+      userId,
+      createNotificationDto,
+    );
   }
 
   @Get()
@@ -46,8 +49,13 @@ export class NotificationsController {
   ): Promise<PaginatedNotificationsResponse> {
     // ✅ Use userId from query param if provided, otherwise from JWT
     const jwtUserId = req.user?.sub || req.user?.userId;
-    const targetUserId = queryDto.userId ? parseInt(queryDto.userId, 10) : jwtUserId;
-    console.log('🔔 [Controller] Getting notifications for user ID:', targetUserId);
+    const targetUserId = queryDto.userId
+      ? parseInt(queryDto.userId, 10)
+      : jwtUserId;
+    console.log(
+      '🔔 [Controller] Getting notifications for user ID:',
+      targetUserId,
+    );
     return this.notificationsService.findAllForUser(targetUserId, queryDto);
   }
 
@@ -59,7 +67,10 @@ export class NotificationsController {
     // ✅ Use userId from query if provided, otherwise from JWT
     const jwtUserId = req.user?.sub || req.user?.userId;
     const targetUserId = userId ? parseInt(userId, 10) : jwtUserId;
-    console.log('🔔 [Controller] Getting notification stats for user ID:', targetUserId);
+    console.log(
+      '🔔 [Controller] Getting notification stats for user ID:',
+      targetUserId,
+    );
     return this.notificationsService.getStats(targetUserId);
   }
 
@@ -70,8 +81,15 @@ export class NotificationsController {
   ): Promise<{ updated: number }> {
     // ✅ Use user_id from body if provided, otherwise from JWT
     const jwtUserId = req.user?.sub || req.user?.userId;
-    const targetUserId = body.user_id ? (typeof body.user_id === 'string' ? parseInt(body.user_id, 10) : body.user_id) : jwtUserId;
-    console.log('🔔 [Controller] Marking all as read for user ID:', targetUserId);
+    const targetUserId = body.user_id
+      ? typeof body.user_id === 'string'
+        ? parseInt(body.user_id, 10)
+        : body.user_id
+      : jwtUserId;
+    console.log(
+      '🔔 [Controller] Marking all as read for user ID:',
+      targetUserId,
+    );
     return this.notificationsService.markAllAsRead(targetUserId);
   }
 
@@ -82,21 +100,28 @@ export class NotificationsController {
   ): Promise<{ deleted: number }> {
     // ✅ Use user_id from body if provided, otherwise from JWT
     const jwtUserId = req.user?.sub || req.user?.userId;
-    const targetUserId = body.user_id ? (typeof body.user_id === 'string' ? parseInt(body.user_id, 10) : body.user_id) : jwtUserId;
-    console.log('🔔 [Controller] Deleting all read notifications for user ID:', targetUserId);
+    const targetUserId = body.user_id
+      ? typeof body.user_id === 'string'
+        ? parseInt(body.user_id, 10)
+        : body.user_id
+      : jwtUserId;
+    console.log(
+      '🔔 [Controller] Deleting all read notifications for user ID:',
+      targetUserId,
+    );
     return this.notificationsService.deleteAllRead(targetUserId);
   }
 
   // ✅ Route cụ thể phải đặt TRƯỚC route generic :id
   @Get(':userId/unread-count')
   async getUnreadCount(
-    @Param('userId', ParseIntPipe) userId: number
+    @Param('userId', ParseIntPipe) userId: number,
   ): Promise<{ success: boolean; count: number }> {
     console.log('🔔 [Controller] Getting unread count for user ID:', userId);
     const stats = await this.notificationsService.getStats(userId);
-    return { 
-      success: true, 
-      count: stats.unread 
+    return {
+      success: true,
+      count: stats.unread,
     };
   }
 
@@ -127,8 +152,15 @@ export class NotificationsController {
   ): Promise<NotificationResponse> {
     // ✅ Use user_id from body if provided, otherwise from JWT
     const jwtUserId = req.user?.sub || req.user?.userId;
-    const targetUserId = body.user_id ? (typeof body.user_id === 'string' ? parseInt(body.user_id, 10) : body.user_id) : jwtUserId;
-    console.log('🔔 [Controller] Marking notification as read:', { id, targetUserId });
+    const targetUserId = body.user_id
+      ? typeof body.user_id === 'string'
+        ? parseInt(body.user_id, 10)
+        : body.user_id
+      : jwtUserId;
+    console.log('🔔 [Controller] Marking notification as read:', {
+      id,
+      targetUserId,
+    });
     return this.notificationsService.markAsRead(id, targetUserId);
   }
 
