@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ExchangeTokenDto {
@@ -6,9 +6,9 @@ export class ExchangeTokenDto {
     description: 'OAuth Code to Exchange AccessToken and Refresh Token',
     example: '122132',
   })
-  @IsEmail()
+  @IsString()
   @IsNotEmpty()
-  email: string;
+  code: string;
 
   @ApiProperty({
     description: 'UUID of device',
@@ -19,18 +19,9 @@ export class ExchangeTokenDto {
   device_id: string;
 
   @ApiProperty({
-    description: 'Device type',
-    example: 'mobile/web',
-  })
-  @IsString()
-  @IsNotEmpty()
-  device_type: string;
-
-  @ApiProperty({
     description: 'Device name',
     example: 'Chrome on Windows',
   })
   @IsString()
-  @IsNotEmpty()
-  device_name: string;
+  device_name?: string;
 }

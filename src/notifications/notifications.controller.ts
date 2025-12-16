@@ -23,6 +23,7 @@ import {
   NotificationStatsResponse,
   PaginatedNotificationsResponse,
 } from './interfaces/notification.interface';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('notifications')
 @UseGuards(JwtAuthGuard) // ✅ Require JWT for all endpoints

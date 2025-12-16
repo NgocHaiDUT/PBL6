@@ -338,7 +338,55 @@ export class AuthService {
     return saveCode.code;
   }
 
-  async exchangeToken(dto: ExchangeTokenDto) {}
+  async exchangeToken(dto: ExchangeTokenDto) {
+    const { code, device_id, device_name } = dto;
+
+    // Find OAuth code in database
+    const oauthCode = await this.PrismaService.oauth_login_codes.findFirst({
+      where: {
+        code,
+        device_id,
+        expires_at: { gt: new Date() },
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!oauthCode) {
+      throw new UnauthorizedException({
+        code: ERROR_CODE.UNAUTHORIZED,
+        message: 'Invalid or expired OAuth code',
+      });
+    }
+
+    const user = oauthCode.user;
+
+    if (!user || !user.is_active || user.is_deleted) {
+      throw new UnauthorizedException({
+        code: ERROR_CODE.UNAUTHORIZED,
+        message: 'User not found or inactive',
+      });
+    }
+
+    // Delete used OAuth code (code is the primary key)
+    await this.PrismaService.oauth_login_codes.delete({
+      where: { code: oauthCode.code },
+    });
+
+    // Issue tokens
+    const tokens = await this.issueTokens(user, device_id, device_name || 'Unknown Device');
+
+    // Get user info in the same format as getCurrentUser
+    const userInfo = await this.getCurrentUser(user.id);
+
+    return {
+      success: true,
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      user: userInfo,
+    };
+  }
 
   async refreshToken(dto: RefreshAccessTokenDto) {
     const { token, device_id } = dto;

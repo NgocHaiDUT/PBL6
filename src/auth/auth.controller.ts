@@ -35,6 +35,7 @@ import { VerifyDeviceOtpDto } from './dto/verifed-email-otp.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LogoutDto } from './dto/logout.dto';
 import { RefreshAccessTokenDto } from './dto/refresh-access-token.dto';
+import { ExchangeTokenDto } from './dto/exchange-token.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -331,6 +332,18 @@ export class AuthController {
     }
 
     return this.authService.refreshToken(dto);
+  }
+
+  @Post('exchange-token')
+  @ApiOperation({ summary: 'Exchange OAuth code for access token and refresh token' })
+  @ApiResponse({ status: 200, description: 'Tokens generated successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired OAuth code' })
+  async exchangeToken(@Body() dto: ExchangeTokenDto) {
+    if (!dto.code || !dto.device_id) {
+      throw new BadRequestException('Missing code or device_id');
+    }
+
+    return this.authService.exchangeToken(dto);
   }
 
   @Get('me')
