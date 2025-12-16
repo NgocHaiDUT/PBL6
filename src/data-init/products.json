@@ -6,19 +6,21 @@
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.5,
-    "total_reviews": 128,
+    "review_count": 128,
     "brand_id": 1,
     "category_id": 1,
     "shop_id": 2,
+    "skin_type_compat": "normal",
     "variants": [
       {
         "name": "50ml",
         "price": 250000,
-        "compare_at_price": 300000,
+        "compare_price": 300000,
         "sku": "KCN001-50ML",
-        "stock": 100,
+        "stock_quantity": 100,
         "is_active": true,
         "weight": 100,
+        "shade_hex": "#FFFFFF",
         "length": 10,
         "width": 5,
         "height": 5
@@ -26,11 +28,12 @@
       {
         "name": "100ml",
         "price": 450000,
-        "compare_at_price": 550000,
+        "compare_price": 550000,
         "sku": "KCN001-100ML",
-        "stock": 50,
+        "stock_quantity": 50,
         "is_active": true,
         "weight": 150,
+        "shade_hex": "#FFFFFF",
         "length": 12,
         "width": 6,
         "height": 6
@@ -56,19 +59,21 @@
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.8,
-    "total_reviews": 95,
+    "review_count": 95,
     "brand_id": 2,
     "category_id": 2,
     "shop_id": 2,
+    "skin_type_compat": "sensitive",
     "variants": [
       {
         "name": "30ml",
         "price": 180000,
-        "compare_at_price": 220000,
+        "compare_price": 220000,
         "sku": "SVC001-30ML",
-        "stock": 80,
+        "stock_quantity": 80,
         "is_active": true,
         "weight": 80,
+        "shade_hex": "#F0E5D8",
         "length": 8,
         "width": 4,
         "height": 4
@@ -89,19 +94,21 @@
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.3,
-    "total_reviews": 67,
+    "review_count": 67,
     "brand_id": 1,
     "category_id": 3,
     "shop_id": 2,
+    "skin_type_compat": "normal",
     "variants": [
       {
         "name": "200ml",
         "price": 120000,
-        "compare_at_price": 150000,
+        "compare_price": 150000,
         "sku": "TCD001-200ML",
-        "stock": 120,
+        "stock_quantity": 120,
         "is_active": true,
         "weight": 250,
+        "shade_hex": "#E8DCC8",
         "length": 15,
         "width": 7,
         "height": 7
@@ -109,11 +116,12 @@
       {
         "name": "400ml",
         "price": 200000,
-        "compare_at_price": 250000,
+        "compare_price": 250000,
         "sku": "TCD001-400ML",
-        "stock": 60,
+        "stock_quantity": 60,
         "is_active": true,
         "weight": 450,
+        "shade_hex": "#E8DCC8",
         "length": 20,
         "width": 8,
         "height": 8
@@ -134,19 +142,21 @@
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.6,
-    "total_reviews": 89,
+    "review_count": 89,
     "brand_id": 3,
     "category_id": 4,
     "shop_id": 2,
+    "skin_type_compat": "normal",
     "variants": [
       {
         "name": "50ml",
         "price": 320000,
-        "compare_at_price": 380000,
+        "compare_price": 380000,
         "sku": "KDAD001-50ML",
-        "stock": 70,
+        "stock_quantity": 70,
         "is_active": true,
         "weight": 120,
+        "shade_hex": "#F5F5DC",
         "length": 7,
         "width": 7,
         "height": 6
@@ -172,19 +182,21 @@
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.2,
-    "total_reviews": 156,
+    "review_count": 156,
     "brand_id": 2,
     "category_id": 5,
     "shop_id": 2,
+    "skin_type_compat": "normal",
     "variants": [
       {
         "name": "100g",
         "price": 95000,
-        "compare_at_price": 120000,
+        "compare_price": 120000,
         "sku": "MNDS001-100G",
-        "stock": 200,
+        "stock_quantity": 200,
         "is_active": true,
         "weight": 120,
+        "shade_hex": "#8B7355",
         "length": 8,
         "width": 8,
         "height": 5
@@ -192,11 +204,12 @@
       {
         "name": "200g",
         "price": 160000,
-        "compare_at_price": 200000,
+        "compare_price": 200000,
         "sku": "MNDS001-200G",
-        "stock": 100,
+        "stock_quantity": 100,
         "is_active": true,
         "weight": 220,
+        "shade_hex": "#8B7355",
         "length": 10,
         "width": 10,
         "height": 6
@@ -217,19 +230,21 @@
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.4,
-    "total_reviews": 203,
+    "review_count": 203,
     "brand_id": 1,
     "category_id": 6,
     "shop_id": 2,
+    "skin_type_compat": "normal",
     "variants": [
       {
         "name": "150ml",
         "price": 85000,
-        "compare_at_price": 100000,
+        "compare_price": 100000,
         "sku": "SRMDN001-150ML",
-        "stock": 150,
+        "stock_quantity": 150,
         "is_active": true,
         "weight": 180,
+        "shade_hex": "#F5F5DC",
         "length": 15,
         "width": 6,
         "height": 6
@@ -237,11 +252,12 @@
       {
         "name": "300ml",
         "price": 150000,
-        "compare_at_price": 180000,
+        "compare_price": 180000,
         "sku": "SRMDN001-300ML",
-        "stock": 80,
+        "stock_quantity": 80,
         "is_active": true,
         "weight": 350,
+        "shade_hex": "#F5F5DC",
         "length": 18,
         "width": 7,
         "height": 7
@@ -262,19 +278,21 @@
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.7,
-    "total_reviews": 74,
+    "review_count": 74,
     "brand_id": 3,
     "category_id": 2,
     "shop_id": 2,
+    "skin_type_compat": "normal",
     "variants": [
       {
         "name": "150ml",
         "price": 280000,
-        "compare_at_price": 330000,
+        "compare_price": 330000,
         "sku": "ETC001-150ML",
-        "stock": 90,
+        "stock_quantity": 90,
         "is_active": true,
         "weight": 200,
+        "shade_hex": "#F0E5D8",
         "length": 14,
         "width": 6,
         "height": 6
@@ -300,19 +318,21 @@
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.9,
-    "total_reviews": 45,
+    "review_count": 45,
     "brand_id": 2,
     "category_id": 7,
     "shop_id": 2,
+    "skin_type_compat": "normal",
     "variants": [
       {
         "name": "15ml",
         "price": 450000,
-        "compare_at_price": 520000,
+        "compare_price": 520000,
         "sku": "KMCLH001-15ML",
-        "stock": 60,
+        "stock_quantity": 60,
         "is_active": true,
         "weight": 50,
+        "shade_hex": "#F5F5DC",
         "length": 10,
         "width": 4,
         "height": 4
@@ -333,19 +353,21 @@
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.6,
-    "total_reviews": 234,
+    "review_count": 234,
     "brand_id": 1,
     "category_id": 8,
     "shop_id": 2,
+    "skin_type_compat": "normal",
     "variants": [
       {
         "name": "3.5g",
         "price": 180000,
-        "compare_at_price": 220000,
+        "compare_price": 220000,
         "sku": "SMMCC001-3.5G",
-        "stock": 150,
+        "stock_quantity": 150,
         "is_active": true,
         "weight": 30,
+        "shade_hex": "#8B4545",
         "length": 8,
         "width": 2,
         "height": 2
@@ -366,19 +388,21 @@
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.4,
-    "total_reviews": 189,
+    "review_count": 189,
     "brand_id": 2,
     "category_id": 9,
     "shop_id": 2,
+    "skin_type_compat": "normal",
     "variants": [
       {
         "name": "8ml",
         "price": 165000,
-        "compare_at_price": 195000,
+        "compare_price": 195000,
         "sku": "MTDC001-8ML",
-        "stock": 120,
+        "stock_quantity": 120,
         "is_active": true,
         "weight": 40,
+        "shade_hex": "#000000",
         "length": 12,
         "width": 3,
         "height": 3
@@ -399,19 +423,21 @@
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.7,
-    "total_reviews": 312,
+    "review_count": 312,
     "brand_id": 3,
     "category_id": 10,
     "shop_id": 2,
+    "skin_type_compat": "normal",
     "variants": [
       {
         "name": "30ml",
         "price": 280000,
-        "compare_at_price": 320000,
+        "compare_price": 320000,
         "sku": "KNLF001-30ML",
-        "stock": 80,
+        "stock_quantity": 80,
         "is_active": true,
         "weight": 100,
+        "shade_hex": "#F5DEB3",
         "length": 10,
         "width": 5,
         "height": 5
@@ -419,11 +445,12 @@
       {
         "name": "50ml",
         "price": 420000,
-        "compare_at_price": 480000,
+        "compare_price": 480000,
         "sku": "KNLF001-50ML",
-        "stock": 60,
+        "stock_quantity": 60,
         "is_active": true,
         "weight": 150,
+        "shade_hex": "#F5DEB3",
         "length": 12,
         "width": 6,
         "height": 6
@@ -449,19 +476,21 @@
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.8,
-    "total_reviews": 156,
+    "review_count": 156,
     "brand_id": 1,
     "category_id": 11,
     "shop_id": 2,
+    "skin_type_compat": "normal",
     "variants": [
       {
         "name": "Bộ 12 cọ",
         "price": 350000,
-        "compare_at_price": 420000,
+        "compare_price": 420000,
         "sku": "BCTDCN001-12CO",
-        "stock": 45,
+        "stock_quantity": 45,
         "is_active": true,
         "weight": 300,
+        "shade_hex": "#D2B48C",
         "length": 20,
         "width": 15,
         "height": 5
@@ -469,11 +498,12 @@
       {
         "name": "Bộ 18 cọ",
         "price": 480000,
-        "compare_at_price": 580000,
+        "compare_price": 580000,
         "sku": "BCTDCN001-18CO",
-        "stock": 30,
+        "stock_quantity": 30,
         "is_active": true,
         "weight": 450,
+        "shade_hex": "#D2B48C",
         "length": 22,
         "width": 18,
         "height": 6
@@ -494,19 +524,21 @@
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.9,
-    "total_reviews": 98,
+    "review_count": 98,
     "brand_id": 2,
     "category_id": 12,
     "shop_id": 2,
+    "skin_type_compat": "normal",
     "variants": [
       {
         "name": "50ml",
         "price": 650000,
-        "compare_at_price": 750000,
+        "compare_price": 750000,
         "sku": "NHNST001-50ML",
-        "stock": 25,
+        "stock_quantity": 25,
         "is_active": true,
         "weight": 250,
+        "shade_hex": "#FFE4B5",
         "length": 10,
         "width": 8,
         "height": 15
@@ -514,11 +546,12 @@
       {
         "name": "100ml",
         "price": 980000,
-        "compare_at_price": 1150000,
+        "compare_price": 1150000,
         "sku": "NHNST001-100ML",
-        "stock": 15,
+        "stock_quantity": 15,
         "is_active": true,
         "weight": 450,
+        "shade_hex": "#FFE4B5",
         "length": 12,
         "width": 10,
         "height": 18
@@ -539,7 +572,7 @@
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.3,
-    "total_reviews": 203,
+    "review_count": 203,
     "brand_id": 1,
     "shop_id": 2,
     "how_to_use": "Làm ướt mặt, massage nhẹ nhàng với sữa rửa mặt, rửa sạch với nước.",
@@ -548,11 +581,12 @@
       {
         "name": "150ml",
         "price": 85000,
-        "compare_at_price": 120000,
+        "compare_price": 120000,
         "sku": "SRMDN002-150ML",
-        "stock": 50,
+        "stock_quantity": 50,
         "is_active": true,
         "weight": 180,
+        "shade_hex": "#F5F5DC",
         "length": 15,
         "width": 6,
         "height": 6
@@ -560,11 +594,12 @@
       {
         "name": "300ml",
         "price": 150000,
-        "compare_at_price": 180000,
+        "compare_price": 180000,
         "sku": "SRMDN002-300ML",
-        "stock": 30,
+        "stock_quantity": 30,
         "is_active": true,
         "weight": 350,
+        "shade_hex": "#F5F5DC",
         "length": 18,
         "width": 7,
         "height": 7
@@ -585,7 +620,7 @@
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.6,
-    "total_reviews": 156,
+    "review_count": 156,
     "brand_id": 1,
     "shop_id": 2,
     "how_to_use": "Thoa đều lên mặt và cổ sau khi rửa mặt, massage nhẹ nhàng cho đến khi thấm hết.",
@@ -594,11 +629,12 @@
       {
         "name": "50ml",
         "price": 120000,
-        "compare_at_price": 150000,
+        "compare_price": 150000,
         "sku": "KDA24H001-50ML",
-        "stock": 40,
+        "stock_quantity": 40,
         "is_active": true,
         "weight": 120,
+        "shade_hex": "#F5F5DC",
         "length": 7,
         "width": 7,
         "height": 6
@@ -607,6 +643,478 @@
     "media": [
       {
         "url": "/uploads/products/kem-duong-am-24h-loreal-1.jpg",
+        "type": "image",
+        "is_primary": true
+      }
+    ]
+  },
+  {
+    "name": "Phấn Mắt Palette Nude",
+    "slug": "phan-mat-palette-nude",
+    "description": "Bảng phấn mắt 12 ô màu nude tự nhiên, dễ tán, lên màu chuẩn. Kết cấu mịn mượt, bám lâu suốt ngày.",
+    "is_published": true,
+    "moderation_status": "approved",
+    "avg_rating": 4.7,
+    "review_count": 145,
+    "brand_id": 1,
+    "category_id": 8,
+    "shop_id": 2,
+    "skin_type_compat": "normal",
+    "variants": [
+      {
+        "name": "Palette 12 Màu",
+        "price": 320000,
+        "compare_price": 380000,
+        "sku": "PMPN001-12M",
+        "stock_quantity": 80,
+        "is_active": true,
+        "weight": 150,
+        "shade_hex": "#D4A5A5",
+        "length": 15,
+        "width": 10,
+        "height": 2
+      }
+    ],
+    "media": [
+      {
+        "url": "/uploads/products/phan-mat-palette-nude-1.jpg",
+        "type": "image",
+        "is_primary": true
+      }
+    ]
+  },
+  {
+    "name": "Phấn Mắt Shimmer Bronze",
+    "slug": "phan-mat-shimmer-bronze",
+    "description": "Phấn mắt ánh kim màu đồng, tạo hiệu ứng lấp lánh tự nhiên. Công thức không bị rơi phấn.",
+    "is_published": true,
+    "moderation_status": "approved",
+    "avg_rating": 4.6,
+    "review_count": 98,
+    "brand_id": 2,
+    "category_id": 8,
+    "shop_id": 2,
+    "skin_type_compat": "normal",
+    "variants": [
+      {
+        "name": "Bronze Gold",
+        "price": 180000,
+        "compare_price": 220000,
+        "sku": "PMSB001-BG",
+        "stock_quantity": 100,
+        "is_active": true,
+        "weight": 50,
+        "shade_hex": "#A0522D",
+        "length": 8,
+        "width": 8,
+        "height": 2
+      }
+    ],
+    "media": [
+      {
+        "url": "/uploads/products/phan-mat-shimmer-bronze-1.jpg",
+        "type": "image",
+        "is_primary": true
+      }
+    ]
+  },
+  {
+    "name": "Phấn Má Hồng Coral",
+    "slug": "phan-ma-hong-coral",
+    "description": "Phấn má hồng san hô tươi tắn, tạo vẻ rạng rỡ tự nhiên cho khuôn mặt. Bám tốt, không bị lem.",
+    "is_published": true,
+    "moderation_status": "approved",
+    "avg_rating": 4.8,
+    "review_count": 167,
+    "brand_id": 1,
+    "category_id": 5,
+    "shop_id": 2,
+    "skin_type_compat": "normal",
+    "variants": [
+      {
+        "name": "Coral Pink",
+        "price": 150000,
+        "compare_price": 190000,
+        "sku": "PMHC001-CP",
+        "stock_quantity": 120,
+        "is_active": true,
+        "weight": 60,
+        "shade_hex": "#E8A4A4",
+        "length": 8,
+        "width": 8,
+        "height": 2
+      }
+    ],
+    "media": [
+      {
+        "url": "/uploads/products/phan-ma-hong-coral-1.jpg",
+        "type": "image",
+        "is_primary": true
+      }
+    ]
+  },
+  {
+    "name": "Phấn Má Hồng Peach",
+    "slug": "phan-ma-hong-peach",
+    "description": "Phấn má hồng đào ngọt ngào, kết cấu mịn màng, lên màu tự nhiên. Phù hợp mọi tông da.",
+    "is_published": true,
+    "moderation_status": "approved",
+    "avg_rating": 4.7,
+    "review_count": 134,
+    "brand_id": 2,
+    "category_id": 5,
+    "shop_id": 2,
+    "skin_type_compat": "normal",
+    "variants": [
+      {
+        "name": "Soft Peach",
+        "price": 165000,
+        "compare_price": 200000,
+        "sku": "PMHP001-SP",
+        "stock_quantity": 95,
+        "is_active": true,
+        "weight": 60,
+        "shade_hex": "#FFB6C1",
+        "length": 8,
+        "width": 8,
+        "height": 2
+      }
+    ],
+    "media": [
+      {
+        "url": "/uploads/products/phan-ma-hong-peach-1.jpg",
+        "type": "image",
+        "is_primary": true
+      }
+    ]
+  },
+  {
+    "name": "Kẻ Mắt Nước Đen Tuyền",
+    "slug": "ke-mat-nuoc-den-tuyen",
+    "description": "Kẻ mắt nước đen tuyền, không lem trôi suốt ngày. Đầu cọ mảnh giúp kẻ line mắt chính xác.",
+    "is_published": true,
+    "moderation_status": "approved",
+    "avg_rating": 4.9,
+    "review_count": 289,
+    "brand_id": 3,
+    "category_id": 9,
+    "shop_id": 2,
+    "skin_type_compat": "normal",
+    "variants": [
+      {
+        "name": "Jet Black",
+        "price": 145000,
+        "compare_price": 180000,
+        "sku": "KMNDT001-JB",
+        "stock_quantity": 150,
+        "is_active": true,
+        "weight": 30,
+        "shade_hex": "#000000",
+        "length": 14,
+        "width": 2,
+        "height": 2
+      }
+    ],
+    "media": [
+      {
+        "url": "/uploads/products/ke-mat-nuoc-den-tuyen-1.jpg",
+        "type": "image",
+        "is_primary": true
+      }
+    ]
+  },
+  {
+    "name": "Kẻ Mắt Chì Nâu",
+    "slug": "ke-mat-chi-nau",
+    "description": "Kẻ mắt dạng chì màu nâu tự nhiên, mềm mịn dễ tán. Tạo đường line mắt nhẹ nhàng cho makeup hàng ngày.",
+    "is_published": true,
+    "moderation_status": "approved",
+    "avg_rating": 4.5,
+    "review_count": 178,
+    "brand_id": 1,
+    "category_id": 9,
+    "shop_id": 2,
+    "skin_type_compat": "normal",
+    "variants": [
+      {
+        "name": "Soft Brown",
+        "price": 95000,
+        "compare_price": 120000,
+        "sku": "KMCN001-SB",
+        "stock_quantity": 140,
+        "is_active": true,
+        "weight": 25,
+        "shade_hex": "#4A3728",
+        "length": 15,
+        "width": 1,
+        "height": 1
+      }
+    ],
+    "media": [
+      {
+        "url": "/uploads/products/ke-mat-chi-nau-1.jpg",
+        "type": "image",
+        "is_primary": true
+      }
+    ]
+  },
+  {
+    "name": "Chì Kẻ Mày Nâu Tự Nhiên",
+    "slug": "chi-ke-may-nau-tu-nhien",
+    "description": "Chì kẻ mày công thức mềm mịn, giúp vẽ từng sợi lông mày tự nhiên. Kèm chổi chuốt mày tiện dụng.",
+    "is_published": true,
+    "moderation_status": "approved",
+    "avg_rating": 4.6,
+    "review_count": 234,
+    "brand_id": 2,
+    "category_id": 11,
+    "shop_id": 2,
+    "skin_type_compat": "normal",
+    "variants": [
+      {
+        "name": "Natural Brown",
+        "price": 85000,
+        "compare_price": 110000,
+        "sku": "CKMNTN001-NB",
+        "stock_quantity": 180,
+        "is_active": true,
+        "weight": 20,
+        "shade_hex": "#6B4423",
+        "length": 14,
+        "width": 1,
+        "height": 1
+      }
+    ],
+    "media": [
+      {
+        "url": "/uploads/products/chi-ke-may-nau-tu-nhien-1.jpg",
+        "type": "image",
+        "is_primary": true
+      }
+    ]
+  },
+  {
+    "name": "Chì Kẻ Mày Đen Nâu",
+    "slug": "chi-ke-may-den-nau",
+    "description": "Chì kẻ mày màu đen nâu đậm, bám màu tốt suốt ngày. Lõi mềm, dễ vẽ và tán.",
+    "is_published": true,
+    "moderation_status": "approved",
+    "avg_rating": 4.7,
+    "review_count": 189,
+    "brand_id": 3,
+    "category_id": 11,
+    "shop_id": 2,
+    "skin_type_compat": "normal",
+    "variants": [
+      {
+        "name": "Dark Brown",
+        "price": 95000,
+        "compare_price": 125000,
+        "sku": "CKMDN001-DB",
+        "stock_quantity": 160,
+        "is_active": true,
+        "weight": 20,
+        "shade_hex": "#2D1F14",
+        "length": 14,
+        "width": 1,
+        "height": 1
+      }
+    ],
+    "media": [
+      {
+        "url": "/uploads/products/chi-ke-may-den-nau-1.jpg",
+        "type": "image",
+        "is_primary": true
+      }
+    ]
+  },
+  {
+    "name": "Kem Nền Lâu Trôi HD",
+    "slug": "kem-nen-lau-troi-hd",
+    "description": "Kem nền HD che phủ hoàn hảo, kiềm dầu tốt, không gây bí da. Công thức lâu trôi 24h với SPF 30.",
+    "is_published": true,
+    "moderation_status": "approved",
+    "avg_rating": 4.8,
+    "review_count": 345,
+    "brand_id": 1,
+    "category_id": 2,
+    "shop_id": 2,
+    "skin_type_compat": "normal",
+    "variants": [
+      {
+        "name": "Fair Ivory",
+        "price": 380000,
+        "compare_price": 450000,
+        "sku": "KNLTHD001-FI",
+        "stock_quantity": 70,
+        "is_active": true,
+        "weight": 120,
+        "shade_hex": "#FFE4C4",
+        "length": 12,
+        "width": 6,
+        "height": 6
+      },
+      {
+        "name": "Natural Beige",
+        "price": 380000,
+        "compare_price": 450000,
+        "sku": "KNLTHD001-NB",
+        "stock_quantity": 85,
+        "is_active": true,
+        "weight": 120,
+        "shade_hex": "#F5DEB3",
+        "length": 12,
+        "width": 6,
+        "height": 6
+      },
+      {
+        "name": "Medium Tan",
+        "price": 380000,
+        "compare_price": 450000,
+        "sku": "KNLTHD001-MT",
+        "stock_quantity": 65,
+        "is_active": true,
+        "weight": 120,
+        "shade_hex": "#DEB887",
+        "length": 12,
+        "width": 6,
+        "height": 6
+      }
+    ],
+    "media": [
+      {
+        "url": "/uploads/products/kem-nen-lau-troi-hd-1.jpg",
+        "type": "image",
+        "is_primary": true
+      }
+    ]
+  },
+  {
+    "name": "Kem Nền Matte Velvet",
+    "slug": "kem-nen-matte-velvet",
+    "description": "Kem nền matte finish với kết cấu nhung mượt mà, che phủ đều màu da. Kiểm soát dầu hiệu quả.",
+    "is_published": true,
+    "moderation_status": "approved",
+    "avg_rating": 4.7,
+    "review_count": 267,
+    "brand_id": 2,
+    "category_id": 2,
+    "shop_id": 2,
+    "skin_type_compat": "normal",
+    "variants": [
+      {
+        "name": "Light Beige",
+        "price": 420000,
+        "compare_price": 500000,
+        "sku": "KNMV001-LB",
+        "stock_quantity": 60,
+        "is_active": true,
+        "weight": 130,
+        "shade_hex": "#F5DEB3",
+        "length": 12,
+        "width": 6,
+        "height": 6
+      },
+      {
+        "name": "Golden Tan",
+        "price": 420000,
+        "compare_price": 500000,
+        "sku": "KNMV001-GT",
+        "stock_quantity": 55,
+        "is_active": true,
+        "weight": 130,
+        "shade_hex": "#D2A679",
+        "length": 12,
+        "width": 6,
+        "height": 6
+      }
+    ],
+    "media": [
+      {
+        "url": "/uploads/products/kem-nen-matte-velvet-1.jpg",
+        "type": "image",
+        "is_primary": true
+      }
+    ]
+  },
+  {
+    "name": "Mascara Dài Mi Cong Vút",
+    "slug": "mascara-dai-mi-cong-vut",
+    "description": "Mascara với công thức độc quyền giúp mi dài, cong vút tự nhiên. Chống nước, không vón cục suốt ngày.",
+    "is_published": true,
+    "moderation_status": "approved",
+    "avg_rating": 4.8,
+    "review_count": 298,
+    "brand_id": 3,
+    "category_id": 10,
+    "shop_id": 2,
+    "skin_type_compat": "normal",
+    "variants": [
+      {
+        "name": "Black",
+        "price": 185000,
+        "compare_price": 230000,
+        "sku": "MDMCV001-BK",
+        "stock_quantity": 140,
+        "is_active": true,
+        "weight": 35,
+        "shade_hex": "#000000",
+        "length": 13,
+        "width": 2,
+        "height": 2
+      }
+    ],
+    "media": [
+      {
+        "url": "/uploads/products/mascara-dai-mi-cong-vut-1.jpg",
+        "type": "image",
+        "is_primary": true
+      }
+    ]
+  },
+  {
+    "name": "Mascara Làm Dày Mi",
+    "slug": "mascara-lam-day-mi",
+    "description": "Mascara công thức làm dày mi tức thì, tạo độ phồng cho lông mi. Không gây kích ứng mắt.",
+    "is_published": true,
+    "moderation_status": "approved",
+    "avg_rating": 4.6,
+    "review_count": 223,
+    "brand_id": 1,
+    "category_id": 10,
+    "shop_id": 2,
+    "skin_type_compat": "normal",
+    "variants": [
+      {
+        "name": "Deep Black",
+        "price": 175000,
+        "compare_price": 210000,
+        "sku": "MLDM001-DB",
+        "stock_quantity": 125,
+        "is_active": true,
+        "weight": 35,
+        "shade_hex": "#0D0D0D",
+        "length": 13,
+        "width": 2,
+        "height": 2
+      },
+      {
+        "name": "Brown Black",
+        "price": 175000,
+        "compare_price": 210000,
+        "sku": "MLDM001-BB",
+        "stock_quantity": 95,
+        "is_active": true,
+        "weight": 35,
+        "shade_hex": "#2C1B10",
+        "length": 13,
+        "width": 2,
+        "height": 2
+      }
+    ],
+    "media": [
+      {
+        "url": "/uploads/products/mascara-lam-day-mi-1.jpg",
         "type": "image",
         "is_primary": true
       }

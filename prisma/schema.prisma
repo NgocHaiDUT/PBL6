@@ -114,6 +114,7 @@ model users {
   saved_posts               saved_posts[]
   skin_analyses             skin_analyses[]
   tryon_sessions            tryon_sessions[]
+  chatbot_sessions         chatbot_sessions[]
   recommendations           recommendations[]
   moderation_logs           moderation_logs[]
   notifications             notifications[]
@@ -849,22 +850,4 @@ model message_media {
   thumbnail_url String? // For videos
   created_at    DateTime @default(now())
   message       messages @relation(fields: [message_id], references: [id], onDelete: Cascade)
-}
-
-///////////////////////////////////////////////////////
-// STORY VIEWS (Story sử dụng model posts với is_story=true)
-// Reactions dùng bảng likes, Replies dùng bảng comments
-///////////////////////////////////////////////////////
-model story_views {
-  id         Int      @id @default(autoincrement())
-  post_id    Int      // Post ID với is_story=true
-  viewer_id  Int
-  viewed_at  DateTime @default(now())
-  
-  post       posts    @relation(fields: [post_id], references: [id], onDelete: Cascade)
-  viewer     users    @relation(fields: [viewer_id], references: [id], onDelete: Cascade)
-  
-  @@unique([post_id, viewer_id])
-  @@index([post_id])
-  @@index([viewer_id])
 }

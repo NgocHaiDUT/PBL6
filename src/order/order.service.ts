@@ -12,11 +12,11 @@ import {
   CalculateFeeDto,
   GetLeadtimeDto,
 } from '../delivery/dto/ghn-order.dto';
-import { DeliveryService } from 'src/delivery/delivery.service';
+import { DeliveryService } from '../delivery/delivery.service';
 import { CalculateCartShippingDto } from './dto/calculate-shipping.dto';
 
-import { PaymentFactory } from 'src/payment/payment.factory';
-import { CreatePaymentUrlDto } from 'src/payment/dto/payment.dto';
+import { PaymentFactory } from '../payment/payment.factory';
+import { CreatePaymentUrlDto } from '../payment/dto/payment.dto';
 
 interface ProductVariant {
     id: number;
