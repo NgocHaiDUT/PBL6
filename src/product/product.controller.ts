@@ -34,6 +34,7 @@ import {
   brandMulterConfig,
   productMediaMulterConfig,
 } from './config/product-multer.config';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('products')
 export class ProductController {

@@ -31,6 +31,7 @@ import { DeliveryService } from '../delivery/delivery.service';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/constants/Permission.enum';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @ApiTags('Address')
 @Controller('address')
