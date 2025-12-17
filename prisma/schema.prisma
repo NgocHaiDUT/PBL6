@@ -114,7 +114,7 @@ model users {
   saved_posts               saved_posts[]
   skin_analyses             skin_analyses[]
   tryon_sessions            tryon_sessions[]
-  chatbot_sessions         chatbot_sessions[]
+  chatbot_sessions          chatbot_sessions[]
   recommendations           recommendations[]
   moderation_logs           moderation_logs[]
   notifications             notifications[]
@@ -550,27 +550,27 @@ model posts {
   like_count        Int               @default(0)
   created_at        DateTime          @default(now())
   updated_at        DateTime          @default(now())
-  
+
   // ✅ Story-specific fields
-  is_story          Boolean           @default(false)
-  story_type        String?           // 'image' hoặc 'video'
-  media_url         String?           // Main story media (single image/video)
-  thumbnail_url     String?           // Thumbnail cho video story
-  duration          Int?              // Video duration (seconds, max 30)
-  caption           String?           // Text overlay trên story
-  background_color  String?           // Hex color cho background text
-  text_color        String?           // Hex color cho text
-  text_position     String?           // JSON: {x, y, rotation, fontSize}
-  expires_at        DateTime?         // Story expires after 24h
-  
-  user              users             @relation(fields: [user_id], references: [id])
-  shop              shops?            @relation(fields: [shop_id], references: [id])
-  post_media        post_media[]
-  post_products     post_products[]   // Dùng cho cả post và story products
-  post_tags         post_tags[]
-  saved_posts       saved_posts[]
-  story_views       story_views[]     // Views riêng cho story
-  
+  is_story         Boolean   @default(false)
+  story_type       String? // 'image' hoặc 'video'
+  media_url        String? // Main story media (single image/video)
+  thumbnail_url    String? // Thumbnail cho video story
+  duration         Int? // Video duration (seconds, max 30)
+  caption          String? // Text overlay trên story
+  background_color String? // Hex color cho background text
+  text_color       String? // Hex color cho text
+  text_position    String? // JSON: {x, y, rotation, fontSize}
+  expires_at       DateTime? // Story expires after 24h
+
+  user          users           @relation(fields: [user_id], references: [id])
+  shop          shops?          @relation(fields: [shop_id], references: [id])
+  post_media    post_media[]
+  post_products post_products[] // Dùng cho cả post và story products
+  post_tags     post_tags[]
+  saved_posts   saved_posts[]
+  story_views   story_views[] // Views riêng cho story
+
   @@index([is_story])
   @@index([expires_at])
   @@index([user_id, is_story])
@@ -850,4 +850,50 @@ model message_media {
   thumbnail_url String? // For videos
   created_at    DateTime @default(now())
   message       messages @relation(fields: [message_id], references: [id], onDelete: Cascade)
+}
+
+// Chatbot session and messages storage
+model chatbot_sessions {
+  id                   Int      @id @default(autoincrement())
+  user_id              Int?
+  coze_conversation_id String?
+  title                String?
+  created_at           DateTime @default(now())
+  updated_at           DateTime @default(now())
+
+  messages chatbot_messages[]
+  user     users?             @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([coze_conversation_id])
+}
+
+model chatbot_messages {
+  id         Int      @id @default(autoincrement())
+  session_id Int
+  sender     String
+  content    String
+  created_at DateTime @default(now())
+
+  session chatbot_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade)
+
+  @@index([session_id])
+}
+
+///////////////////////////////////////////////////////
+// STORY VIEWS (Story sử dụng model posts với is_story=true)
+// Reactions dùng bảng likes, Replies dùng bảng comments
+///////////////////////////////////////////////////////
+model story_views {
+  id        Int      @id @default(autoincrement())
+  post_id   Int // Post ID với is_story=true
+  viewer_id Int
+  viewed_at DateTime @default(now())
+
+  post   posts @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  viewer users @relation(fields: [viewer_id], references: [id], onDelete: Cascade)
+
+  @@unique([post_id, viewer_id])
+  @@index([post_id])
+  @@index([viewer_id])
 }
