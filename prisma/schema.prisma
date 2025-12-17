@@ -7,8 +7,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" // đổi sang "mysql" hay "sqlite" tùy DB của bạn
-  url      = env("DATABASE_URL")
+  provider          = "postgresql" // đổi sang "mysql" hay "sqlite" tùy DB của bạn
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 ///////////////////////////////////////////////////////
@@ -373,6 +374,7 @@ model product_variants {
   sku              String        @unique
   name             String?
   shade_hex        String?
+  opacity          Float?
   size_label       String?
   price            Decimal
   compare_at_price Decimal?
