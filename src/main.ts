@@ -67,11 +67,14 @@ async function bootstrap() {
         scheme: 'bearer',
         bearerFormat: 'JWT',
         name: 'JWT',
-        description: 'Enter JWT token',
+        description:
+          "Use the access_token returned by POST /auth/login (paste: 'Bearer <access_token>')",
         in: 'header',
       },
       'JWT-auth',
     )
+    // Apply JWT security globally so Swagger "Authorize" works across protected endpoints
+    .addSecurityRequirements('JWT-auth')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

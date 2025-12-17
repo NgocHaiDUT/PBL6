@@ -149,6 +149,47 @@ export class AuthService {
       device_id: dto.device_id,
     };
   }
+
+  /**
+   * Login endpoint for admin users only
+   * Behaves like normal login but requires user's role to be 'admin'
+   */
+  async adminLogin(dto: LoginDto) {
+    const user = await this.validateUser(dto.email, dto.password);
+
+    // Ensure user has admin role
+    const roleName = user.role?.name || null;
+    if (roleName !== 'admin') {
+      throw new UnauthorizedException('Admin access required');
+    }
+
+    // Reuse same device/token flow as regular login
+    const existingToken = await this.PrismaService.refresh_tokens.findFirst({
+      where: {
+        user_id: user.id,
+        device_id: dto.device_id,
+      },
+    });
+
+    if (existingToken) {
+      return this.issueTokens(user, dto.device_id, dto.device_name);
+    }
+
+    if (
+      user.device_register &&
+      user.device_register === dto.device_id &&
+      user.firstlogin
+    ) {
+      return this.issueTokens(user, dto.device_id, dto.device_name);
+    }
+
+    await this.sendDeviceOtp(user, dto.device_id, dto.device_name);
+    return {
+      success: false,
+      code: 'DEVICE_VERIFICATION_REQUIRED',
+      device_id: dto.device_id,
+    };
+  }
   async sendDeviceOtp(user: users, deviceId: string, deviceName: string) {
     const otp = this.generateOtp(); // 6 số
     const hashedOtp = await bcrypt.hash(otp, 10);
