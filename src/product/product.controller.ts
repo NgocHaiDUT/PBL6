@@ -423,6 +423,7 @@ export class ProductController {
       shade_hex?: string;
       size_label?: string;
       compare_at_price?: string;
+      opacity?: string;
     },
     @Req() req: any,
   ) {
@@ -439,6 +440,7 @@ export class ProductController {
       body.shade_hex,
       body.size_label,
       body.compare_at_price ? Number(body.compare_at_price) : undefined,
+      body.opacity ? Number(body.opacity) : undefined,
     );
   }
 
@@ -457,6 +459,7 @@ export class ProductController {
       size_label?: string;
       compare_at_price?: string;
       is_active?: boolean;
+      opacity?: string;
     },
     @Req() req: any,
   ) {
@@ -472,6 +475,7 @@ export class ProductController {
       body.size_label,
       body.compare_at_price ? Number(body.compare_at_price) : undefined,
       body.is_active,
+      body.opacity ? Number(body.opacity) : undefined,
     );
   }
 
