@@ -65,9 +65,17 @@ export class AuthController {
 
   @Post('login')
   @ApiOperation({ summary: 'Login with email and password' })
+  @ApiBody({ type: LoginDto })
   @ApiResponse({
     status: 200,
-    description: 'Login successful. Returns access token and user info.',
+    description: 'Login successful. Returns access token and refresh token.',
+    schema: {
+      example: {
+        success: true,
+        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+      },
+    },
   })
   @ApiResponse({
     status: 400,
@@ -82,6 +90,28 @@ export class AuthController {
       throw new BadRequestException('email and password are required');
     }
     return this.authService.login(loginDto);
+  }
+
+  @Post('admin/login')
+  @ApiOperation({ summary: 'Admin login with email and password' })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful for admin. Returns access and refresh tokens.',
+    schema: {
+      example: {
+        success: true,
+        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized - invalid credentials or not admin' })
+  async adminLogin(@Body() loginDto: LoginDto) {
+    if (!loginDto || !loginDto.email || !loginDto.password) {
+      throw new BadRequestException('email and password are required');
+    }
+    return this.authService.adminLogin(loginDto);
   }
 
   @Post('verify-device')

@@ -31,14 +31,18 @@ export class DataInitService implements OnModuleInit {
       await this.seedShops();
       await this.seedProducts();
       await this.seedCoupons();
-      // await this.seedShopStaffs(); // Moved to API
-      // await this.seedCarts(); // Moved to API
-      // await this.seedCartItems(); // Moved to API
-      // await this.seedAddresses(); // Moved to API
-      // await this.seedShopAddresses(); // Moved to API
-      // await this.seedOrders(); // Moved to API
-      // await this.seedOrderCoupons(); // Moved to API
-      // await this.seedShipmentLogs(); // Moved to API
+      // Seed addresses and orders (previously moved to API) so DB has order/address data
+      await this.seedAddresses();
+      // Optional: shop addresses file can also be seeded if present
+      try {
+        await this.seedShopAddresses();
+      } catch (e) {
+        // ignore if shop_addresses file not present or creation fails
+      }
+      await this.seedOrders();
+      // Create order coupons and shipment logs based on created orders/shipments
+      await this.seedOrderCoupons();
+      await this.seedShipmentLogs();
 
       // await this.uploadBrandLogosIfNeeded();
 
