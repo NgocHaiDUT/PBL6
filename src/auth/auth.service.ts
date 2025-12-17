@@ -328,6 +328,13 @@ export class AuthService {
     return user;
   }
 
+  async getUserEmail(userId: number) {
+    const user = await this.PrismaService.users.findUnique({
+      where: { id: userId },
+    });
+    return user?.email;
+  }
+
   async existingDevice(userId: number, device_id: string): Promise<boolean> {
     const device = await this.PrismaService.refresh_tokens.findFirst({
       where: {
