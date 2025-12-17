@@ -10,6 +10,7 @@ import {
   ParseIntPipe,
   HttpStatus,
   HttpCode,
+  UseGuards,
 } from '@nestjs/common';
 import { LikesService } from './likes.service';
 import { CreateLikeDto } from './dto/create-like.dto';
@@ -19,19 +20,21 @@ import {
   LikeStatsResponse,
   PaginatedLikesResponse,
 } from './interfaces/like.interface';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('likes')
 export class LikesController {
-  constructor(private readonly likesService: LikesService) {}
+  constructor(private readonly likesService: LikesService) { }
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() createLikeDto: CreateLikeDto,
     @Request() req: any,
   ): Promise<LikeResponse> {
-    // TODO: Extract user ID from JWT token when auth is implemented
-    const userId = req.user?.id || 1; // Temporary fallback
+    // Extract user ID from JWT token
+    const userId = req.user.userId;
     return this.likesService.create(createLikeDto, userId);
   }
 
@@ -66,6 +69,7 @@ export class LikesController {
     return this.likesService.getTotalLikesByUser(userId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('toggle/:targetType/:targetId')
   async toggleLike(
     @Param('targetType') targetType: string,
@@ -73,8 +77,8 @@ export class LikesController {
     @Body() body: { userId?: number },
     @Request() req: any,
   ): Promise<{ liked: boolean; total_likes: number }> {
-    // Extract user ID from body or JWT token
-    const userId = body.userId || req.user?.id || 1;
+    // Extract user ID from JWT token
+    const userId = req.user.userId;
     console.log('🔥 [LikesController] Toggle like:', {
       targetType,
       targetId,
@@ -83,6 +87,7 @@ export class LikesController {
     return this.likesService.toggleLike(targetType, targetId, userId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':targetType/:targetId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(
@@ -90,8 +95,8 @@ export class LikesController {
     @Param('targetId', ParseIntPipe) targetId: number,
     @Request() req: any,
   ): Promise<void> {
-    // TODO: Extract user ID from JWT token when auth is implemented
-    const userId = req.user?.id || 1; // Temporary fallback
+    // Extract user ID from JWT token
+    const userId = req.user.userId;
     return this.likesService.remove(targetType, targetId, userId);
   }
   @Get(':id')

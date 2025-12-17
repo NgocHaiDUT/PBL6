@@ -18,17 +18,19 @@ import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { QueryNotificationsDto } from './dto/query-notifications.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+
+
 import {
   NotificationResponse,
   NotificationStatsResponse,
   PaginatedNotificationsResponse,
 } from './interfaces/notification.interface';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('notifications')
 @UseGuards(JwtAuthGuard) // ✅ Require JWT for all endpoints
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(private readonly notificationsService: NotificationsService) { }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

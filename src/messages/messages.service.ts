@@ -375,7 +375,7 @@ export class MessagesService {
 
   // Gửi tin nhắn (từ user hoặc shop)
   async sendMessage(userId: number, createMessageDto: CreateMessageDto, shopId?: number) {
-    const { conversation_id, sender_id, receiver_id, content, postId, sharedProfileId, messageType } = createMessageDto;
+    const { conversation_id, sender_id, receiver_id, content, postId, sharedProfileId, messageType, payload } = createMessageDto;
     
     let finalConversationId = conversation_id;
     
@@ -480,6 +480,7 @@ export class MessagesService {
         post_id: postId, // ✅ Include postId
         shared_profile_id: sharedProfileId, // ✅ Include sharedProfileId
         type: messageType, // ✅ Include messageType as enum
+        payload: payload, // ✅ Include payload for SHARE_PRODUCT and other types
       },
       include: {
         sender: {

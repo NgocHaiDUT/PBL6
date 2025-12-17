@@ -44,7 +44,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly mailerService: MailerService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user account' })
@@ -112,12 +112,17 @@ export class AuthController {
     try {
       await this.mailerService.sendMail({
         to: `${forgotPasswordDto.email}`,
-        subject: 'Quên mật khẩu',
-        text: `Mật khẩu mới của bạn là: ${newPassword}`,
-        html: `Mật khẩu mới của bạn là: ${newPassword}`,
+        subject: 'Đặt lại mật khẩu - Beauty Shop',
+        html: `
+        <h2>Xin chào!</h2>
+        <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản Beauty Shop của mình.</p>
+        <p><strong>Mật khẩu mới của bạn là:</strong> ${newPassword}</p>
+        <p>Vui lòng đăng nhập và đổi mật khẩu ngay sau khi đăng nhập.</p>
+        <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+      `,
       });
     } catch (error) {
-      return { success: false, message: 'Email không tồn tại' };
+      return { success: false, message: 'Không thể gửi email. Vui lòng thử lại.' };
     }
     await this.authService.changepassword_forgotpassword(
       forgotPasswordDto.email,
@@ -215,7 +220,7 @@ export class AuthController {
   })
   @ApiExcludeEndpoint()
   @UseGuards(GoogleAuthGuard)
-  async googleLogin() {}
+  async googleLogin() { }
 
   @Get('google/callback')
   @ApiOperation({
@@ -274,6 +279,22 @@ export class AuthController {
     return res.redirect(`${process.env.MOBILE_URL}/auth/callback?code=${code}`);
   }
 
+  @Post('exchange')
+  @ApiOperation({
+    summary: 'Exchange OAuth code for access and refresh tokens',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tokens issued successfully',
+    schema: {
+      example: {
+        success: true,
+        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+      },
+    },
+  })
+
   @Get('facebook')
   @ApiOperation({ summary: 'Initiate Facebook OAuth login' })
   @ApiResponse({
@@ -282,7 +303,7 @@ export class AuthController {
   })
   @ApiExcludeEndpoint() // Exclude from Swagger UI as it's a redirect endpoint
   @UseGuards(AuthGuard('facebook'))
-  async facebookLogin() {}
+  async facebookLogin() { }
 
   @Get('facebook/callback')
   @ApiOperation({
