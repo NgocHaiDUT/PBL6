@@ -35,6 +35,7 @@ import { VerifyDeviceOtpDto } from './dto/verifed-email-otp.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LogoutDto } from './dto/logout.dto';
 import { RefreshAccessTokenDto } from './dto/refresh-access-token.dto';
+import { ExchangeTokenDto } from './dto/exchange-token.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -85,10 +86,7 @@ export class AuthController {
 
   @Post('verify-device')
   async verifyDevice(@Body() dto: VerifyDeviceOtpDto) {
-    console.log(`📥 POST /auth/verify-device - Email: ${dto.email}, Device: ${dto.device_id}, OTP: ${dto.otp}`);
-    const result = await this.authService.verifyDevice(dto);
-    console.log(`📤 Verify device response - Success: ${result.success}, Has token: ${!!result.access_token}`);
-    return result;
+    return this.authService.verifyDevice(dto);
   }
 
   @Post('forgot-password')
@@ -114,12 +112,17 @@ export class AuthController {
     try {
       await this.mailerService.sendMail({
         to: `${forgotPasswordDto.email}`,
-        subject: 'Quên mật khẩu',
-        text: `Mật khẩu mới của bạn là: ${newPassword}`,
-        html: `Mật khẩu mới của bạn là: ${newPassword}`,
+        subject: 'Đặt lại mật khẩu - Beauty Shop',
+        html: `
+        <h2>Xin chào!</h2>
+        <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản Beauty Shop của mình.</p>
+        <p><strong>Mật khẩu mới của bạn là:</strong> ${newPassword}</p>
+        <p>Vui lòng đăng nhập và đổi mật khẩu ngay sau khi đăng nhập.</p>
+        <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+      `,
       });
     } catch (error) {
-      return { success: false, message: 'Email không tồn tại' };
+      return { success: false, message: 'Không thể gửi email. Vui lòng thử lại.' };
     }
     await this.authService.changepassword_forgotpassword(
       forgotPasswordDto.email,
@@ -274,6 +277,29 @@ export class AuthController {
     }
 
     return res.redirect(`${process.env.MOBILE_URL}/auth/callback?code=${code}`);
+  }
+
+  @Post('exchange')
+  @ApiOperation({
+    summary: 'Exchange OAuth code for access and refresh tokens',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tokens issued successfully',
+    schema: {
+      example: {
+        success: true,
+        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid or expired OAuth code',
+  })
+  async exchangeToken(@Body() dto: ExchangeTokenDto) {
+    return this.authService.exchangeToken(dto);
   }
 
   @Get('facebook')

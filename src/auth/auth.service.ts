@@ -116,6 +116,20 @@ export class AuthService {
       return this.issueTokens(user, dto.device_id, dto.device_name);
     }
 
+    // ✅ THIẾT BỊ MỚI → Revoke tất cả thiết bị cũ của user này
+    console.log(`[Auth] New device login - Revoking all old devices for user ${user.id}`);
+    await this.PrismaService.refresh_tokens.updateMany({
+      where: {
+        user_id: user.id,
+        is_revoked: false,
+      },
+      data: {
+        is_revoked: true,
+        updated_at: new Date(),
+      },
+    });
+    console.log(`[Auth] Old devices revoked for user ${user.id}`);
+
     // Lần đầu login, kiểm tra device_id có trùng với device_register không
     if (
       user.device_register &&
@@ -226,22 +240,25 @@ export class AuthService {
       secret: process.env.JWT_REFRESH_SECRET,
     });
 
-    // ✅ Lưu refresh token theo device
-    // UPSERT: Nếu device_id chưa tồn tại → INSERT, đã tồn tại → UPDATE
-    console.log(`[Auth] Before upsert - User: ${user.id}, Device: ${device_id}`);
-
+    // ✅ Lưu refresh token theo device với unique constraint (user_id, device_id)
+    // Cho phép nhiều user cùng 1 device_id mà không conflict với nhau
+    console.log(`[Auth] Saving token - User: ${user.id}, Device: ${device_id}`);
+    
     const savedToken = await this.PrismaService.refresh_tokens.upsert({
-      where: { device_id },
+      where: {
+        user_id_device_id: {
+          user_id: user.id,
+          device_id: device_id,
+        },
+      },
       update: {
-        // ✅ LOGIN LẠI CÙNG THIẾT BỊ → UPDATE (rotate token)
         token: refresh_token,
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         device_name, // Cập nhật device_name nếu có thay đổi
-        is_revoked: false, // Reset revoked flag nếu user đã logout trước đó
+        is_revoked: false, // Reset revoked flag nếu đã logout trước đó
         updated_at: new Date(),
       },
       create: {
-        // ✅ LOGIN THIẾT BỊ MỚI → INSERT record mới
         user_id: user.id,
         device_id,
         device_name,
@@ -250,10 +267,8 @@ export class AuthService {
         is_revoked: false,
       },
     });
-
-    const isInsert = savedToken.created_at.getTime() === savedToken.updated_at.getTime();
-    console.log(`[Auth] Upsert complete - User: ${user.id}, Device: ${device_id}, Action: ${isInsert ? 'INSERT (NEW)' : 'UPDATE (EXISTING)'}, Record ID: ${savedToken.id}`);
-
+    
+    console.log(`[Auth] Token saved - User: ${user.id}, Device: ${device_id}, Record ID: ${savedToken.id}`);
     // ✅ Trả về cả thông tin user
     return {
       success: true,
@@ -398,7 +413,62 @@ export class AuthService {
     return saveCode.code;
   }
 
-  async exchangeToken(dto: ExchangeTokenDto) { }
+  async exchangeToken(dto: ExchangeTokenDto) {
+    const { code, device_id, device_type, device_name } = dto;
+
+    // Find the OAuth code
+    const oauthCode = await this.PrismaService.oauth_login_codes.findUnique({
+      where: { code },
+    });
+
+    if (!oauthCode) {
+      throw new UnauthorizedException({
+        code: ERROR_CODE.OAUTH_CODE_INVALID,
+        message: 'Invalid OAuth code',
+      });
+    }
+
+    // Check if code is expired
+    if (oauthCode.expires_at < new Date()) {
+      await this.PrismaService.oauth_login_codes.delete({
+        where: { code },
+      });
+      throw new UnauthorizedException({
+        code: ERROR_CODE.OAUTH_CODE_EXPIRED,
+        message: 'OAuth code has expired',
+      });
+    }
+
+    // Verify device_id matches
+    if (oauthCode.device_id !== device_id) {
+      throw new UnauthorizedException({
+        code: ERROR_CODE.OAUTH_CODE_INVALID,
+        message: 'Device ID mismatch',
+      });
+    }
+
+    // Delete the used code
+    await this.PrismaService.oauth_login_codes.delete({
+      where: { code },
+    });
+
+    // Get user data
+    const user = await this.PrismaService.users.findUnique({
+      where: { id: oauthCode.user_id },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException({
+        code: ERROR_CODE.OAUTH_CODE_INVALID,
+        message: 'User not found',
+      });
+    }
+
+    // Issue tokens using the device info from the code
+    const tokens = await this.issueTokens(user, device_id, device_name);
+
+    return tokens;
+  }
 
   async refreshToken(dto: RefreshAccessTokenDto) {
     const { token, device_id } = dto;
@@ -569,23 +639,21 @@ export class AuthService {
     }
 
     // ✅ LOGOUT THIẾT BỊ HIỆN TẠI: Set is_revoked = true
+    // Sử dụng unique constraint (user_id, device_id)
     const token = await this.PrismaService.refresh_tokens.findUnique({
-      where: { device_id: deviceId },
+      where: {
+        user_id_device_id: {
+          user_id: userId,
+          device_id: deviceId,
+        },
+      },
     });
 
     if (!token) {
-      console.warn(`[Auth] Logout failed: Device ${deviceId} không tồn tại`);
+      console.warn(`[Auth] Logout failed: Device ${deviceId} của user ${userId} không tồn tại`);
       return {
         success: false,
         message: 'Device không tồn tại',
-      };
-    }
-
-    if (token.user_id !== userId) {
-      console.warn(`[Auth] Logout failed: Device ${deviceId} không thuộc user ${userId}`);
-      return {
-        success: false,
-        message: 'Device không thuộc user này',
       };
     }
 
@@ -595,7 +663,12 @@ export class AuthService {
     }
 
     await this.PrismaService.refresh_tokens.update({
-      where: { device_id: deviceId },
+      where: {
+        user_id_device_id: {
+          user_id: userId,
+          device_id: deviceId,
+        },
+      },
       data: {
         is_revoked: true,
         updated_at: new Date(),

@@ -6,9 +6,9 @@ export class ExchangeTokenDto {
     description: 'OAuth Code to Exchange AccessToken and Refresh Token',
     example: '122132',
   })
-  @IsEmail()
+  @IsString()
   @IsNotEmpty()
-  email: string;
+  code: string;
 
   @ApiProperty({
     description: 'UUID of device',
