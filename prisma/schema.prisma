@@ -161,7 +161,7 @@ model device_otps {
 model refresh_tokens {
   id          Int      @id @default(autoincrement())
   user_id     Int
-  device_id   String   @unique
+  device_id   String
   device_name String
   token       String   @unique
   expires_at  DateTime
@@ -170,6 +170,7 @@ model refresh_tokens {
   is_revoked  Boolean  @default(false)
   user        users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
+  @@unique([user_id, device_id])
   @@index([user_id, device_id])
 }
 

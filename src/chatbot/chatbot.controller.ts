@@ -8,7 +8,7 @@ import { ChatDto } from './dto/chat.dto';
 @ApiBearerAuth('JWT-auth')
 @Controller('chatbot')
 export class ChatbotController {
-  constructor(private readonly chatbot: ChatbotService) {}
+  constructor(private readonly chatbot: ChatbotService) { }
 
   @Post('send')
   @HttpCode(200)
@@ -25,9 +25,22 @@ export class ChatbotController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Danh sách phiên chatbot của user hiện tại' })
   async sessions(@Req() req: any) {
-    const userId = req?.user?.userId || req?.user?.sub;
-    const data = await this.chatbot.listSessions(userId);
-    return { success: true, data };
+    try {
+      console.log('🔍 [Chatbot Sessions] Request user:', req?.user);
+      const userId = req?.user?.userId || req?.user?.sub || req?.user?.id;
+
+      if (!userId) {
+        console.error('❌ [Chatbot Sessions] No userId found in request');
+        throw new Error('User ID not found in token');
+      }
+
+      console.log('✅ [Chatbot Sessions] UserId:', userId);
+      const data = await this.chatbot.listSessions(userId);
+      return { success: true, data };
+    } catch (error) {
+      console.error('❌ [Chatbot Sessions] Error:', error);
+      throw error;
+    }
   }
 
   @Get('sessions/:id/messages')

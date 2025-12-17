@@ -142,12 +142,20 @@ export class AuthController {
     try {
       await this.mailerService.sendMail({
         to: `${forgotPasswordDto.email}`,
-        subject: 'Quên mật khẩu',
-        text: `Mật khẩu mới của bạn là: ${newPassword}`,
-        html: `Mật khẩu mới của bạn là: ${newPassword}`,
+        subject: 'Đặt lại mật khẩu - Beauty Shop',
+        html: `
+        <h2>Xin chào!</h2>
+        <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản Beauty Shop của mình.</p>
+        <p><strong>Mật khẩu mới của bạn là:</strong> ${newPassword}</p>
+        <p>Vui lòng đăng nhập và đổi mật khẩu ngay sau khi đăng nhập.</p>
+        <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+      `,
       });
     } catch (error) {
-      return { success: false, message: 'Email không tồn tại' };
+      return {
+        success: false,
+        message: 'Không thể gửi email. Vui lòng thử lại.',
+      };
     }
     await this.authService.changepassword_forgotpassword(
       forgotPasswordDto.email,
@@ -193,7 +201,8 @@ export class AuthController {
 
   @Post('change-password-first-time')
   @ApiOperation({
-    summary: 'Change password on first login with temporary password',
+    summary:
+      'Change password on first login (no need to re-enter temp password)',
   })
   @ApiResponse({
     status: 200,
@@ -202,35 +211,26 @@ export class AuthController {
   })
   @ApiResponse({
     status: 400,
-    description:
-      'Bad request - email, temporaryPassword, and newPassword are required',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Temporary password is incorrect',
+    description: 'Bad request - newPassword is required',
   })
   @ApiResponse({ status: 404, description: 'User not found' })
+  @UseGuards(JwtAuthGuard)
   async changePasswordFirstTime(
     @Body() changePasswordFirstTimeDto: ChangePasswordFirstTimeDto,
+    @Req() req: any,
   ) {
     if (
       !changePasswordFirstTimeDto ||
-      !changePasswordFirstTimeDto.email ||
-      !changePasswordFirstTimeDto.temporaryPassword ||
       !changePasswordFirstTimeDto.newPassword
     ) {
-      throw new BadRequestException(
-        'email, temporaryPassword, and newPassword are required',
-      );
+      throw new BadRequestException('newPassword is required');
     }
-    // Xác thực mật khẩu tạm thời
-    const user = await this.authService.validateUser(
-      changePasswordFirstTimeDto.email,
-      changePasswordFirstTimeDto.temporaryPassword,
-    );
-    // Đổi mật khẩu và set firstlogin = false
+
+    const userId = req.user.userId;
+
+    // Đổi mật khẩu và set firstlogin = false (không cần nhập lại mật khẩu tạm)
     const result = await this.authService.changePasswordFirstTime(
-      user.id,
+      userId,
       changePasswordFirstTimeDto.newPassword,
     );
 
@@ -304,6 +304,21 @@ export class AuthController {
     return res.redirect(`${process.env.MOBILE_URL}/auth/callback?code=${code}`);
   }
 
+  @Post('exchange')
+  @ApiOperation({
+    summary: 'Exchange OAuth code for access and refresh tokens',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tokens issued successfully',
+    schema: {
+      example: {
+        success: true,
+        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+      },
+    },
+  })
   @Get('facebook')
   @ApiOperation({ summary: 'Initiate Facebook OAuth login' })
   @ApiResponse({
@@ -366,7 +381,9 @@ export class AuthController {
   }
 
   @Post('exchange-token')
-  @ApiOperation({ summary: 'Exchange OAuth code for access token and refresh token' })
+  @ApiOperation({
+    summary: 'Exchange OAuth code for access token and refresh token',
+  })
   @ApiResponse({ status: 200, description: 'Tokens generated successfully' })
   @ApiResponse({ status: 401, description: 'Invalid or expired OAuth code' })
   async exchangeToken(@Body() dto: ExchangeTokenDto) {

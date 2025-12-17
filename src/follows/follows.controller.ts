@@ -10,6 +10,7 @@ import {
   ParseIntPipe,
   HttpStatus,
   HttpCode,
+  UseGuards,
 } from '@nestjs/common';
 import { FollowsService } from './follows.service';
 import { CreateFollowDto } from './dto/create-follow.dto';
@@ -19,19 +20,21 @@ import {
   FollowStatsResponse,
   PaginatedFollowsResponse,
 } from './interfaces/follow.interface';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('follows')
 export class FollowsController {
-  constructor(private readonly followsService: FollowsService) {}
+  constructor(private readonly followsService: FollowsService) { }
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() createFollowDto: CreateFollowDto,
     @Request() req: any,
   ): Promise<FollowResponse> {
-    // Use user_id from request body, fallback to JWT token, then fallback to 1
-    const followerId = createFollowDto.user_id || req.user?.id || 1;
+    // Use user_id from JWT token
+    const followerId = req.user.userId;
     console.log(
       '👥 [Controller] Creating follow with follower ID:',
       followerId,
@@ -63,14 +66,15 @@ export class FollowsController {
     return this.followsService.getStats(userId, currentUserId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('toggle/:followingId')
   async toggleFollow(
     @Param('followingId', ParseIntPipe) followingId: number,
     @Body() body: { user_id?: number },
     @Request() req: any,
   ): Promise<{ following: boolean; followers_count: number }> {
-    // Use user_id from request body, fallback to JWT token, then fallback to 1
-    const followerId = body.user_id || req.user?.id || 1;
+    // Use user_id from JWT token
+    const followerId = req.user.userId;
     console.log('👥 [Controller] Toggling follow:', {
       followerId,
       followingId,
@@ -78,6 +82,7 @@ export class FollowsController {
     return this.followsService.toggleFollow(followingId, followerId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':followingId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(
@@ -85,8 +90,8 @@ export class FollowsController {
     @Body() body: { user_id?: number },
     @Request() req: any,
   ): Promise<void> {
-    // Use user_id from request body, fallback to JWT token, then fallback to 1
-    const followerId = body.user_id || req.user?.id || 1;
+    // Use user_id from JWT token
+    const followerId = req.user.userId;
     console.log('👥 [Controller] Removing follow:', {
       followerId,
       followingId,

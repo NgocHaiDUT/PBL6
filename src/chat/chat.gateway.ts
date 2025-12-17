@@ -73,6 +73,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       content: string; 
       postId?: number; 
       sharedProfileId?: number;
+      productPayload?: any;
       messageType?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHARE_POST' | 'SHARE_PRODUCT' | 'SHARE_PROFILE';
       type?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHARE_POST' | 'SHARE_PRODUCT';
       payload?: any;
@@ -112,6 +113,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         messageType = 'SHARE_POST';
       } else if (data.sharedProfileId) {
         messageType = 'SHARE_PROFILE';
+      } else if (data.productPayload) {
+        messageType = 'SHARE_PRODUCT';
       } else if (data.messageType || data.type) {
         messageType = data.messageType || data.type || 'TEXT';
       }
@@ -125,7 +128,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           postId: data.postId, // ✅ Include postId
           sharedProfileId: data.sharedProfileId, // ✅ Include sharedProfileId
           messageType: messageType, // ✅ Use enum value
-          payload: data.payload || (data.postId ? { postId: data.postId } : null),
+          payload: data.productPayload || data.payload || (data.postId ? { postId: data.postId } : null),
         },
         data.senderShopId // Pass shopId if sending as shop
       );
@@ -174,6 +177,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         content: message.content,
         type: message.type,
         payload: message.payload,
+        productPayload: messageType === 'SHARE_PRODUCT' ? message.payload : null, // ✅ Include product payload
         createdAt: message.created_at.toISOString(),
         sharedPostId: (message as any).post_id || null, // ✅ Include shared post ID
         sharedProfileId: (message as any).shared_profile_id || null, // ✅ Include shared profile ID
@@ -368,10 +372,79 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         this.logger.log(`📎 Message ${msg.id} has ${mediaFiles.length} media files:`, mediaFiles);
         this.logger.log(`📦 Message ${msg.id} payload:`, msg.payload);
-        this.logger.log(`📋 Message ${msg.id} type:`, msg.type);
+        this.logger.log(`� Message ${msg.id} payload type:`, typeof msg.payload);
+        this.logger.log(`📦 Message ${msg.id} payload is null:`, msg.payload === null);
+        this.logger.log(`�📋 Message ${msg.id} type:`, msg.type);
 
-        // ✅ Enrich payload with story details if STORY_REPLY
+        // ✅ Enrich payload with story details if STORY_REPLY or product details if SHARE_PRODUCT
         let enrichedPayload = msg.payload;
+        
+        // ✅ Enrich product payload for SHARE_PRODUCT
+        if (msg.type === 'SHARE_PRODUCT') {
+          const payloadData = (msg.payload as any) || {};
+          this.logger.log(`🛒 Message ${msg.id} is SHARE_PRODUCT, payload:`, payloadData);
+          
+          // ✅ Try to get product_id from payload, or extract from content
+          let productId = payloadData.product_id;
+          
+          if (productId) {
+            this.logger.log(`🔍 Loading product ${payloadData.product_id} from database...`);
+            try {
+              // Load product from products table with variants and media
+              const product = await this.prisma.products.findUnique({
+                where: {
+                  id: payloadData.product_id,
+                },
+                include: {
+                  brand: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                  product_variants: {
+                    orderBy: {
+                      price: 'asc',
+                    },
+                    take: 1,
+                  },
+                  product_media: {
+                    orderBy: {
+                      sort_order: 'asc',
+                    },
+                    take: 1,
+                  },
+                },
+              });
+
+              this.logger.log(`📦 Product loaded:`, product ? `Found (ID: ${product.id})` : 'Not found');
+
+              if (product) {
+                // Get price from first variant, image from first media
+                const price = product.product_variants[0]?.price || 0;
+                const image = product.product_media[0]?.url || '';
+                
+                this.logger.log(`💰 Price: ${price}, 🖼️ Image: ${image}`);
+                
+                // Enrich payload with full product data
+                enrichedPayload = {
+                  product_id: product.id,
+                  product_name: product.name,
+                  product_price: Number(price), // Convert Decimal to number
+                  product_image: image,
+                  product_brand: product.brand?.name || 'Unknown Brand',
+                  product_description: product.description,
+                };
+                this.logger.log(`✅ Enriched product payload for message ${msg.id}:`, enrichedPayload);
+              }
+            } catch (error) {
+              this.logger.error(`❌ Failed to load product for message ${msg.id}:`, error);
+            }
+          } else {
+            this.logger.warn(`⚠️ Message ${msg.id} has SHARE_PRODUCT type but no product_id in payload`);
+          }
+        }
+        
+        // ✅ Enrich story payload for STORY_REPLY
         if (msg.type === 'STORY_REPLY' && msg.payload) {
           const payloadData = msg.payload as any;
           if (payloadData.story_id) {
@@ -417,6 +490,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           }
         }
 
+        // ✅ Log before returning to debug
+        this.logger.log(`🔍 Message ${msg.id} before return:`, {
+          type: msg.type,
+          hasPayload: !!msg.payload,
+          enrichedPayload: enrichedPayload,
+          willSetProductPayload: msg.type === 'SHARE_PRODUCT',
+        });
+
         return {
           id: msg.id,
           conversationId: msg.conversation_id,
@@ -427,8 +508,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           content: msg.content,
           type: msg.type,
           payload: enrichedPayload,
+          productPayload: msg.type === 'SHARE_PRODUCT' ? enrichedPayload : null, // ✅ Include product payload
+          storyPayload: msg.type === 'STORY_REPLY' ? enrichedPayload : null, // ✅ Include story payload
           createdAt: msg.created_at.toISOString(),
           sharedPostId: (msg as any).post_id, // ✅ Include shared post ID
+          sharedProfileId: (msg as any).shared_profile_id, // ✅ Include shared profile ID
           messageType: msg.type, // ✅ Use 'type' field (enum message_type)
           reactions: formattedReactions, // ✅ Include reactions
           mediaFiles: mediaFiles, // ✅ Include media files
@@ -462,8 +546,24 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
       });
 
+      // ✅ Log formattedMessages to verify productPayload
+      const productMessages = formattedMessages.filter(m => m.messageType === 'SHARE_PRODUCT');
+      if (productMessages.length > 0) {
+        this.logger.log(`🛒 Found ${productMessages.length} product messages in conversation`);
+        productMessages.forEach(pm => {
+          this.logger.log(`  Message ${pm.id}: hasProductPayload = ${!!pm.productPayload}`);
+          if (pm.productPayload) {
+            this.logger.log(`  ProductPayload:`, pm.productPayload);
+          }
+          // ✅ Test JSON serialization
+          const serialized = JSON.stringify(pm);
+          const deserialized = JSON.parse(serialized);
+          this.logger.log(`  After JSON round-trip: hasProductPayload = ${!!deserialized.productPayload}`);
+        });
+      }
+
       // 5. Send conversation to opener
-      client.emit('conversation', { 
+      const conversationData = {
         with: {
           Id: targetUser.id, // ✅ Use uppercase 'Id' to match frontend
           Fullname: targetUser.full_name || 'Unknown User',
@@ -474,8 +574,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           total: formattedMessages.length,
           hasMore: false,
         },
-      });
-
+      };
+      
+      // ✅ Log what we're about to emit
+      this.logger.log(`📤 Emitting conversation with ${formattedMessages.length} messages`);
+      const productMsgsToEmit = conversationData.messages.filter(m => m.messageType === 'SHARE_PRODUCT');
+      if (productMsgsToEmit.length > 0) {
+        this.logger.log(`📤 Including ${productMsgsToEmit.length} product messages:`);
+        productMsgsToEmit.forEach(pm => {
+          this.logger.log(`  Message ${pm.id}: productPayload = ${JSON.stringify(pm.productPayload)}`);
+        });
+      }
+      
+      client.emit('conversation', conversationData);
       client.emit('chatOpened', {
         success: true,
         targetId: data.targetId,
