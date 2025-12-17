@@ -28,6 +28,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/constants/Permission.enum';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 // Import local file config for local testing
 // import { s3BrandConfig } from './config/s3-product.config';
 import {

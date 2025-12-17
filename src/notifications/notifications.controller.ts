@@ -18,6 +18,8 @@ import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { QueryNotificationsDto } from './dto/query-notifications.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+
 import {
   NotificationResponse,
   NotificationStatsResponse,

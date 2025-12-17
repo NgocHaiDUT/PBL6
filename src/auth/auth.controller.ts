@@ -43,7 +43,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly mailerService: MailerService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user account' })
@@ -85,7 +85,10 @@ export class AuthController {
 
   @Post('verify-device')
   async verifyDevice(@Body() dto: VerifyDeviceOtpDto) {
-    return this.authService.verifyDevice(dto);
+    console.log(`📥 POST /auth/verify-device - Email: ${dto.email}, Device: ${dto.device_id}, OTP: ${dto.otp}`);
+    const result = await this.authService.verifyDevice(dto);
+    console.log(`📤 Verify device response - Success: ${result.success}, Has token: ${!!result.access_token}`);
+    return result;
   }
 
   @Post('forgot-password')
@@ -214,7 +217,7 @@ export class AuthController {
   })
   @ApiExcludeEndpoint()
   @UseGuards(GoogleAuthGuard)
-  async googleLogin() {}
+  async googleLogin() { }
 
   @Get('google/callback')
   @ApiOperation({
@@ -281,7 +284,7 @@ export class AuthController {
   })
   @ApiExcludeEndpoint() // Exclude from Swagger UI as it's a redirect endpoint
   @UseGuards(AuthGuard('facebook'))
-  async facebookLogin() {}
+  async facebookLogin() { }
 
   @Get('facebook/callback')
   @ApiOperation({

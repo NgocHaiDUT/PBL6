@@ -17,6 +17,7 @@ import {
   NotificationsQueryDto,
   OrderStatsQueryDto,
 } from './dto/analytics-query.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('analytics')
 @UseGuards(JwtAuthGuard)

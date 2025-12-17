@@ -23,7 +23,7 @@ export class AuthService {
     private readonly PrismaService: PrismaService,
     private readonly mailerService: MailerService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
   async register(registerDto: RegisterDto) {
     const { email, full_name, phone, device_register } = registerDto;
 
@@ -94,15 +94,25 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.validateUser(dto.email, dto.password);
 
-    // Kiểm tra device đã tồn tại refresh token chưa
+    console.log(`[Auth] Login attempt - User: ${user.id}, Device: ${dto.device_id}, Name: ${dto.device_name}`);
+
+    // ✅ Kiểm tra device đã tồn tại refresh token ACTIVE chưa
+    // QUAN TRỌNG: Phải check is_revoked = false để phân biệt device mới vs device đã logout
     const existingToken = await this.PrismaService.refresh_tokens.findFirst({
       where: {
         user_id: user.id,
         device_id: dto.device_id,
+        is_revoked: false, // ✅ Chỉ tìm token chưa bị revoke
+        expires_at: { gt: new Date() }, // ✅ Và chưa hết hạn
       },
     });
 
+    console.log(`[Auth] Existing token check - Found: ${!!existingToken}, Device: ${dto.device_id}`);
+
     if (existingToken) {
+      // ✅ Device đã tồn tại và có token active → LOGIN LẠI CÙNG THIẾT BỊ
+      // → UPDATE record cũ (rotate token)
+      console.log(`[Auth] User ${user.id} login lại từ thiết bị đã biết: ${dto.device_id}`);
       return this.issueTokens(user, dto.device_id, dto.device_name);
     }
 
@@ -117,6 +127,7 @@ export class AuthService {
     }
 
     // Nếu thiết bị mới và khác device_register -> gửi OTP
+    console.log(`[Auth] New device detected - Sending OTP to ${user.email} for device: ${dto.device_id}`);
     await this.sendDeviceOtp(user, dto.device_id, dto.device_name);
     return {
       success: false,
@@ -128,6 +139,8 @@ export class AuthService {
     const otp = this.generateOtp(); // 6 số
     const hashedOtp = await bcrypt.hash(otp, 10);
 
+    console.log(`[Auth] Generating OTP for user ${user.id}, device: ${deviceId}, OTP: ${otp}`);
+
     await this.PrismaService.device_otps.create({
       data: {
         user_id: user.id,
@@ -137,20 +150,36 @@ export class AuthService {
       },
     });
 
+    console.log(`[Auth] OTP saved to database, sending email to ${user.email}`);
+
     await this.mailerService.sendMail({
       to: user.email,
       subject: 'Xác minh thiết bị mới',
       html: `<p>Mã OTP của bạn là <b>${otp}</b></p>`,
     });
+
+    console.log(`[Auth] OTP email sent successfully to ${user.email}`);
   }
   async verifyDevice(dto: VerifyDeviceOtpDto) {
     const { email, device_id, otp, device_name } = dto;
 
+    console.log(`[Auth] Verifying OTP - Email: ${email}, Device: ${device_id}, OTP: ${otp}`);
+
     const user = await this.PrismaService.users.findUnique({
       where: { email },
+      include: {
+        role: {
+          select: {
+            name: true,
+          },
+        },
+      },
     });
 
-    if (!user) throw new UnauthorizedException('INVALID_CREDENTIALS');
+    if (!user) {
+      console.error(`[Auth] Verify failed - User not found: ${email}`);
+      throw new UnauthorizedException('INVALID_CREDENTIALS');
+    }
 
     const deviceOtp = await this.PrismaService.device_otps.findFirst({
       where: {
@@ -160,15 +189,25 @@ export class AuthService {
       },
     });
 
-    if (!deviceOtp) throw new UnauthorizedException('OTP_EXPIRED');
+    if (!deviceOtp) {
+      console.error(`[Auth] Verify failed - OTP expired or not found for user ${user.id}, device: ${device_id}`);
+      throw new UnauthorizedException('OTP_EXPIRED');
+    }
 
     const isValidOtp = await bcrypt.compare(otp, deviceOtp.otp_hash);
-    if (!isValidOtp) throw new UnauthorizedException('INVALID_OTP');
+    if (!isValidOtp) {
+      console.error(`[Auth] Verify failed - Invalid OTP for user ${user.id}`);
+      throw new UnauthorizedException('INVALID_OTP');
+    }
+
+    console.log(`[Auth] OTP verified successfully for user ${user.id}, device: ${device_id}`);
 
     // Xóa OTP
     await this.PrismaService.device_otps.delete({
       where: { id: deviceOtp.id },
     });
+
+    console.log(`[Auth] OTP deleted, issuing tokens for user ${user.id}`);
 
     // Cấp token và lưu refresh token cho device
     return this.issueTokens(user, device_id, device_name);
@@ -178,7 +217,7 @@ export class AuthService {
     const payload = { sub: user.id, email: user.email };
 
     const access_token = await this.jwtService.signAsync(payload, {
-      expiresIn: '15m',
+      expiresIn: '5m',
       secret: process.env.JWT_ACCESS_SECRET,
     });
 
@@ -187,28 +226,49 @@ export class AuthService {
       secret: process.env.JWT_REFRESH_SECRET,
     });
 
-    // Lưu refresh token theo device
-    await this.PrismaService.refresh_tokens.upsert({
+    // ✅ Lưu refresh token theo device
+    // UPSERT: Nếu device_id chưa tồn tại → INSERT, đã tồn tại → UPDATE
+    console.log(`[Auth] Before upsert - User: ${user.id}, Device: ${device_id}`);
+
+    const savedToken = await this.PrismaService.refresh_tokens.upsert({
       where: { device_id },
       update: {
+        // ✅ LOGIN LẠI CÙNG THIẾT BỊ → UPDATE (rotate token)
         token: refresh_token,
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        device_name,
-        is_revoked: false,
+        device_name, // Cập nhật device_name nếu có thay đổi
+        is_revoked: false, // Reset revoked flag nếu user đã logout trước đó
+        updated_at: new Date(),
       },
       create: {
+        // ✅ LOGIN THIẾT BỊ MỚI → INSERT record mới
         user_id: user.id,
         device_id,
         device_name,
         token: refresh_token,
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        is_revoked: false,
       },
     });
 
+    const isInsert = savedToken.created_at.getTime() === savedToken.updated_at.getTime();
+    console.log(`[Auth] Upsert complete - User: ${user.id}, Device: ${device_id}, Action: ${isInsert ? 'INSERT (NEW)' : 'UPDATE (EXISTING)'}, Record ID: ${savedToken.id}`);
+
+    // ✅ Trả về cả thông tin user
     return {
       success: true,
       access_token,
       refresh_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        avatar_url: user.avatar_url,
+        phone: user.phone,
+        story: user.story,
+        role: user.role?.name || 'user',
+        firstlogin: user.firstlogin,
+      },
     };
   }
 
@@ -338,7 +398,7 @@ export class AuthService {
     return saveCode.code;
   }
 
-  async exchangeToken(dto: ExchangeTokenDto) {}
+  async exchangeToken(dto: ExchangeTokenDto) { }
 
   async refreshToken(dto: RefreshAccessTokenDto) {
     const { token, device_id } = dto;
@@ -375,12 +435,13 @@ export class AuthService {
         sub: userId,
       },
       {
-        expiresIn: '15m',
+        expiresIn: '5m',
         secret: process.env.JWT_ACCESS_SECRET,
       },
     );
 
     return {
+      success: true,
       access_token: newAccessToken,
     };
   }
@@ -491,32 +552,57 @@ export class AuthService {
   }
   async logout(userId: number, deviceId: string, all: boolean) {
     if (all) {
-      // Logout tất cả các device: set is_revoked = true cho tất cả refresh_tokens
-      await this.PrismaService.refresh_tokens.updateMany({
-        where: { user_id: userId },
-        data: { is_revoked: true },
+      // ✅ LOGOUT ALL: Revoke tất cả refresh_tokens của user
+      const result = await this.PrismaService.refresh_tokens.updateMany({
+        where: {
+          user_id: userId,
+          is_revoked: false, // Chỉ revoke những token đang active
+        },
+        data: {
+          is_revoked: true,
+          updated_at: new Date(),
+        },
       });
 
-      return { success: true, message: 'Đã logout tất cả thiết bị' };
+      console.log(`[Auth] User ${userId} logout ALL devices, revoked ${result.count} tokens`);
+      return { success: true, message: `Đã logout tất cả thiết bị (${result.count} devices)` };
     }
 
-    // Logout chỉ device hiện tại
+    // ✅ LOGOUT THIẾT BỊ HIỆN TẠI: Set is_revoked = true
     const token = await this.PrismaService.refresh_tokens.findUnique({
       where: { device_id: deviceId },
     });
 
-    if (!token || token.user_id !== userId) {
+    if (!token) {
+      console.warn(`[Auth] Logout failed: Device ${deviceId} không tồn tại`);
       return {
         success: false,
-        message: 'Device không tồn tại hoặc không thuộc user',
+        message: 'Device không tồn tại',
       };
+    }
+
+    if (token.user_id !== userId) {
+      console.warn(`[Auth] Logout failed: Device ${deviceId} không thuộc user ${userId}`);
+      return {
+        success: false,
+        message: 'Device không thuộc user này',
+      };
+    }
+
+    if (token.is_revoked) {
+      console.warn(`[Auth] Device ${deviceId} đã bị revoke trước đó`);
+      return { success: true, message: 'Device đã được logout trước đó' };
     }
 
     await this.PrismaService.refresh_tokens.update({
       where: { device_id: deviceId },
-      data: { is_revoked: true },
+      data: {
+        is_revoked: true,
+        updated_at: new Date(),
+      },
     });
 
+    console.log(`[Auth] User ${userId} logout device: ${deviceId}`);
     return { success: true, message: 'Đã logout thiết bị hiện tại' };
   }
 }

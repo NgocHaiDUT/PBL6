@@ -31,6 +31,7 @@ import { SetUserPermissionDto } from './dto/set-user-permission.dto';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { SetRolePermissionDto } from './dto/set-role-permission.dto';
 import { GetAllPermissionsResponseDto } from './dto/get-all-permissions-response.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')

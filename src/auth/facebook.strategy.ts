@@ -41,10 +41,7 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
     });
 
     if (identity) {
-      await this.prisma.auth_identities.update({
-        where: { id: identity.id },
-        data: { access_token: accessToken, refresh_token: refreshToken },
-      });
+      // Identity already exists, just return the user
       return identity.user;
     }
 
@@ -94,8 +91,6 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
         user_id: user.id,
         provider,
         provider_user_id: providerUserId,
-        access_token: accessToken,
-        refresh_token: refreshToken,
       },
       include: { user: true },
     });
