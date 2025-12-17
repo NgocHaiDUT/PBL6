@@ -243,7 +243,7 @@ export class AuthService {
     // ✅ Lưu refresh token theo device với unique constraint (user_id, device_id)
     // Cho phép nhiều user cùng 1 device_id mà không conflict với nhau
     console.log(`[Auth] Saving token - User: ${user.id}, Device: ${device_id}`);
-    
+
     const savedToken = await this.PrismaService.refresh_tokens.upsert({
       where: {
         user_id_device_id: {
@@ -267,7 +267,7 @@ export class AuthService {
         is_revoked: false,
       },
     });
-    
+
     console.log(`[Auth] Token saved - User: ${user.id}, Device: ${device_id}, Record ID: ${savedToken.id}`);
     // ✅ Trả về cả thông tin user
     return {
@@ -414,11 +414,18 @@ export class AuthService {
   }
 
   async exchangeToken(dto: ExchangeTokenDto) {
-    const { code, device_id, device_type, device_name } = dto;
+    const { code, device_id, device_name } = dto;
 
-    // Find the OAuth code
-    const oauthCode = await this.PrismaService.oauth_login_codes.findUnique({
-      where: { code },
+    // Find OAuth code in database
+    const oauthCode = await this.PrismaService.oauth_login_codes.findFirst({
+      where: {
+        code,
+        device_id,
+        expires_at: { gt: new Date() },
+      },
+      include: {
+        user: true,
+      },
     });
 
     if (!oauthCode) {
@@ -465,9 +472,10 @@ export class AuthService {
     }
 
     // Issue tokens using the device info from the code
-    const tokens = await this.issueTokens(user, device_id, device_name);
+    const tokens = await this.issueTokens(user, device_id, device_name || 'Unknown Device');
 
     return tokens;
+
   }
 
   async refreshToken(dto: RefreshAccessTokenDto) {

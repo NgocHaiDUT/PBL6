@@ -20,6 +20,7 @@ import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { QueryNotificationsDto } from './dto/query-notifications.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
+
 import {
   NotificationResponse,
   NotificationStatsResponse,
@@ -29,7 +30,7 @@ import {
 @Controller('notifications')
 @UseGuards(JwtAuthGuard) // ✅ Require JWT for all endpoints
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(private readonly notificationsService: NotificationsService) { }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

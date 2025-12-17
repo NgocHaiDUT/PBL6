@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { DataInitService } from './data-init.service';
 import { DataInitController } from './data-init.controller';
 import { S3UploadService } from './s3-upload.service';
-import { PrismaModule } from 'src/prisma/prisma.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
   imports: [PrismaModule],

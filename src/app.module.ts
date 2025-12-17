@@ -32,6 +32,7 @@ import { SearchModule } from './search/search.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { PaymentController } from './payment/payment.controller';
 import { PaymentModule } from './payment/payment.module';
+import { ChatbotModule } from './chatbot/chatbot.module';
 import { StoryModule } from './story/story.module';
 @Module({
   imports: [
@@ -98,7 +99,9 @@ import { StoryModule } from './story/story.module';
     AnalyticsModule,
     UsersModule,
     PaymentModule,
+    ChatbotModule,
     StoryModule, // ✅ Add StoryModule
+
   ],
   controllers: [AppController, PaymentController],
   providers: [AppService, PrismaService],

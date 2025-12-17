@@ -294,13 +294,6 @@ export class AuthController {
       },
     },
   })
-  @ApiResponse({
-    status: 401,
-    description: 'Invalid or expired OAuth code',
-  })
-  async exchangeToken(@Body() dto: ExchangeTokenDto) {
-    return this.authService.exchangeToken(dto);
-  }
 
   @Get('facebook')
   @ApiOperation({ summary: 'Initiate Facebook OAuth login' })
@@ -360,6 +353,18 @@ export class AuthController {
     }
 
     return this.authService.refreshToken(dto);
+  }
+
+  @Post('exchange-token')
+  @ApiOperation({ summary: 'Exchange OAuth code for access token and refresh token' })
+  @ApiResponse({ status: 200, description: 'Tokens generated successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired OAuth code' })
+  async exchangeToken(@Body() dto: ExchangeTokenDto) {
+    if (!dto.code || !dto.device_id) {
+      throw new BadRequestException('Missing code or device_id');
+    }
+
+    return this.authService.exchangeToken(dto);
   }
 
   @Get('me')

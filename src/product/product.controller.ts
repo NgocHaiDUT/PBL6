@@ -38,7 +38,7 @@ import {
 
 @Controller('products')
 export class ProductController {
-  constructor(private readonly productservice: ProductService) {}
+  constructor(private readonly productservice: ProductService) { }
 
   @Get('brands')
   async getAllBrands() {
@@ -62,7 +62,7 @@ export class ProductController {
     // S3: file.location or file.key, Local: file.filename
     const brandUrl = USE_S3
       ? file.location ||
-        `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
+      `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
       : `/uploads/brands/${file.filename}`;
     return this.productservice.addbrand(userId, body.name, body.slug, brandUrl);
   }
@@ -112,7 +112,7 @@ export class ProductController {
     const userId = req.user.userId;
     const brandUrl = USE_S3
       ? file.location ||
-        `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
+      `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
       : `/uploads/brands/${file.filename}`;
     return this.productservice.editbrandslogo(userId, brandId, brandUrl);
   }
@@ -217,7 +217,7 @@ export class ProductController {
     const userId = req.user.userId;
     const brandUrl = USE_S3
       ? file.location ||
-        `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
+      `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
       : `/uploads/brands/${file.filename}`;
     return this.productservice.addbrand(userId, body.name, body.slug, brandUrl);
   }
@@ -273,7 +273,7 @@ export class ProductController {
     const userId = req.user.userId;
     const brandUrl = USE_S3
       ? file.location ||
-        `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
+      `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
       : `/uploads/brands/${file.filename}`;
     return this.productservice.editbrandslogo(
       userId,
@@ -504,7 +504,7 @@ export class ProductController {
 
     const mediaUrl = USE_S3
       ? file.location ||
-        `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
+      `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`
       : `/uploads/products/${file.filename}`;
 
     return this.productservice.addProductMedia(
