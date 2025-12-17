@@ -72,6 +72,8 @@ async function bootstrap() {
       },
       'JWT-auth',
     )
+    // Apply JWT security globally so Swagger "Authorize" works across protected endpoints
+    .addSecurityRequirements('JWT-auth')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

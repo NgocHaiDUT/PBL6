@@ -313,6 +313,7 @@ export class AuthController {
   }
   @Post('logout')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   async logout(@Body() dto: LogoutDto, @Req() req: any) {
     if (!req.user) {
       throw new UnauthorizedException();
@@ -351,6 +352,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Get information success' })
   @ApiResponse({ status: 401, description: 'Invalid access_token' })
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   async getCurentUser(@Req() req: any) {
     const userId = req.user.userId;
     return this.authService.getCurrentUser(userId);
