@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { skin_type, moderation_status, Prisma } from '@prisma/client';
+import { moderation_status, Prisma } from '@prisma/client';
 @Injectable()
 export class ProductService {
   constructor(private prisma: PrismaService) {}
@@ -211,7 +211,6 @@ export class ProductService {
     shop_id: number,
     name: string,
     slug: string,
-    skin_type_compat: skin_type,
     is_published: boolean,
     how_to_use?: string,
     description?: string,
@@ -301,7 +300,6 @@ export class ProductService {
             slug: finalSlug,
             description: description,
             how_to_use: how_to_use,
-            skin_type_compat: skin_type_compat,
             is_published: is_published,
             moderation_status: moderation_status.pending,
             created_at: new Date(),
@@ -345,7 +343,6 @@ export class ProductService {
     slug?: string,
     description?: string,
     how_to_use?: string,
-    skin_type_compat?: skin_type,
     is_published?: boolean,
     brand_id?: number,
     category_ids?: number[],
@@ -432,8 +429,6 @@ export class ProductService {
       if (finalSlug !== undefined) updateData.slug = finalSlug;
       if (description !== undefined) updateData.description = description;
       if (how_to_use !== undefined) updateData.how_to_use = how_to_use;
-      if (skin_type_compat !== undefined)
-        updateData.skin_type_compat = skin_type_compat;
       if (is_published !== undefined) updateData.is_published = is_published;
       if (brand_id !== undefined) updateData.brand_id = brand_id;
 
@@ -1028,7 +1023,6 @@ export class ProductService {
       category_id?: number;
       brand_id?: number;
       is_published?: boolean;
-      skin_type?: skin_type;
       min_price?: number;
       max_price?: number;
     },
@@ -1071,10 +1065,6 @@ export class ProductService {
 
         if (filters.is_published !== undefined) {
           whereClause.is_published = filters.is_published;
-        }
-
-        if (filters.skin_type) {
-          whereClause.skin_type_compat = filters.skin_type;
         }
 
         if (filters.category_id) {

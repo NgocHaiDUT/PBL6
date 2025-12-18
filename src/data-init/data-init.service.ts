@@ -624,7 +624,6 @@ export class DataInitService implements OnModuleInit {
             slug: productData.slug,
             description: productData.description,
             how_to_use: productData.how_to_use,
-            skin_type_compat: productData.skin_type_compat,
             is_published: productData.is_published,
             moderation_status: productData.moderation_status,
             avg_rating: productData.avg_rating,
