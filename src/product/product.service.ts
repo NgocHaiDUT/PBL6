@@ -562,6 +562,11 @@ export class ProductService {
           where: { product_id: product_id },
         });
 
+        // Delete post_products (posts that tag this product)
+        await tx.post_products.deleteMany({
+          where: { product_id: product_id },
+        });
+
         // Finally delete the product
         await tx.products.delete({
           where: { id: product_id },
