@@ -1,5 +1,5 @@
 // src/makeup/makeup.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -66,13 +66,13 @@ export class MakeupService {
 
   // Map category names
   private categoryMap = {
-    lips: ['Son thỏi', 'Son kem', 'Son tint', 'Son dưỡng có màu','Soi môi'],
-    eyeshadow: ['Phấn mắt'],
-    blush: ['Phấn má hồng'],
-    eyeliner: ['Kẻ mắt'],
-    eyebrows: ['Chì kẻ mày'],
-    foundation: ['Kem nền'],
-    mascara: ['Mascara'],
+    lips: ['Son thỏi', 'Son kem', 'Son tint', 'Son dưỡng có màu', 'Soi môi', 'Trang điểm môi'],
+    eyeshadow: ['Phấn mắt', 'Trang điểm mắt'],
+    blush: ['Phấn má hồng', 'Trang điểm má'],
+    eyeliner: ['Kẻ mắt', 'Trang điểm mắt'],
+    eyebrows: ['Chì kẻ mày', 'Trang điểm mày'],
+    foundation: ['Kem nền', 'Trang điểm nền'],
+    mascara: ['Mascara', 'Trang điểm mi'],
   };
 
   // Hàm chuyển hex sang RGB
@@ -95,6 +95,23 @@ export class MakeupService {
       Math.pow(rgb1.g - rgb2.g, 2) +
       Math.pow(rgb1.b - rgb2.b, 2)
     );
+  }
+
+  // Hàm tính điểm phù hợp tổng hợp (màu sắc + opacity)
+  private calculateMatchScore(
+    variantHex: string,
+    variantOpacity: number | null,
+    targetColor: string,
+    targetOpacity: number
+  ): number {
+    const colorDist = this.colorDistance(variantHex, targetColor);
+    const actualOpacity = variantOpacity ?? 0.2;
+    const opacityDist = Math.abs(actualOpacity - targetOpacity);
+    
+    // Trọng số: màu sắc quan trọng hơn (70%), opacity (30%)
+    // Chuẩn hóa opacityDist về cùng scale với colorDist (0-255 range)
+    const normalizedOpacityDist = opacityDist * 255;
+    return colorDist * 0.7 + normalizedOpacityDist * 0.3;
   }
 
   /**
@@ -165,29 +182,40 @@ export class MakeupService {
         const belongs = product.product_categories.some(pc => cats.includes(pc.category.name));
         if (!belongs) continue;
 
-        // tìm variant có distance nhỏ nhất cho product này
-        let productMinDistance = Infinity;
+        // tìm variant có score tốt nhất cho product này (tính cả màu sắc và opacity)
+        let productMinScore = Infinity;
         let variantHex: string | null = null;
         let variantId: number | null = null;
+        let variantOpacity: number | null = null;
+
+        const targetColor = skinColors[productType as keyof typeof skinColors].color;
+        const targetOpacity = skinColors[productType as keyof typeof skinColors].alpha;
 
         for (const variant of product.product_variants) {
           if (!variant.shade_hex) continue;
-          const distance = this.colorDistance(variant.shade_hex, skinColors[productType as keyof typeof skinColors].color);
-          if (distance < productMinDistance) {
-            productMinDistance = distance;
+          const score = this.calculateMatchScore(
+            variant.shade_hex,
+            variant.opacity,
+            targetColor,
+            targetOpacity
+          );
+          if (score < productMinScore) {
+            productMinScore = score;
             variantHex = variant.shade_hex;
             variantId = variant.id ?? null;
+            variantOpacity = variant.opacity;
           }
         }
 
-        if (productMinDistance < bestDistance) {
-          bestDistance = productMinDistance;
+        if (productMinScore < bestDistance) {
+          bestDistance = productMinScore;
           bestProduct = {
             product_id: product.id,
             product_name: product.name,
             variant_id: variantId,
             shade_hex: variantHex,
-            colorDistance: productMinDistance,
+            opacity: variantOpacity ?? 0.2,
+            matchScore: productMinScore,
             bestMatch: `${productType}: ${skinColors[productType as keyof typeof skinColors].name}`,
           };
         }
@@ -205,32 +233,293 @@ export class MakeupService {
    * @param limitPerCategory số lượng sản phẩm tối đa mỗi mục
    */
   async getProductsByCategories(limitPerCategory = 10) {
-    const result: Record<string, any[]> = {};
+    // Lấy tất cả categories makeup
+    const allCategories = Object.values(this.categoryMap).flat();
 
-    for (const [productType, cats] of Object.entries(this.categoryMap) as Array<[keyof typeof this.categoryMap, string[]]>) {
-      const products = await this.prisma.products.findMany({
-        where: {
-          is_published: true,
-          moderation_status: 'approved',
-          product_categories: {
-            some: {
-              category: { name: { in: cats } },
+    // Lấy tất cả sản phẩm makeup một lần
+    const allProducts = await this.prisma.products.findMany({
+      where: {
+        is_published: true,
+        moderation_status: 'approved',
+        product_categories: {
+          some: {
+            category: { name: { in: allCategories } },
+          },
+        },
+      },
+      select: {
+        id: true,
+        shop_id: true,
+        brand_id: true,
+        name: true,
+        avg_rating: true,
+        product_media: {
+          where: { type: 'image' },
+          take: 1,
+          select: {
+            id: true,
+            url: true,
+            type: true,
+          },
+        },
+        product_variants: {
+          select: {
+            id: true,
+            name: true,
+            shade_hex: true,
+            opacity: true,
+          },
+        },
+        product_categories: {
+          select: {
+            category: {
+              select: {
+                name: true,
+              },
             },
           },
         },
-        include: {
-          brand: true,
-          product_categories: { include: { category: true } },
-          product_media: true,
-          product_variants: true,
-        },
-        take: limitPerCategory,
-        orderBy: { avg_rating: 'desc' },
-      });
+      },
+      orderBy: { avg_rating: 'desc' },
+    });
 
-      result[productType] = products;
+    // Phân loại sản phẩm vào các nhóm, mỗi sản phẩm chỉ xuất hiện trong nhóm đầu tiên phù hợp
+    const result: Record<string, any[]> = {};
+    const assignedProductIds = new Set<number>();
+
+    // Khởi tạo các nhóm rỗng
+    for (const productType of Object.keys(this.categoryMap)) {
+      result[productType] = [];
+    }
+
+    // Duyệt qua từng nhóm theo thứ tự ưu tiên
+    for (const [productType, cats] of Object.entries(this.categoryMap) as Array<[keyof typeof this.categoryMap, string[]]>) {
+      for (const product of allProducts) {
+        // Bỏ qua nếu sản phẩm đã được phân vào nhóm khác
+        if (assignedProductIds.has(product.id)) continue;
+
+        // Kiểm tra xem sản phẩm có category nào thuộc nhóm này không
+        const hasMatchingCategory = product.product_categories.some(pc => 
+          cats.includes(pc.category.name)
+        );
+
+        if (hasMatchingCategory) {
+          // Transform opacity và loại bỏ product_categories
+          const { product_categories, ...productWithoutCategories } = product;
+          const transformedProduct = {
+            ...productWithoutCategories,
+            product_variants: product.product_variants.map((variant: any) => ({
+              ...variant,
+              opacity: variant.opacity ?? 0.2,
+            })),
+          };
+
+          result[productType].push(transformedProduct);
+          assignedProductIds.add(product.id);
+
+          // Giới hạn số lượng sản phẩm mỗi nhóm
+          if (result[productType].length >= limitPerCategory) break;
+        }
+      }
     }
 
     return result;
+  }
+
+  /**
+   * Trả về danh sách sản phẩm makeup của shop của user (nhóm theo productType)
+   * @param userId id của user
+   * @param limitPerCategory số lượng tối đa mỗi mục
+   */
+  async getMakeupProductsByMyShop(userId: number, limitPerCategory = 10) {
+    // Tìm shop mà user là owner hoặc staff
+    const ownedShop = await this.prisma.shops.findFirst({
+      where: { owner_id: userId },
+      select: { id: true },
+    });
+
+    let shopId: number | null = null;
+
+    if (ownedShop) {
+      shopId = ownedShop.id;
+    } else {
+      // Kiểm tra xem user có phải staff của shop nào không
+      const staffRecord = await this.prisma.shop_staffs.findFirst({
+        where: { user_id: userId },
+        select: { shop_id: true },
+      });
+
+      if (staffRecord) {
+        shopId = staffRecord.shop_id;
+      }
+    }
+
+    if (!shopId) {
+      throw new NotFoundException('User does not own or work at any shop');
+    }
+
+    // Gọi hàm getMakeupProductsByShop với shopId tìm được
+    return this.getMakeupProductsByShop(shopId, limitPerCategory);
+  }
+
+  /**
+   * Trả về danh sách sản phẩm makeup của một shop (nhóm theo productType)
+   * Lấy tất cả sản phẩm kể cả chưa publish và chưa approved
+   * @param shopId id của shop
+   * @param limitPerCategory số lượng tối đa mỗi mục
+   */
+  async getMakeupProductsByShop(shopId: number, limitPerCategory = 10) {
+    // Lấy tất cả categories makeup
+    const allCategories = Object.values(this.categoryMap).flat();
+
+    // Lấy tất cả sản phẩm makeup của shop một lần (bao gồm cả chưa publish và chưa approved)
+    const allProducts = await this.prisma.products.findMany({
+      where: {
+        shop_id: shopId,
+        product_categories: {
+          some: {
+            category: { name: { in: allCategories } },
+          },
+        },
+      },
+      select: {
+        id: true,
+        shop_id: true,
+        brand_id: true,
+        name: true,
+        avg_rating: true,
+        product_media: {
+          where: { type: 'image' },
+          take: 1,
+          select: {
+            id: true,
+            url: true,
+            type: true,
+          },
+        },
+        product_variants: {
+          select: {
+            id: true,
+            name: true,
+            shade_hex: true,
+            opacity: true,
+          },
+        },
+        product_categories: {
+          select: {
+            category: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { avg_rating: 'desc' },
+    });
+
+    // Phân loại sản phẩm vào các nhóm, mỗi sản phẩm chỉ xuất hiện trong nhóm đầu tiên phù hợp
+    const result: Record<string, any[]> = {};
+    const assignedProductIds = new Set<number>();
+
+    // Khởi tạo các nhóm rỗng
+    for (const productType of Object.keys(this.categoryMap)) {
+      result[productType] = [];
+    }
+
+    // Duyệt qua từng nhóm theo thứ tự ưu tiên
+    for (const [productType, cats] of Object.entries(this.categoryMap) as Array<[keyof typeof this.categoryMap, string[]]>) {
+      for (const product of allProducts) {
+        // Bỏ qua nếu sản phẩm đã được phân vào nhóm khác
+        if (assignedProductIds.has(product.id)) continue;
+
+        // Kiểm tra xem sản phẩm có category nào thuộc nhóm này không
+        const hasMatchingCategory = product.product_categories.some(pc => 
+          cats.includes(pc.category.name)
+        );
+
+        if (hasMatchingCategory) {
+          // Transform opacity và loại bỏ product_categories
+          const { product_categories, ...productWithoutCategories } = product;
+          const transformedProduct = {
+            ...productWithoutCategories,
+            product_variants: product.product_variants.map((variant: any) => ({
+              ...variant,
+              opacity: variant.opacity ?? 0.2,
+            })),
+          };
+
+          result[productType].push(transformedProduct);
+          assignedProductIds.add(product.id);
+
+          // Giới hạn số lượng sản phẩm mỗi nhóm
+          if (result[productType].length >= limitPerCategory) break;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Cập nhật shade_hex và opacity cho một product_variant
+   * @param variantId id của variant
+   * @param data dữ liệu cập nhật (shade_hex và/hoặc opacity)
+   * @param userId id của user thực hiện cập nhật
+   */
+  async updateVariantShade(
+    variantId: number,
+    data: { shade_hex?: string; opacity?: number },
+    userId: number,
+  ) {
+    // Kiểm tra variant có tồn tại không và lấy thông tin product + shop
+    const variant = await this.prisma.product_variants.findUnique({
+      where: { id: variantId },
+      include: {
+        product: {
+          include: {
+            shop: true,
+          },
+        },
+      },
+    });
+
+    if (!variant) {
+      throw new NotFoundException('Variant not found');
+    }
+
+    const shop = variant.product.shop;
+
+    // Kiểm tra quyền: phải là owner hoặc staff của shop
+    const isOwner = shop.owner_id === userId;
+    const isStaff = await this.prisma.shop_staffs.findFirst({
+      where: {
+        shop_id: shop.id,
+        user_id: userId,
+      },
+    });
+
+    if (!isOwner && !isStaff) {
+      throw new ForbiddenException('You do not have permission to update this variant. Only shop owner or staff can update variants.');
+    }
+
+    // Cập nhật variant
+    const updatedVariant = await this.prisma.product_variants.update({
+      where: { id: variantId },
+      data: {
+        ...(data.shade_hex !== undefined && { shade_hex: data.shade_hex }),
+        ...(data.opacity !== undefined && { opacity: data.opacity }),
+      },
+      select: {
+        id: true,
+        product_id: true,
+        name: true,
+        shade_hex: true,
+        opacity: true,
+        price: true,
+      },
+    });
+
+    return updatedVariant;
   }
 }
