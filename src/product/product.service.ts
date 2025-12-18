@@ -237,7 +237,19 @@ export class ProductService {
         },
       });
 
-      if (!isOwner && !isStaff) {
+      // Check if staff has manage_product permission
+      let hasManageProductPermission = false;
+      if (isStaff && !isOwner) {
+        const userPermissions = await this.prisma.userpermission.findMany({
+          where: { user_id: user_id },
+          include: { permission: true },
+        });
+        hasManageProductPermission = userPermissions.some(
+          (up) => up.permission.name === 'manage_product',
+        );
+      }
+
+      if (!isOwner && (!isStaff || !hasManageProductPermission)) {
         return {
           success: false,
           message: 'Bạn không có quyền tạo sản phẩm cho shop này',
@@ -359,7 +371,19 @@ export class ProductService {
         },
       });
 
-      if (!isOwner && !isStaff) {
+      // Check if staff has manage_product permission
+      let hasManageProductPermission = false;
+      if (isStaff && !isOwner) {
+        const userPermissions = await this.prisma.userpermission.findMany({
+          where: { user_id: user_id },
+          include: { permission: true },
+        });
+        hasManageProductPermission = userPermissions.some(
+          (up) => up.permission.name === 'manage_product',
+        );
+      }
+
+      if (!isOwner && (!isStaff || !hasManageProductPermission)) {
         return {
           success: false,
           message: 'Bạn không có quyền chỉnh sửa sản phẩm của shop này',
@@ -479,7 +503,19 @@ export class ProductService {
         },
       });
 
-      if (!isOwner && !isStaff) {
+      // Check if staff has manage_product permission
+      let hasManageProductPermission = false;
+      if (isStaff && !isOwner) {
+        const userPermissions = await this.prisma.userpermission.findMany({
+          where: { user_id: user_id },
+          include: { permission: true },
+        });
+        hasManageProductPermission = userPermissions.some(
+          (up) => up.permission.name === 'manage_product',
+        );
+      }
+
+      if (!isOwner && (!isStaff || !hasManageProductPermission)) {
         return {
           success: false,
           message: 'Bạn không có quyền xóa sản phẩm của shop này',
@@ -555,6 +591,7 @@ export class ProductService {
     shade_hex?: string,
     size_label?: string,
     compare_at_price?: number,
+    opacity?: number,
   ) {
     try {
       const product = await this.prisma.products.findUnique({
@@ -581,6 +618,7 @@ export class ProductService {
           price: price,
           compare_at_price: compare_at_price,
           stock: stock,
+          opacity: opacity,
           created_at: new Date(),
           updated_at: new Date(),
         },
@@ -612,6 +650,7 @@ export class ProductService {
     size_label?: string,
     compare_at_price?: number,
     is_active?: boolean,
+    opacity?: number,
   ) {
     try {
       // Check if variant exists
@@ -638,7 +677,19 @@ export class ProductService {
         },
       });
 
-      if (!isOwner && !isStaff) {
+      // Check if staff has manage_product permission
+      let hasManageProductPermission = false;
+      if (isStaff && !isOwner) {
+        const userPermissions = await this.prisma.userpermission.findMany({
+          where: { user_id: user_id },
+          include: { permission: true },
+        });
+        hasManageProductPermission = userPermissions.some(
+          (up) => up.permission.name === 'manage_product',
+        );
+      }
+
+      if (!isOwner && (!isStaff || !hasManageProductPermission)) {
         return {
           success: false,
           message: 'Bạn không có quyền chỉnh sửa variant của shop này',
@@ -669,6 +720,7 @@ export class ProductService {
       if (compare_at_price !== undefined)
         updateData.compare_at_price = compare_at_price;
       if (is_active !== undefined) updateData.is_active = is_active;
+      if (opacity !== undefined) updateData.opacity = opacity;
 
       // Update variant
       const updatedVariant = await this.prisma.product_variants.update({
@@ -717,7 +769,19 @@ export class ProductService {
         },
       });
 
-      if (!isOwner && !isStaff) {
+      // Check if staff has manage_product permission
+      let hasManageProductPermission = false;
+      if (isStaff && !isOwner) {
+        const userPermissions = await this.prisma.userpermission.findMany({
+          where: { user_id: user_id },
+          include: { permission: true },
+        });
+        hasManageProductPermission = userPermissions.some(
+          (up) => up.permission.name === 'manage_product',
+        );
+      }
+
+      if (!isOwner && (!isStaff || !hasManageProductPermission)) {
         return {
           success: false,
           message: 'Bạn không có quyền xóa variant của shop này',
@@ -834,7 +898,19 @@ export class ProductService {
         },
       });
 
-      if (!isOwner && !isStaff) {
+      // Check if staff has manage_product permission
+      let hasManageProductPermission = false;
+      if (isStaff && !isOwner) {
+        const userPermissions = await this.prisma.userpermission.findMany({
+          where: { user_id: user_id },
+          include: { permission: true },
+        });
+        hasManageProductPermission = userPermissions.some(
+          (up) => up.permission.name === 'manage_product',
+        );
+      }
+
+      if (!isOwner && (!isStaff || !hasManageProductPermission)) {
         return {
           success: false,
           message: 'Bạn không có quyền chỉnh sửa media của shop này',
@@ -894,7 +970,19 @@ export class ProductService {
         },
       });
 
-      if (!isOwner && !isStaff) {
+      // Check if staff has manage_product permission
+      let hasManageProductPermission = false;
+      if (isStaff && !isOwner) {
+        const userPermissions = await this.prisma.userpermission.findMany({
+          where: { user_id: user_id },
+          include: { permission: true },
+        });
+        hasManageProductPermission = userPermissions.some(
+          (up) => up.permission.name === 'manage_product',
+        );
+      }
+
+      if (!isOwner && (!isStaff || !hasManageProductPermission)) {
         return {
           success: false,
           message: 'Bạn không có quyền xóa media của shop này',
@@ -1051,6 +1139,7 @@ export class ProductService {
               stock: true,
               shade_hex: true,
               size_label: true,
+              opacity: true,
             },
           },
         },
@@ -1155,7 +1244,6 @@ export class ProductService {
       }
 
       if (brand) {
-        console.log('getAllProducts - Filtering by brand_id:', Number(brand));
         where.brand_id = Number(brand);
       }
 
@@ -1213,16 +1301,6 @@ export class ProductService {
         this.prisma.products.count({ where }),
       ]);
 
-      console.log('getAllProducts - Found products:', products.length);
-      console.log(
-        'getAllProducts - Where clause:',
-        JSON.stringify(where, null, 2),
-      );
-      console.log(
-        'getAllProducts - Products:',
-        products.map((p) => ({ id: p.id, name: p.name, brand_id: p.brand_id })),
-      );
-
       return {
         success: true,
         products,
@@ -1241,9 +1319,7 @@ export class ProductService {
 
   async getProductById(id: number) {
     try {
-      console.log('getProductById - ID received:', id, 'Type:', typeof id);
       const productId = Number(id);
-      console.log('getProductById - Converted ID:', productId);
 
       const product = await this.prisma.products.findUnique({
         where: {
@@ -1324,7 +1400,6 @@ export class ProductService {
 
       // Brand filter
       if (brand) {
-        console.log('getAllProducts - Filtering by brand_id:', Number(brand));
         where.brand_id = Number(brand);
       }
 
@@ -1399,8 +1474,6 @@ export class ProductService {
   }
 
   async filterProducts(query: any) {
-    console.log('filterProducts - Query received:', query);
-    console.log('filterProducts - Brand parameter:', query.brand);
     // Similar to getAllProducts but with more filter options
     return this.getAllProducts(query);
   }

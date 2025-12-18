@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
 export class ShopService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async addstaff(
     userid: number,
@@ -254,6 +254,7 @@ export class ShopService {
       };
     }
 
+    // Validate permissions tồn tại trong database
     const permissions = await this.prisma.permission.findMany({
       where: { name: { in: permissionNames } },
       select: { id: true, name: true },
@@ -274,14 +275,51 @@ export class ShopService {
       };
     }
 
-    const data = permissions.map((p) => ({
-      user_id: staff.id,
-      permission_id: p.id,
-    }));
+    // Danh sách SHOP permissions (không bao gồm USER permissions)
+    const shopPermissionNames = [
+      'manage_shop_staff',
+      'edit_profile_shop',
+      'manage_shop_admin',
+      'manage_order',
+      'try_on_tester',
+      'chat_with_customer',
+      'manage_shop_setting',
+      'view_dashboard',
+      'view_shop_tutorial',
+      'manage_product',
+      'manage_brands',
+      'manage_categorys',
+      'manage_shop_address',
+    ];
 
-    await this.prisma.userpermission.createMany({
-      data,
-      skipDuplicates: true,
+    // Lấy IDs của tất cả SHOP permissions để xóa
+    const shopPermissions = await this.prisma.permission.findMany({
+      where: { name: { in: shopPermissionNames } },
+      select: { id: true },
+    });
+
+    const shopPermissionIds = shopPermissions.map((p) => p.id);
+
+    // Thực hiện update trong transaction
+    await this.prisma.$transaction(async (tx) => {
+      // Xóa TẤT CẢ shop permissions hiện tại của staff
+      const deleteResult = await tx.userpermission.deleteMany({
+        where: {
+          user_id: staff.id,
+          permission_id: { in: shopPermissionIds },
+        },
+      });
+
+      // Thêm permissions mới
+      const data = permissions.map((p) => ({
+        user_id: staff.id,
+        permission_id: p.id,
+      }));
+
+      const createResult = await tx.userpermission.createMany({
+        data,
+        skipDuplicates: true,
+      });
     });
 
     return { success: true, message: 'Cập nhật quyền nhân viên thành công' };
@@ -399,6 +437,49 @@ export class ShopService {
     return permissionname;
   }
 
+  async getallpermissionswithstatus(shopid: number, staffemail: string) {
+    // Verify staff exists and belongs to shop
+    const staff = await this.prisma.users.findUnique({
+      where: { email: staffemail },
+      select: { id: true },
+    });
+
+    if (!staff) {
+      throw new NotFoundException('Nhân viên không tồn tại');
+    }
+
+    const staffInShop = await this.prisma.shop_staffs.findFirst({
+      where: { shop_id: shopid, user_id: staff.id },
+    });
+
+    if (!staffInShop) {
+      throw new NotFoundException('Nhân viên không thuộc cửa hàng này');
+    }
+
+    // Get all available permissions
+    const allPermissions = await this.prisma.permission.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' }
+    });
+
+    // Get staff's current permissions
+    const staffPermissions = await this.prisma.userpermission.findMany({
+      where: { user_id: staff.id },
+      select: { permission_id: true },
+    });
+
+    const staffPermissionIds = new Set(staffPermissions.map(sp => sp.permission_id));
+
+    // Map all permissions with isGranted status
+    const permissionsWithStatus = allPermissions.map(permission => ({
+      id: permission.id,
+      name: permission.name,
+      isGranted: staffPermissionIds.has(permission.id)
+    }));
+
+    return permissionsWithStatus;
+  }
+
   async getproduct(shopid: number) {
     const ishasshop = await this.prisma.shops.findUnique({
       where: { id: shopid },
@@ -459,5 +540,166 @@ export class ShopService {
       },
     };
   }
-}
 
+  // ============================================
+  // PUBLIC METHODS (No authentication required)
+  // ============================================
+
+  /**
+   * Get shop public profile - No authentication required
+   */
+  async getShopPublicProfile(shopId: number) {
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        logo_url: true,
+        cover_url: true,
+        phone: true,
+        email: true,
+        is_verified: true,
+        created_at: true,
+        _count: {
+          select: {
+            products: true,
+            shop_staffs: true,
+          },
+        },
+      },
+    });
+
+    if (!shop) {
+      throw new NotFoundException('Shop not found');
+    }
+
+    // TODO: Calculate real rating and response rate from orders/reviews
+    // For now, return mock data
+    const rating = 4.8;
+    const responseRate = 99;
+    const followersCount = 12500; // TODO: Implement followers system
+
+    return {
+      success: true,
+      data: {
+        id: shop.id,
+        name: shop.name,
+        slug: shop.slug,
+        description: shop.description,
+        logo_url: shop.logo_url,
+        cover_url: shop.cover_url,
+        phone: shop.phone,
+        email: shop.email,
+        is_verified: shop.is_verified,
+        rating,
+        response_rate: responseRate,
+        followers_count: followersCount,
+        product_count: shop._count.products,
+        created_at: shop.created_at,
+      },
+    };
+  }
+
+  /**
+   * Get shop products with pagination - No authentication required
+   */
+  async getShopProducts(shopId: number, query: any) {
+    const { page = 1, limit = 20, sortBy = 'created_at', order = 'desc' } = query;
+
+    // Verify shop exists
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopId },
+      select: { id: true },
+    });
+
+    if (!shop) {
+      throw new NotFoundException('Shop not found');
+    }
+
+    const skip = (page - 1) * limit;
+
+    // Build orderBy object
+    const orderByField: any = {};
+    orderByField[sortBy] = order;
+
+    // Get products with pagination
+    const [products, total] = await Promise.all([
+      this.prisma.products.findMany({
+        where: {
+          shop_id: shopId,
+          is_published: true, // ✅ Only show published products
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          avg_rating: true,
+          review_count: true,
+          created_at: true,
+          product_media: {
+            select: {
+              url: true,
+              sort_order: true,
+            },
+            orderBy: {
+              sort_order: 'asc',
+            },
+            take: 1,
+          },
+          product_variants: {
+            select: {
+              price: true,
+              compare_at_price: true,
+              stock: true,
+            },
+            orderBy: {
+              price: 'asc',
+            },
+            take: 1,
+          },
+        },
+        orderBy: orderByField,
+        skip,
+        take: limit,
+      }),
+      this.prisma.products.count({
+        where: {
+          shop_id: shopId,
+          is_published: true,
+        },
+      }),
+    ]);
+
+    return {
+      success: true,
+      data: products.map(product => {
+        const variant = product.product_variants[0];
+        const soldCount = 0; // TODO: Calculate from orders
+
+        return {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          description: product.description,
+          price: variant ? Number(variant.price) : 0,
+          discount_price: variant?.compare_at_price ? Number(variant.compare_at_price) : null,
+          stock_quantity: variant?.stock || 0,
+          sold_count: soldCount,
+          rating: product.avg_rating ? Number(product.avg_rating) : 0,
+          review_count: product.review_count,
+          image_url: product.product_media[0]?.url || null,
+          created_at: product.created_at.toISOString(),
+        };
+      }),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+}

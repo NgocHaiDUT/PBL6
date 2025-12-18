@@ -18,6 +18,7 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
@@ -29,12 +30,100 @@ import {
   RemoveStaffDto,
   UpdateStaffPermissionsDto,
 } from './dto';
+import { GetShopProductsDto } from './dto/get-shop-products.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @ApiTags('Shop Management')
 @Controller('shop')
 export class ShopController {
-  constructor(private readonly shopService: ShopService) {}
+  constructor(private readonly shopService: ShopService) { }
+
+  // ============================================
+  // PUBLIC ENDPOINTS (No authentication required)
+  // ============================================
+
+  @Get(':shopId/profile')
+  @ApiOperation({
+    summary: 'Get shop public profile',
+    description: 'Get public information about a shop. No authentication required.',
+  })
+  @ApiParam({
+    name: 'shopId',
+    description: 'Shop ID',
+    type: Number,
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Shop profile retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 1 },
+            name: { type: 'string', example: 'GlowBeauty Official' },
+            slug: { type: 'string', example: 'glowbeauty-official' },
+            description: { type: 'string', example: 'Best beauty products store' },
+            logo_url: { type: 'string', example: 'https://example.com/logo.jpg' },
+            cover_url: { type: 'string', example: 'https://example.com/cover.jpg' },
+            phone: { type: 'string', example: '0912345678' },
+            email: { type: 'string', example: 'shop@example.com' },
+            is_verified: { type: 'boolean', example: true },
+            rating: { type: 'number', example: 4.8 },
+            response_rate: { type: 'number', example: 99 },
+            followers_count: { type: 'number', example: 12500 },
+            product_count: { type: 'number', example: 125 },
+            created_at: { type: 'string', format: 'date-time' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Shop not found',
+  })
+  async getShopProfile(@Param('shopId', ParseIntPipe) shopId: number) {
+    return this.shopService.getShopPublicProfile(shopId);
+  }
+
+  @Get(':shopId/products')
+  @ApiOperation({
+    summary: 'Get shop products',
+    description: 'Get all products from a shop with pagination. No authentication required.',
+  })
+  @ApiParam({
+    name: 'shopId',
+    description: 'Shop ID',
+    type: Number,
+    example: 1,
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiQuery({ name: 'sortBy', required: false, type: String, example: 'created_at' })
+  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'], example: 'desc' })
+  @ApiResponse({
+    status: 200,
+    description: 'Shop products retrieved successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Shop not found',
+  })
+  async getShopProducts(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Query() query: GetShopProductsDto,
+  ) {
+    return this.shopService.getShopProducts(shopId, query);
+  }
+
+  // ============================================
+  // PROTECTED ENDPOINTS (Authentication required)
+  // ============================================
+
   // Thêm nhân viên
   @Post(':shopId/staff')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -299,6 +388,61 @@ export class ShopController {
     @Param('staffemail') staffemail: string,
   ) {
     return this.shopService.getpermissionstaff(shopid, staffemail);
+  }
+
+  @Get(':shopid/staff/:staffemail/permissions/all')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_SHOP_STAFF)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Get all permissions with staff status',
+    description:
+      'Returns a list of ALL available permissions with a flag indicating if the staff member has each permission. Useful for UI checkboxes.',
+  })
+  @ApiParam({
+    name: 'shopid',
+    description: 'Shop ID',
+    type: Number,
+    example: 1,
+  })
+  @ApiParam({
+    name: 'staffemail',
+    description: 'Email of the staff member',
+    type: String,
+    example: 'staff@example.com',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'All permissions with status retrieved successfully',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'number', example: 1 },
+          name: { type: 'string', example: 'manage_product' },
+          isGranted: { type: 'boolean', example: true },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Not logged in',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - No MANAGE_SHOP_STAFF permission',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Staff not found or does not belong to this shop',
+  })
+  async getAllPermissionsWithStatus(
+    @Param('shopid', ParseIntPipe) shopid: number,
+    @Param('staffemail') staffemail: string,
+  ) {
+    return this.shopService.getallpermissionswithstatus(shopid, staffemail);
   }
 
   // Xóa quyền của nhân viên

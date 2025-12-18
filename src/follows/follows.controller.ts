@@ -35,12 +35,6 @@ export class FollowsController {
   ): Promise<FollowResponse> {
     // Use user_id from JWT token
     const followerId = req.user.userId;
-    console.log(
-      '👥 [Controller] Creating follow with follower ID:',
-      followerId,
-      'following:',
-      createFollowDto.following_id,
-    );
     return this.followsService.create(createFollowDto, followerId);
   }
 
@@ -48,7 +42,6 @@ export class FollowsController {
   async findAll(
     @Query() queryDto: QueryFollowsDto,
   ): Promise<PaginatedFollowsResponse> {
-    console.log('👥 [Controller] Getting follows with query:', queryDto);
     return this.followsService.findAll(queryDto);
   }
 
@@ -57,12 +50,6 @@ export class FollowsController {
     @Param('userId', ParseIntPipe) userId: number,
     @Query('currentUserId') currentUserId?: number,
   ): Promise<FollowStatsResponse> {
-    console.log(
-      '👥 [Controller] Getting follow stats for user:',
-      userId,
-      'current user:',
-      currentUserId,
-    );
     return this.followsService.getStats(userId, currentUserId);
   }
 
@@ -75,10 +62,6 @@ export class FollowsController {
   ): Promise<{ following: boolean; followers_count: number }> {
     // Use user_id from JWT token
     const followerId = req.user.userId;
-    console.log('👥 [Controller] Toggling follow:', {
-      followerId,
-      followingId,
-    });
     return this.followsService.toggleFollow(followingId, followerId);
   }
 
@@ -92,10 +75,6 @@ export class FollowsController {
   ): Promise<void> {
     // Use user_id from JWT token
     const followerId = req.user.userId;
-    console.log('👥 [Controller] Removing follow:', {
-      followerId,
-      followingId,
-    });
     return this.followsService.remove(followingId, followerId);
   }
 
@@ -106,7 +85,6 @@ export class FollowsController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ): Promise<PaginatedFollowsResponse> {
-    console.log('👥 [FollowsController] getFollowers called for userId:', userId);
     const queryDto: QueryFollowsDto = {
       user_id: userId,
       type: 'followers',
@@ -123,7 +101,6 @@ export class FollowsController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ): Promise<PaginatedFollowsResponse> {
-    console.log('👥 [FollowsController] getFollowing called for userId:', userId);
     const queryDto: QueryFollowsDto = {
       user_id: userId,
       type: 'following',
@@ -140,7 +117,6 @@ export class FollowsController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ): Promise<any> {
-    console.log('👥 [Controller] Getting mutual friends for user:', userId);
     return this.followsService.getMutualFriends(userId, page || 1, limit || 20);
   }
 }

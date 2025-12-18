@@ -3,8 +3,8 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ChangePasswordFirstTimeDto {
   @ApiProperty({
-    description: 'Email address',
-    example: 'user@example.com'
+    description: 'User email address',
+    example: 'user@example.com',
   })
   @IsEmail()
   @IsNotEmpty()
@@ -12,7 +12,7 @@ export class ChangePasswordFirstTimeDto {
 
   @ApiProperty({
     description: 'Temporary password received via email',
-    example: 'abc12345'
+    example: 'temp123456',
   })
   @IsString()
   @IsNotEmpty()
@@ -21,7 +21,7 @@ export class ChangePasswordFirstTimeDto {
   @ApiProperty({
     description: 'New password to set (min 6 characters)',
     example: 'mynewpassword123',
-    minLength: 6
+    minLength: 6,
   })
   @IsString()
   @IsNotEmpty()

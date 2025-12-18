@@ -219,7 +219,22 @@ export class AddressService {
     const isOwner = shop.owner_id === userId;
     const isManager = shop.shop_staffs.some((staff) => staff.is_manager);
 
+    // Check if user has manage_shop_address permission
+    let hasManageAddressPermission = false;
     if (!isOwner && !isManager) {
+      const staffMember = shop.shop_staffs.find(staff => staff.user_id === userId);
+      if (staffMember) {
+        const userPermissions = await this.prisma.userpermission.findMany({
+          where: { user_id: userId },
+          include: { permission: true },
+        });
+        hasManageAddressPermission = userPermissions.some(
+          (up) => up.permission.name === 'manage_shop_address',
+        );
+      }
+    }
+
+    if (!isOwner && !isManager && !hasManageAddressPermission) {
       throw new ForbiddenException(
         'Bạn không có quyền thêm địa chỉ cho shop này',
       );
@@ -300,7 +315,22 @@ export class AddressService {
       (staff) => staff.is_manager,
     );
 
+    // Check if user has manage_shop_address permission
+    let hasManageAddressPermission = false;
     if (!isOwner && !isManager) {
+      const staffMember = existingAddress.shop.shop_staffs.find(staff => staff.user_id === userId);
+      if (staffMember) {
+        const userPermissions = await this.prisma.userpermission.findMany({
+          where: { user_id: userId },
+          include: { permission: true },
+        });
+        hasManageAddressPermission = userPermissions.some(
+          (up) => up.permission.name === 'manage_shop_address',
+        );
+      }
+    }
+
+    if (!isOwner && !isManager && !hasManageAddressPermission) {
       throw new ForbiddenException(
         'Bạn không có quyền cập nhật địa chỉ shop này',
       );
@@ -383,7 +413,22 @@ export class AddressService {
       (staff) => staff.is_manager,
     );
 
+    // Check if user has manage_shop_address permission
+    let hasManageAddressPermission = false;
     if (!isOwner && !isManager) {
+      const staffMember = existingAddress.shop.shop_staffs.find(staff => staff.user_id === userId);
+      if (staffMember) {
+        const userPermissions = await this.prisma.userpermission.findMany({
+          where: { user_id: userId },
+          include: { permission: true },
+        });
+        hasManageAddressPermission = userPermissions.some(
+          (up) => up.permission.name === 'manage_shop_address',
+        );
+      }
+    }
+
+    if (!isOwner && !isManager && !hasManageAddressPermission) {
       throw new ForbiddenException('Bạn không có quyền xóa địa chỉ shop này');
     }
 

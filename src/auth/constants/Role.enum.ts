@@ -13,65 +13,98 @@
 import { Permission } from './Permission.enum';
 
 export enum Role {
-  /** Người dùng thông thường */
+  /** Người dùng thông thường (role_id: 1) */
   USER = 'user',
-  
-  /** Người bán - Chủ shop */
+
+  /** Người bán - Chủ shop (role_id: 2) */
   SELLER = 'seller',
-  
-  /** Quản trị viên hệ thống */
+
+  /** Quản trị viên hệ thống (role_id: 3) */
   ADMIN = 'admin',
-  
-  /** Nhân viên shop */
+
+  /** Nhân viên shop (role_id: 4) */
   STAFF = 'staff',
 }
 
 /**
  * Default permissions cho mỗi role
- * Đây là mapping chuẩn giữa role và permissions
+ * Đây là mapping chuẩn giữa role và permissions từ database backup
  * 
  * Lưu ý: Đây là permissions MẶC ĐỊNH. Trong database có thể tùy chỉnh
  * thêm/bớt permissions cho từng user cụ thể thông qua bảng role_permissions
  */
 export const RolePermissions: Record<Role, Permission[]> = {
+  // ===== USER (role_id: 1) =====
   [Role.USER]: [
-    // Post permissions
+    Permission.ADD_TO_CART,
+    Permission.CHECKOUT,
+    Permission.CREATE_COMMENT,
     Permission.CREATE_POST,
-    Permission.EDIT_POST,
+    Permission.CREATE_REVIEW,
+    Permission.CREATE_SHOP,
+    Permission.DELETE_COMMENT,
     Permission.DELETE_POST,
+    Permission.EDIT_COMMENT,
+    Permission.EDIT_POST,
+    Permission.EDIT_PROFILE,
+    Permission.MANAGE_ADDRESSES,
+    Permission.TOGGLE_FOLLOW,
+    Permission.TOGGLE_LIKE,
+    Permission.VIEW_ORDERS,
+    Permission.VIEW_PRODUCTS,
   ],
 
+  // ===== SELLER (role_id: 2) =====
   [Role.SELLER]: [
-    // Product permissions
+    Permission.CHAT_WITH_CUSTOMER,
     Permission.CREATE_PRODUCT,
-    Permission.EDIT_PRODUCT,
     Permission.DELETE_PRODUCT,
-    
-    // Shop permissions
-    Permission.MANAGE_SHOP_STAFF,
+    Permission.EDIT_PRODUCT,
     Permission.EDIT_PROFILE_SHOP,
-    Permission.MANAGE_SHOP_ADDRESS,
+    Permission.MANAGE_ORDERS,
+    Permission.MANAGE_SHOP_STAFF,
+    Permission.TRY_ON_TESTER,
+    Permission.UPDATE_PRODUCT,
+    Permission.VIEW_PRODUCTS,
+    Permission.VIEW_SHOP_DASHBOARD,
+    Permission.MANAGE_SHOP_ADMIN,
+    Permission.MANAGE_PRODUCT
   ],
 
+  // ===== ADMIN (role_id: 3) =====
   [Role.ADMIN]: [
-    // User, Role & Permission management
-    Permission.MANAGE_USERS,
-    
-    // Product management
     Permission.CREATE_PRODUCT,
-    Permission.EDIT_PRODUCT,
+    Permission.CREATE_USER,
     Permission.DELETE_PRODUCT,
+    Permission.DELETE_USER,
+    Permission.EDIT_PRODUCT,
     Permission.MANAGE_BRANDS,
     Permission.MANAGE_CATEGORYS,
-
-    // Shop management
-    Permission.MANAGE_SHOP_ADMIN,
+    Permission.MANAGE_COUPONS,
+    Permission.MANAGE_ORDERS,
+    Permission.MANAGE_PERMISSIONS,
+    Permission.MANAGE_PRODUCT_CATEGORIES,
+    Permission.MANAGE_ROLES,
     Permission.MANAGE_SHOP_STAFF,
+    Permission.MANAGE_USERS,
+    Permission.MODERATE_POSTS,
+    Permission.MODERATE_PRODUCTS,
+    Permission.UPDATE_PRODUCT,
+    Permission.UPDATE_USER,
+    Permission.VIEW_PRODUCTS,
+    Permission.VIEW_SHOP_DASHBOARD,
+    Permission.VIEW_SYSTEM_LOGS,
+    Permission.VIEW_USERS,
+    Permission.MANAGE_SHOP_ADMIN,
+    Permission.MANAGE_PRODUCT
   ],
 
+  // ===== STAFF (role_id: 4) =====
+  // Note: Staff permissions sẽ được inherit từ SELLER hoặc custom
   [Role.STAFF]: [
-    // Shop staff permissions
-    Permission.MANAGE_SHOP_STAFF,
+    Permission.CHAT_WITH_CUSTOMER,
+    Permission.MANAGE_ORDERS,
+    Permission.VIEW_SHOP_DASHBOARD,
   ],
 };
 
@@ -141,30 +174,34 @@ export const isValidRole = (role: string): role is Role => {
 export const RoleMetadata = {
   [Role.USER]: {
     displayName: 'Người dùng',
-    description: 'Người dùng thông thường, có thể tạo và quản lý bài viết cá nhân',
+    description: 'Người dùng thông thường, có thể mua sắm và tương tác với nội dung',
     color: '#3b82f6', // blue
     icon: '👤',
+    permissionCount: RolePermissions[Role.USER].length,
   },
-  
+
   [Role.SELLER]: {
     displayName: 'Người bán',
     description: 'Chủ shop, quản lý sản phẩm, nhân viên và hoạt động kinh doanh',
     color: '#10b981', // green
     icon: '🏪',
+    permissionCount: RolePermissions[Role.SELLER].length,
   },
-  
+
   [Role.ADMIN]: {
     displayName: 'Quản trị viên',
     description: 'Quản lý toàn bộ hệ thống, users, roles, permissions và dữ liệu',
     color: '#ef4444', // red
     icon: '👑',
+    permissionCount: RolePermissions[Role.ADMIN].length,
   },
-  
+
   [Role.STAFF]: {
     displayName: 'Nhân viên',
-    description: 'Nhân viên shop, hỗ trợ quản lý cửa hàng',
+    description: 'Nhân viên shop, hỗ trợ quản lý cửa hàng và chăm sóc khách hàng',
     color: '#f59e0b', // amber
     icon: '👔',
+    permissionCount: RolePermissions[Role.STAFF].length,
   },
 } as const;
 
@@ -175,10 +212,20 @@ export const RoleMetadata = {
 export const RoleHierarchy = {
   /** Cấp cao nhất - Toàn quyền */
   HIGHEST: [Role.ADMIN],
-  
+
   /** Cấp trung - Quản lý shop */
   MEDIUM: [Role.SELLER],
-  
+
   /** Cấp thấp - Nhân viên và user */
   LOWEST: [Role.STAFF, Role.USER],
+} as const;
+
+/**
+ * Mapping role_id từ database (để tương thích với backup)
+ */
+export const RoleIdMapping = {
+  1: Role.ADMIN,
+  2: Role.USER,
+  3: Role.SELLER,
+  4: Role.STAFF,
 } as const;

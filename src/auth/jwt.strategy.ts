@@ -9,13 +9,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'your-fallback-secret-key',
+      secretOrKey: process.env.JWT_ACCESS_SECRET as string,
     });
   }
 
   async validate(payload: any) {
-    console.log('🔍 [JWT Strategy] Validating payload:', payload);
-
     const user = await this.prisma.users.findUnique({
       where: { id: Number(payload.sub) },
       include: {
@@ -53,12 +51,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const allPermissions = [
       ...new Set([...rolePermissions, ...userPermissions]),
     ];
-
-    console.log('🔍 [JWT Strategy] User ID:', user.id);
-    console.log('🔍 [JWT Strategy] User role:', user.role?.name);
-    console.log('🔍 [JWT Strategy] Role permissions:', rolePermissions);
-    console.log('🔍 [JWT Strategy] User permissions:', userPermissions);
-    console.log('🔍 [JWT Strategy] All permissions:', allPermissions);
 
     // The object returned here will be attached to the request object as `req.user`.
     return {

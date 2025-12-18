@@ -1039,7 +1039,6 @@ export class MessagesService {
 
   // Tìm kiếm cuộc hội thoại với user khác
   async findOrCreateConversation(userId: number, otherUserId: number) {
-    console.log(`🔍 [findOrCreateConversation] Finding conversation between users ${userId} and ${otherUserId}`);
     
     if (userId === otherUserId) {
       throw new BadRequestException('Cannot create conversation with yourself');
@@ -1096,8 +1095,6 @@ export class MessagesService {
         }
       });
 
-      console.log(`📋 [findOrCreateConversation] Found ${userConversations.length} conversations for user ${userId}`);
-
       // Tìm conversation có đúng 2 participants: userId và otherUserId
       const existingConversation = userConversations.find(conv => {
         if (conv.participants.length !== 2) return false;
@@ -1107,12 +1104,10 @@ export class MessagesService {
       });
 
       if (existingConversation) {
-        console.log(`✅ [findOrCreateConversation] Found existing conversation:`, existingConversation.id);
         return existingConversation;
       }
 
       // Tạo conversation mới
-      console.log(`➕ [findOrCreateConversation] Creating new conversation`);
       return this.createConversation(userId, {
         participant_ids: [otherUserId],
         type: 'private'
