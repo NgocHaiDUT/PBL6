@@ -269,11 +269,14 @@ export class ProfileService {
   }
 
   async updatebannershop(userid: number, shopid: number, banner_url: string) {
-    await this.prisma.shops.update({
+    const shop = await this.prisma.shops.update({
       where: { id: shopid },
       data: { cover_url: banner_url },
     });
-    return { message: 'Cập nhật banner cửa hàng thành công' };
+    return { 
+      message: 'Cập nhật banner cửa hàng thành công',
+      cover_url: shop.cover_url
+    };
   }
 
   async updatephoneshop(userid: number, shopid: number, phone: string) {
@@ -305,7 +308,6 @@ export class ProfileService {
   }
 
     async getUserInfo(userId: number) {
-        console.log('🔍 [getUserInfo] UserID lấy từ frontend:', userId);
         try {
             const user = await this.prisma.users.findUnique({
                 where: { id: userId },
@@ -348,8 +350,6 @@ export class ProfileService {
         const user = await this.prisma.users.findUnique({
             where: { id: userId },
         });
-        console.log('🔍 [getProfile] User data from database:', JSON.stringify(user, null, 2));
-        console.log('🔍 [getProfile] User keys:', user ? Object.keys(user) : 'null');
         return user;
     }
 }

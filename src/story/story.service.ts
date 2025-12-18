@@ -755,7 +755,6 @@ export class StoryService {
       },
     });
 
-    console.log(`🗑️  Cleaned up ${deleted.count} expired stories`);
     return deleted.count;
   }
 }

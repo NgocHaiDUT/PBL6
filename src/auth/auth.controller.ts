@@ -302,7 +302,7 @@ export class AuthController {
     }
 
     return res.redirect(`${process.env.MOBILE_URL}/auth/callback?code=${code}`);
-  }
+  } 
 
   @Post('exchange')
   @ApiOperation({
@@ -402,6 +402,7 @@ export class AuthController {
   @ApiBearerAuth('JWT-auth')
   async getCurentUser(@Req() req: any) {
     const userId = req.user.userId;
-    return this.authService.getCurrentUser(userId);
+    const user = await this.authService.getCurrentUser(userId);
+    return { success: true, user };
   }
 }

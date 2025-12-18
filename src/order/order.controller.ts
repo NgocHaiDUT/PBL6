@@ -25,7 +25,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('order')
 export class OrderController {
-  constructor(private readonly orderService: OrderService) {}
+  constructor(private readonly orderService: OrderService) { }
 
   @Post('calculate-cart-shipping')
   @UseGuards(JwtAuthGuard)
@@ -54,14 +54,15 @@ export class OrderController {
       body.items,
       body.note,
       body.payment_method,
+      req,
     );
   }
 
   @Post('create-from-product')
+  @UseGuards(JwtAuthGuard)
   async createOrderFromProduct(
     @Body()
     body: {
-      userId?: number;
       product_id: number;
       variant_id?: number;
       quantity: number;
@@ -69,10 +70,9 @@ export class OrderController {
       note?: string;
       payment_method?: string;
     },
+    @Req() req: any,
   ) {
-    if (!body.userId) {
-      return { success: false, message: 'Vui lòng đăng nhập' };
-    }
+    const userId = req.user.userId;
 
     if (!body.product_id || !body.quantity || !body.shipping_address_id) {
       throw new BadRequestException(
@@ -81,7 +81,7 @@ export class OrderController {
     }
 
     return this.orderService.createOrderFromProduct(
-      body.userId,
+      userId,
       body.product_id,
       body.variant_id || null,
       body.quantity,

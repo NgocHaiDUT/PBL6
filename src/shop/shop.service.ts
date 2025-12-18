@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
 export class ShopService {
@@ -254,6 +254,7 @@ export class ShopService {
       };
     }
 
+    // Validate permissions tồn tại trong database
     const permissions = await this.prisma.permission.findMany({
       where: { name: { in: permissionNames } },
       select: { id: true, name: true },
@@ -274,14 +275,51 @@ export class ShopService {
       };
     }
 
-    const data = permissions.map((p) => ({
-      user_id: staff.id,
-      permission_id: p.id,
-    }));
+    // Danh sách SHOP permissions (không bao gồm USER permissions)
+    const shopPermissionNames = [
+      'manage_shop_staff',
+      'edit_profile_shop',
+      'manage_shop_admin',
+      'manage_order',
+      'try_on_tester',
+      'chat_with_customer',
+      'manage_shop_setting',
+      'view_dashboard',
+      'view_shop_tutorial',
+      'manage_product',
+      'manage_brands',
+      'manage_categorys',
+      'manage_shop_address',
+    ];
 
-    await this.prisma.userpermission.createMany({
-      data,
-      skipDuplicates: true,
+    // Lấy IDs của tất cả SHOP permissions để xóa
+    const shopPermissions = await this.prisma.permission.findMany({
+      where: { name: { in: shopPermissionNames } },
+      select: { id: true },
+    });
+
+    const shopPermissionIds = shopPermissions.map((p) => p.id);
+
+    // Thực hiện update trong transaction
+    await this.prisma.$transaction(async (tx) => {
+      // Xóa TẤT CẢ shop permissions hiện tại của staff
+      const deleteResult = await tx.userpermission.deleteMany({
+        where: {
+          user_id: staff.id,
+          permission_id: { in: shopPermissionIds },
+        },
+      });
+
+      // Thêm permissions mới
+      const data = permissions.map((p) => ({
+        user_id: staff.id,
+        permission_id: p.id,
+      }));
+
+      const createResult = await tx.userpermission.createMany({
+        data,
+        skipDuplicates: true,
+      });
     });
 
     return { success: true, message: 'Cập nhật quyền nhân viên thành công' };
@@ -397,6 +435,49 @@ export class ShopService {
       .filter((n): n is string => typeof n === 'string' && n.length > 0);
 
     return permissionname;
+  }
+
+  async getallpermissionswithstatus(shopid: number, staffemail: string) {
+    // Verify staff exists and belongs to shop
+    const staff = await this.prisma.users.findUnique({
+      where: { email: staffemail },
+      select: { id: true },
+    });
+    
+    if (!staff) {
+      throw new NotFoundException('Nhân viên không tồn tại');
+    }
+
+    const staffInShop = await this.prisma.shop_staffs.findFirst({
+      where: { shop_id: shopid, user_id: staff.id },
+    });
+
+    if (!staffInShop) {
+      throw new NotFoundException('Nhân viên không thuộc cửa hàng này');
+    }
+
+    // Get all available permissions
+    const allPermissions = await this.prisma.permission.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' }
+    });
+
+    // Get staff's current permissions
+    const staffPermissions = await this.prisma.userpermission.findMany({
+      where: { user_id: staff.id },
+      select: { permission_id: true },
+    });
+
+    const staffPermissionIds = new Set(staffPermissions.map(sp => sp.permission_id));
+
+    // Map all permissions with isGranted status
+    const permissionsWithStatus = allPermissions.map(permission => ({
+      id: permission.id,
+      name: permission.name,
+      isGranted: staffPermissionIds.has(permission.id)
+    }));
+
+    return permissionsWithStatus;
   }
 
   async getproduct(shopid: number) {

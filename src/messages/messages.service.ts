@@ -12,7 +12,7 @@ import { QueryConversationsDto } from './dto/query-conversations.dto';
 
 @Injectable()
 export class MessagesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   // Tạo cuộc hội thoại mới
   async createConversation(
@@ -28,7 +28,7 @@ export class MessagesService {
 
     // Chat với users
     const participants = participant_ids || [];
-    
+
     // Kiểm tra user có trong danh sách participants không
     if (!participants.includes(userId)) {
       participants.push(userId);
@@ -376,9 +376,9 @@ export class MessagesService {
   // Gửi tin nhắn (từ user hoặc shop)
   async sendMessage(userId: number, createMessageDto: CreateMessageDto, shopId?: number) {
     const { conversation_id, sender_id, receiver_id, content, postId, sharedProfileId, messageType, payload } = createMessageDto;
-    
+
     let finalConversationId = conversation_id;
-    
+
     // If conversation_id not provided, find or create conversation using sender_id and receiver_id
     if (!finalConversationId && sender_id && receiver_id) {
       const conversations = await this.prisma.conversations.findMany({
@@ -393,9 +393,9 @@ export class MessagesService {
       let conversation = conversations.find(conv => {
         const userIds = conv.participants.map(p => p.user_id).sort();
         const targetIds = [sender_id, receiver_id].sort();
-        return userIds.length === 2 && 
-               userIds[0] === targetIds[0] && 
-               userIds[1] === targetIds[1];
+        return userIds.length === 2 &&
+          userIds[0] === targetIds[0] &&
+          userIds[1] === targetIds[1];
       });
 
       if (!conversation) {
@@ -415,7 +415,7 @@ export class MessagesService {
           }
         });
       }
-      
+
       finalConversationId = conversation.id;
     }
 
@@ -456,7 +456,7 @@ export class MessagesService {
     const participant = await this.prisma.conversation_participants.findFirst({
       where: {
         conversation_id: finalConversationId,
-        ...(shopId 
+        ...(shopId
           ? { shop_id: shopId, entity_type: 'shop' }
           : { user_id: sender_id || userId, entity_type: 'user' }
         )
@@ -1039,7 +1039,6 @@ export class MessagesService {
 
   // Tìm kiếm cuộc hội thoại với user khác
   async findOrCreateConversation(userId: number, otherUserId: number) {
-    console.log(`🔍 [findOrCreateConversation] Finding conversation between users ${userId} and ${otherUserId}`);
     
     if (userId === otherUserId) {
       throw new BadRequestException('Cannot create conversation with yourself');
@@ -1096,8 +1095,6 @@ export class MessagesService {
         }
       });
 
-      console.log(`📋 [findOrCreateConversation] Found ${userConversations.length} conversations for user ${userId}`);
-
       // Tìm conversation có đúng 2 participants: userId và otherUserId
       const existingConversation = userConversations.find(conv => {
         if (conv.participants.length !== 2) return false;
@@ -1107,12 +1104,10 @@ export class MessagesService {
       });
 
       if (existingConversation) {
-        console.log(`✅ [findOrCreateConversation] Found existing conversation:`, existingConversation.id);
         return existingConversation;
       }
 
       // Tạo conversation mới
-      console.log(`➕ [findOrCreateConversation] Creating new conversation`);
       return this.createConversation(userId, {
         participant_ids: [otherUserId],
         type: 'private'

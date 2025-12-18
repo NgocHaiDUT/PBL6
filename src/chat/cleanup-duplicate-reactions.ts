@@ -7,8 +7,6 @@ const prisma = new PrismaClient();
  * Ensures each user has only ONE reaction per message (keeps the most recent one).
  */
 async function cleanupDuplicateReactions() {
-  console.log('🧹 Starting cleanup of duplicate reactions...\n');
-
   try {
     // Get all reactions
     const allReactions = await prisma.message_reactions.findMany({
@@ -16,8 +14,6 @@ async function cleanupDuplicateReactions() {
         created_at: 'desc', // Most recent first
       },
     });
-
-    console.log(`📊 Total reactions found: ${allReactions.length}`);
 
     // Group by message_id + user_id
     const groupedReactions = new Map<string, typeof allReactions>();
@@ -40,11 +36,6 @@ async function cleanupDuplicateReactions() {
       if (reactions.length > 1) {
         messagesWithDuplicates++;
         const [messageId, userId] = key.split('_').map(Number);
-        
-        console.log(`\n🔍 Found ${reactions.length} reactions for message ${messageId}, user ${userId}:`);
-        reactions.forEach((r, i) => {
-          console.log(`  ${i === 0 ? '✅ KEEP' : '❌ DELETE'}: ${r.emoji} (created: ${r.created_at})`);
-        });
 
         // Keep the first one (most recent), delete the rest
         const toDelete = reactions.slice(1);

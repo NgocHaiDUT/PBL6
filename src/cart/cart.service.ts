@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class CartService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async getCart(userId: number) {
     try {
@@ -16,6 +16,7 @@ export class CartService {
               product: {
                 include: {
                   brand: true,
+                  shop: true, // Include shop info
                   product_media: {
                     orderBy: { sort_order: 'asc' },
                     take: 1,
@@ -41,6 +42,7 @@ export class CartService {
                 product: {
                   include: {
                     brand: true,
+                    shop: true, // Include shop info
                     product_media: {
                       orderBy: { sort_order: 'asc' },
                       take: 1,

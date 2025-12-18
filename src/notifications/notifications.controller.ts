@@ -55,10 +55,6 @@ export class NotificationsController {
     const targetUserId = queryDto.userId
       ? parseInt(queryDto.userId, 10)
       : jwtUserId;
-    console.log(
-      '🔔 [Controller] Getting notifications for user ID:',
-      targetUserId,
-    );
     return this.notificationsService.findAllForUser(targetUserId, queryDto);
   }
 
@@ -70,10 +66,6 @@ export class NotificationsController {
     // ✅ Use userId from query if provided, otherwise from JWT
     const jwtUserId = req.user?.sub || req.user?.userId;
     const targetUserId = userId ? parseInt(userId, 10) : jwtUserId;
-    console.log(
-      '🔔 [Controller] Getting notification stats for user ID:',
-      targetUserId,
-    );
     return this.notificationsService.getStats(targetUserId);
   }
 
@@ -89,10 +81,6 @@ export class NotificationsController {
         ? parseInt(body.user_id, 10)
         : body.user_id
       : jwtUserId;
-    console.log(
-      '🔔 [Controller] Marking all as read for user ID:',
-      targetUserId,
-    );
     return this.notificationsService.markAllAsRead(targetUserId);
   }
 
@@ -108,10 +96,6 @@ export class NotificationsController {
         ? parseInt(body.user_id, 10)
         : body.user_id
       : jwtUserId;
-    console.log(
-      '🔔 [Controller] Deleting all read notifications for user ID:',
-      targetUserId,
-    );
     return this.notificationsService.deleteAllRead(targetUserId);
   }
 
@@ -120,7 +104,6 @@ export class NotificationsController {
   async getUnreadCount(
     @Param('userId', ParseIntPipe) userId: number,
   ): Promise<{ success: boolean; count: number }> {
-    console.log('🔔 [Controller] Getting unread count for user ID:', userId);
     const stats = await this.notificationsService.getStats(userId);
     return {
       success: true,
@@ -160,10 +143,6 @@ export class NotificationsController {
         ? parseInt(body.user_id, 10)
         : body.user_id
       : jwtUserId;
-    console.log('🔔 [Controller] Marking notification as read:', {
-      id,
-      targetUserId,
-    });
     return this.notificationsService.markAsRead(id, targetUserId);
   }
 
@@ -182,10 +161,6 @@ export class NotificationsController {
   async createSampleNotifications(
     @Param('userId', ParseIntPipe) userId: number,
   ): Promise<{ success: boolean; message: string; created: number }> {
-    console.log(
-      '🔔 [Controller] Creating sample notifications for user ID:',
-      userId,
-    );
 
     const sampleNotifications = [
       {
