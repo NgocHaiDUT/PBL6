@@ -42,7 +42,6 @@ export class ProductController {
 
   @Get('brands')
   async getAllBrands() {
-    console.log('Controller - getAllBrands called');
     return this.productservice.getallbrand();
   }
 
@@ -118,7 +117,6 @@ export class ProductController {
   }
   @Get('categories')
   async getAllCategories() {
-    console.log('Controller - getAllCategories called');
     return this.productservice.getallcategories();
   }
 
@@ -285,7 +283,7 @@ export class ProductController {
   // Product CRUD
   @Post()
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions(Permission.CREATE_PRODUCT)
+  @RequirePermissions(Permission.MANAGE_PRODUCT)
   async createProduct(
     @Body()
     body: {
@@ -344,7 +342,7 @@ export class ProductController {
 
   @Put(':productId')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions(Permission.EDIT_PRODUCT)
+  @RequirePermissions(Permission.MANAGE_PRODUCT)
   async updateProduct(
     @Param('productId', ParseIntPipe) productId: number,
     @Body()
@@ -399,7 +397,7 @@ export class ProductController {
 
   @Delete(':productId')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions(Permission.DELETE_PRODUCT)
+  @RequirePermissions(Permission.MANAGE_PRODUCT)
   async deleteProduct(
     @Param('productId', ParseIntPipe) productId: number,
     @Req() req: any,
@@ -411,7 +409,7 @@ export class ProductController {
   // Product Variants
   @Post('variants')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions('create_product')
+  @RequirePermissions(Permission.MANAGE_PRODUCT)
   async createProductVariant(
     @Body()
     body: {
@@ -446,7 +444,7 @@ export class ProductController {
 
   @Put('variants/:variantId')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions(Permission.EDIT_PRODUCT)
+  @RequirePermissions(Permission.MANAGE_PRODUCT)
   async updateProductVariant(
     @Param('variantId', ParseIntPipe) variantId: number,
     @Body()
@@ -481,7 +479,7 @@ export class ProductController {
 
   @Delete('variants/:variantId')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions(Permission.DELETE_PRODUCT)
+  @RequirePermissions(Permission.MANAGE_PRODUCT)
   async deleteProductVariant(
     @Param('variantId', ParseIntPipe) variantId: number,
     @Req() req: any,
@@ -493,7 +491,7 @@ export class ProductController {
   // Product Media
   @Post(':productId/media')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions('edit_product')
+  @RequirePermissions(Permission.MANAGE_PRODUCT)
   @UseInterceptors(FileInterceptor('file', productMediaMulterConfig))
   async addProductMedia(
     @Param('productId', ParseIntPipe) productId: number,

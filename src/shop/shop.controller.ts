@@ -301,6 +301,61 @@ export class ShopController {
     return this.shopService.getpermissionstaff(shopid, staffemail);
   }
 
+  @Get(':shopid/staff/:staffemail/permissions/all')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_SHOP_STAFF)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Get all permissions with staff status',
+    description:
+      'Returns a list of ALL available permissions with a flag indicating if the staff member has each permission. Useful for UI checkboxes.',
+  })
+  @ApiParam({
+    name: 'shopid',
+    description: 'Shop ID',
+    type: Number,
+    example: 1,
+  })
+  @ApiParam({
+    name: 'staffemail',
+    description: 'Email of the staff member',
+    type: String,
+    example: 'staff@example.com',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'All permissions with status retrieved successfully',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'number', example: 1 },
+          name: { type: 'string', example: 'manage_product' },
+          isGranted: { type: 'boolean', example: true },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Not logged in',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - No MANAGE_SHOP_STAFF permission',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Staff not found or does not belong to this shop',
+  })
+  async getAllPermissionsWithStatus(
+    @Param('shopid', ParseIntPipe) shopid: number,
+    @Param('staffemail') staffemail: string,
+  ) {
+    return this.shopService.getallpermissionswithstatus(shopid, staffemail);
+  }
+
   // Xóa quyền của nhân viên
   @Delete(':shopId/staff/:staffEmail/permissions')
   @UseGuards(JwtAuthGuard, PermissionsGuard)

@@ -1,0 +1,62 @@
+[
+  {
+    "user_id": 1,
+    "product_id": 1,
+    "rating": 5,
+    "title": "Sản phẩm tuyệt vời!",
+    "content": "Kem chống nắng này rất tốt, không gây nhờn rít và bảo vệ da hiệu quả. Tôi đã dùng được 2 tháng và rất hài lòng.",
+    "media_url": null,
+    "is_verified_purchase": true,
+    "created_at": "2024-06-15T10:30:00Z"
+  },
+  {
+    "user_id": 2,
+    "product_id": 1,
+    "rating": 4,
+    "title": "Tốt nhưng hơi đắt",
+    "content": "Chất lượng ổn, bảo vệ da tốt nhưng giá hơi cao so với mặt bằng chung.",
+    "media_url": null,
+    "is_verified_purchase": true,
+    "created_at": "2024-06-20T14:20:00Z"
+  },
+  {
+    "user_id": 3,
+    "product_id": 2,
+    "rating": 5,
+    "title": "Serum vitamin C tốt nhất từng dùng",
+    "content": "Da sáng lên rõ rệt sau 2 tuần sử dụng. Thấm nhanh, không dính. Sẽ tiếp tục repurchase.",
+    "media_url": null,
+    "is_verified_purchase": true,
+    "created_at": "2024-07-01T09:15:00Z"
+  },
+  {
+    "user_id": 1,
+    "product_id": 3,
+    "rating": 4,
+    "title": "Toner dịu nhẹ, phù hợp da nhạy cảm",
+    "content": "Toner không cồn, dùng rất êm ái. Da mình nhạy cảm nhưng dùng sản phẩm này không bị kích ứng gì.",
+    "media_url": null,
+    "is_verified_purchase": true,
+    "created_at": "2024-07-10T16:45:00Z"
+  },
+  {
+    "user_id": 2,
+    "product_id": 4,
+    "rating": 5,
+    "title": "Kem dưỡng ẩm ban đêm xuất sắc",
+    "content": "Kem dưỡng ẩm ban đêm này siêu cấp ẩm, sáng dậy da mịn màng, căng bóng. Must have trong routine của tôi.",
+    "media_url": null,
+    "is_verified_purchase": true,
+    "created_at": "2024-07-15T20:00:00Z"
+  },
+  {
+    "user_id": 3,
+    "product_id": 5,
+    "rating": 3,
+    "title": "Sữa rửa mặt ổn nhưng không đặc biệt",
+    "content": "Rửa sạch nhưng không có gì nổi bật. Có thể tìm sản phẩm khác tốt hơn với giá tương đương.",
+    "media_url": null,
+    "is_verified_purchase": true,
+    "created_at": "2024-07-20T11:30:00Z"
+  }
+]

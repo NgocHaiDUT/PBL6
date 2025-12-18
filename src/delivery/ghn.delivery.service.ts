@@ -26,9 +26,6 @@ export class GHNDeliveryService extends DeliveryService {
     const apiUrl = this.configService.get<string>('GHN_API_URL');
 
     if (!token || !apiUrl) {
-      console.warn(
-        'GHN_API_TOKEN and GHN_API_URL are not configured in .env file. GHN service will not be available.',
-      );
       // Set default values to prevent crashes
       this.token = '';
       this.apiUrl = '';

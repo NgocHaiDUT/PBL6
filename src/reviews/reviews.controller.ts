@@ -34,10 +34,7 @@ export class ReviewsController {
   @Post()
   @UseGuards(JwtAuthGuard)
   async createReview(@Request() req, @Body() createReviewDto: CreateReviewDto) {
-    console.log('🔍 [ReviewsController] User from JWT:', req.user);
-    console.log('🔍 [ReviewsController] Review DTO:', createReviewDto);
     const userId = req.user.userId || req.user.id; // Support both userId and id
-    console.log('🔍 [ReviewsController] Using userId:', userId);
     return this.reviewsService.createReview(createReviewDto, userId);
   }
 
@@ -90,18 +87,6 @@ export class ReviewsController {
     @Request() req,
     @UploadedFile() file: any,
   ) {
-    console.log(
-      '🖼️ [ReviewsController] Upload review media - File received:',
-      file
-        ? {
-            filename: file.filename,
-            originalname: file.originalname,
-            size: file.size,
-            mimetype: file.mimetype,
-          }
-        : 'No file received',
-    );
-
     const userId = req.user.userId || req.user.id;
     return this.reviewsService.uploadReviewMedia(id, userId, file);
   }
@@ -113,18 +98,6 @@ export class ReviewsController {
     FileInterceptor('media', getMulterOptions('reviews', 'image')),
   )
   async uploadTempMedia(@Request() req, @UploadedFile() file: any) {
-    console.log(
-      '🖼️ [ReviewsController] Upload temp media - File received:',
-      file
-        ? {
-            filename: file.filename,
-            originalname: file.originalname,
-            size: file.size,
-            mimetype: file.mimetype,
-          }
-        : 'No file received',
-    );
-
     if (!file) {
       return {
         success: false,
@@ -155,12 +128,6 @@ export class ReviewsController {
     },
   ) {
     const userId = req.user.userId || req.user.id;
-
-    console.log('🔑 [ReviewsController] Generating presigned URL:', {
-      userId,
-      fileName: body.fileName,
-      fileType: body.fileType,
-    });
 
     // Validate
     if (!body.fileName || !body.fileType) {
@@ -202,8 +169,6 @@ export class ReviewsController {
 
     const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 600 });
     const s3Url = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'ap-southeast-1'}.amazonaws.com/${key}`;
-
-    console.log('✅ [ReviewsController] Presigned URL generated');
 
     return {
       success: true,
