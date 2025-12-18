@@ -269,11 +269,14 @@ export class ProfileService {
   }
 
   async updatebannershop(userid: number, shopid: number, banner_url: string) {
-    await this.prisma.shops.update({
+    const shop = await this.prisma.shops.update({
       where: { id: shopid },
       data: { cover_url: banner_url },
     });
-    return { message: 'Cập nhật banner cửa hàng thành công' };
+    return { 
+      message: 'Cập nhật banner cửa hàng thành công',
+      cover_url: shop.cover_url
+    };
   }
 
   async updatephoneshop(userid: number, shopid: number, phone: string) {
