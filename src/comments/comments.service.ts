@@ -386,7 +386,6 @@ export class CommentsService {
 
   // Helper method để tạo test data - có thể xóa sau
   async createTestCommentsForPost(postId: number): Promise<void> {
-    console.log('🧪 [Service] Creating test comments for post:', postId);
 
     // Tạo comment cấp 1
     const rootComment = await this.prisma.comments.create({
@@ -450,7 +449,5 @@ export class CommentsService {
         parent_id: rootComment2.id,
       },
     });
-
-    console.log('✅ [Service] Test comments created successfully');
   }
 }

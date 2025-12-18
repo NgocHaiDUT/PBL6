@@ -124,12 +124,6 @@ export class PostsController {
     @UploadedFiles() files: any[],
     @Req() req: any,
   ) {
-    console.log('📸 [PostsController] Upload media request received:', {
-      postId: id,
-      filesCount: files?.length || 0,
-      userId: req.user?.userId,
-      headers: req.headers['content-type'],
-    });
     const userId = req.user.userId;
     return this.postsService.uploadAdditionalMedia(id, userId, files);
   }
@@ -187,13 +181,6 @@ export class PostsController {
     },
   ) {
     const userId = req.user.userId || req.user.sub;
-
-    console.log('🔑 [PostsController] Generating presigned URL:', {
-      userId,
-      fileName: body.fileName,
-      fileType: body.fileType,
-      mediaType: body.mediaType,
-    });
 
     // Validate input
     if (!body.fileName || !body.fileType || !body.mediaType) {
@@ -263,8 +250,6 @@ export class PostsController {
     // Generate public S3 URL
     const s3Url = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'ap-southeast-1'}.amazonaws.com/${key}`;
 
-    console.log('✅ [PostsController] Presigned URL generated:', { key });
-
     return {
       success: true,
       data: {
@@ -293,13 +278,6 @@ export class PostsController {
     },
   ) {
     const userId = req.user.userId || req.user.sub;
-
-    console.log('💾 [PostsController] Complete upload:', {
-      userId,
-      mediaCount: body.mediaUrls?.length || 0,
-      hasCover: !!body.coverUrl,
-      hasVideo: !!body.videoUrl,
-    });
 
     // Validate
     if (!body.postData) {

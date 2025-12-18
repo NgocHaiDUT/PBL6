@@ -42,15 +42,23 @@ export const RolePermissions: Record<Role, Permission[]> = {
   ],
 
   [Role.SELLER]: [
-    // Product permissions
-    Permission.CREATE_PRODUCT,
-    Permission.EDIT_PRODUCT,
-    Permission.DELETE_PRODUCT,
+    // Post permissions - Seller cũng có thể tạo/sửa/xóa bài viết (tutorials)
+    Permission.CREATE_POST,
+    Permission.EDIT_POST,
+    Permission.DELETE_POST,
     
-    // Shop permissions
-    Permission.MANAGE_SHOP_STAFF,
+    // Product permissions
+    Permission.MANAGE_PRODUCT,
+    
+    // Shop permissions - Chủ shop có tất cả quyền
+    Permission.MANAGE_SHOP_STAFF, // Chỉ chủ shop mới có quyền này
     Permission.EDIT_PROFILE_SHOP,
     Permission.MANAGE_SHOP_ADDRESS,
+    Permission.MANAGE_ORDER,
+    Permission.TRY_ON_TESTER,
+    Permission.CHAT_WITH_CUSTOMER,
+    Permission.MANAGE_SHOP_SETTING,
+    Permission.VIEW_DASHBOARD,
   ],
 
   [Role.ADMIN]: [
@@ -58,20 +66,23 @@ export const RolePermissions: Record<Role, Permission[]> = {
     Permission.MANAGE_USERS,
     
     // Product management
-    Permission.CREATE_PRODUCT,
-    Permission.EDIT_PRODUCT,
-    Permission.DELETE_PRODUCT,
+    Permission.MANAGE_PRODUCT,
     Permission.MANAGE_BRANDS,
     Permission.MANAGE_CATEGORYS,
 
-    // Shop management
+    // Shop management - Admin quản lý toàn bộ
     Permission.MANAGE_SHOP_ADMIN,
     Permission.MANAGE_SHOP_STAFF,
+    Permission.MANAGE_ORDER,
+    Permission.VIEW_DASHBOARD,
   ],
 
   [Role.STAFF]: [
-    // Shop staff permissions
-    Permission.MANAGE_SHOP_STAFF,
+    // Shop staff permissions - Nhân viên chỉ có quyền hạn cơ bản
+    Permission.MANAGE_ORDER,
+    Permission.CHAT_WITH_CUSTOMER,
+    Permission.VIEW_DASHBOARD,
+    Permission.VIEW_SHOP_TUTORIAL,
   ],
 };
 

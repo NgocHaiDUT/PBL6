@@ -53,13 +53,6 @@ export class NotificationHelperService {
           post_title: post.title,
         },
       });
-
-      console.log('🔔 [NotificationHelper] Post like notification sent:', {
-        to: post.user.id,
-        from: liker.full_name,
-        postId,
-        actorId: likerId,
-      });
     } catch (error) {
       console.error(
         '❌ [NotificationHelper] Error creating post like notification:',
@@ -113,13 +106,6 @@ export class NotificationHelperService {
             (comment.content.length > 50 ? '...' : ''),
         },
       });
-
-      console.log('🔔 [NotificationHelper] Comment like notification sent:', {
-        to: comment.user.id,
-        from: liker.full_name,
-        commentId,
-        actorId: likerId,
-      });
     } catch (error) {
       console.error(
         '❌ [NotificationHelper] Error creating comment like notification:',
@@ -159,12 +145,6 @@ export class NotificationHelperService {
           actor_name: follower.full_name || 'Someone',
           actor_avatar: follower.avatar_url,
         },
-      });
-
-      console.log('🔔 [NotificationHelper] Follow notification sent:', {
-        to: followingId,
-        from: follower.full_name,
-        actorId: followerId,
       });
     } catch (error) {
       console.error(
@@ -214,16 +194,6 @@ export class NotificationHelperService {
               comment_content: commentData.content,
             },
           });
-
-          console.log(
-            '🔔 [NotificationHelper] Post comment notification sent:',
-            {
-              to: post.user.id,
-              from: commenter.full_name,
-              postId: commentData.target_id,
-              actorId: userId,
-            },
-          );
         }
       }
 
@@ -260,16 +230,6 @@ export class NotificationHelperService {
               reply_content: commentData.content,
             },
           });
-
-          console.log(
-            '🔔 [NotificationHelper] Comment reply notification sent:',
-            {
-              to: parentComment.user.id,
-              from: commenter.full_name,
-              parentCommentId: commentData.parent_id,
-              actorId: userId,
-            },
-          );
         }
       }
     } catch (error) {

@@ -43,13 +43,6 @@ export class ProfileController {
   @Get('user-info')
   @UseGuards(JwtAuthGuard)
   async getUserInfo(@Query('userId') userIdRaw?: string, @Req() req?: any) {
-    console.log(
-      '🔍 [getUserInfo] Received raw userId:',
-      userIdRaw,
-      'Type:',
-      typeof userIdRaw,
-    );
-
     let userId: number | undefined;
 
     if (userIdRaw) {
@@ -61,7 +54,6 @@ export class ProfileController {
 
     if (!userId) {
       userId = req?.user?.sub || req?.user?.userId;
-      console.log('🔍 [getUserInfo] Using JWT userId:', userId);
     }
 
     if (!userId || isNaN(userId)) {
@@ -75,7 +67,6 @@ export class ProfileController {
       );
     }
 
-    console.log('✅ [getUserInfo] Fetching user info for userId:', userId);
     return this.profileService.getUserInfo(userId);
   }
 
@@ -85,14 +76,6 @@ export class ProfileController {
     @Query('userId', new ParseIntPipe({ optional: true })) userId?: number,
     @Req() req?: any,
   ) {
-    console.log('🔍 [getUserInfoV2] ===== V2 ENDPOINT =====');
-    console.log(
-      '🔍 [getUserInfoV2] Received userId:',
-      userId,
-      'Type:',
-      typeof userId,
-    );
-
     if (!userId) {
       userId = req?.user?.sub || req?.user?.userId;
     }
@@ -103,7 +86,6 @@ export class ProfileController {
       );
     }
 
-    console.log('✅ [getUserInfoV2] Fetching user info for userId:', userId);
     return this.profileService.getUserInfo(userId);
   }
 

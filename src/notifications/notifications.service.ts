@@ -94,11 +94,6 @@ export class NotificationsService {
     userId: number,
     updateNotificationDto: UpdateNotificationDto,
   ): Promise<NotificationResponse> {
-    console.log('🔔 [Service] Updating notification:', {
-      id,
-      userId,
-      updateData: updateNotificationDto,
-    });
 
     const existingNotification = await this.prisma.notifications.findFirst({
       where: {
@@ -106,11 +101,6 @@ export class NotificationsService {
         user_id: userId,
       },
     });
-
-    console.log(
-      '🔔 [Service] Found existing notification:',
-      existingNotification ? 'YES' : 'NO',
-    );
 
     if (!existingNotification) {
       console.error('🔔 [Service] Notification not found for:', { id, userId });
@@ -145,10 +135,8 @@ export class NotificationsService {
   }
 
   async markAsRead(id: number, userId: number): Promise<NotificationResponse> {
-    console.log('🔔 [Service] Marking notification as read:', { id, userId });
     try {
       const result = await this.update(id, userId, { is_read: true });
-      console.log('🔔 [Service] Successfully marked as read:', result.id);
       return result;
     } catch (error) {
       console.error('🔔 [Service] Failed to mark as read:', error.message);

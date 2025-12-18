@@ -52,15 +52,6 @@ export class StoryController {
     @UploadedFile() file: Express.Multer.File,
     @Body() createStoryDto: CreateStoryDto,
   ) {
-    console.log('📸 [StoryController] Create story request:', {
-      userId: req.user?.userId || req.user?.sub,
-      hasFile: !!file,
-      fileSize: file?.size,
-      fileMimetype: file?.mimetype,
-      dto: createStoryDto,
-      bodyKeys: Object.keys(req.body || {}),
-    });
-
     const userId = req.user.userId || req.user.sub;
     if (!file) {
       throw new BadRequestException('Media file is required');
@@ -279,13 +270,6 @@ export class StoryController {
   ) {
     const userId = req.user.userId || req.user.sub;
 
-    console.log('🔑 [StoryController] Generating presigned URL:', {
-      userId,
-      fileName: body.fileName,
-      fileType: body.fileType,
-      storyType: body.storyType,
-    });
-
     // Validate input
     if (!body.fileName || !body.fileType || !body.storyType) {
       throw new BadRequestException(
@@ -341,11 +325,6 @@ export class StoryController {
     // Generate public S3 URL
     const s3Url = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'ap-southeast-1'}.amazonaws.com/${key}`;
 
-    console.log('✅ [StoryController] Presigned URL generated:', {
-      key,
-      expiresIn: 600,
-    });
-
     return {
       success: true,
       data: {
@@ -379,14 +358,6 @@ export class StoryController {
     },
   ) {
     const userId = req.user.userId || req.user.sub;
-
-    console.log('💾 [StoryController] Complete upload:', {
-      userId,
-      s3Url: body.s3Url,
-      storyType: body.story_type,
-      hasCaption: !!body.caption,
-      productCount: body.product_ids?.length || 0,
-    });
 
     // Validate required fields
     if (!body.s3Url || !body.story_type) {
@@ -427,11 +398,6 @@ export class StoryController {
       createStoryDto,
       body.s3Url, // Media URL already uploaded to S3
       body.thumbnail_url, // Optional thumbnail
-    );
-
-    console.log(
-      '✅ [StoryController] Story created:',
-      story.data?.id || 'unknown',
     );
 
     return story;

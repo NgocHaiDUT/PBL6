@@ -302,7 +302,7 @@ export class AuthController {
     }
 
     return res.redirect(`${process.env.MOBILE_URL}/auth/callback?code=${code}`);
-  }
+  } 
 
   @Post('exchange')
   @ApiOperation({

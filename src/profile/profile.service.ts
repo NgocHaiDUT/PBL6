@@ -305,7 +305,6 @@ export class ProfileService {
   }
 
     async getUserInfo(userId: number) {
-        console.log('🔍 [getUserInfo] UserID lấy từ frontend:', userId);
         try {
             const user = await this.prisma.users.findUnique({
                 where: { id: userId },
@@ -348,8 +347,6 @@ export class ProfileService {
         const user = await this.prisma.users.findUnique({
             where: { id: userId },
         });
-        console.log('🔍 [getProfile] User data from database:', JSON.stringify(user, null, 2));
-        console.log('🔍 [getProfile] User keys:', user ? Object.keys(user) : 'null');
         return user;
     }
 }
