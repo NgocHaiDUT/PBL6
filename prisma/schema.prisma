@@ -330,7 +330,6 @@ model products {
   slug               String               @unique
   description        String?
   how_to_use         String?
-  skin_type_compat   skin_type            @default(unknown)
   moderation_status  moderation_status    @default(approved)
   is_published       Boolean              @default(false)
   avg_rating         Decimal?             @default(0.0)

@@ -289,11 +289,21 @@ export class AuthController {
 
     let deviceInfo;
     try {
-      deviceInfo = JSON.parse(Buffer.from(state, 'base64').toString());
-    } catch {
+      const decodedState = Buffer.from(state as string, 'base64').toString();
+      console.log('[GoogleCallback] Decoded state:', decodedState);
+      deviceInfo = JSON.parse(decodedState);
+      console.log('[GoogleCallback] Parsed deviceInfo:', deviceInfo);
+    } catch (error) {
+      console.error('[GoogleCallback] Failed to parse state:', error);
       throw new UnauthorizedException({
         code: ERROR_CODE.GOOGLE_UNAUTHORIZED,
       });
+    }
+
+    // Validate device_id exists
+    if (!deviceInfo.device_id) {
+      console.error('[GoogleCallback] Missing device_id in deviceInfo:', deviceInfo);
+      throw new BadRequestException('Missing device_id in state parameter');
     }
 
     const dto: CreateOAuthCodeDto = {
@@ -301,6 +311,7 @@ export class AuthController {
       device_id: deviceInfo.device_id,
     };
 
+    console.log('[GoogleCallback] Creating OAuth code with DTO:', dto);
     const code = await this.authService.createOAuthCode(dto);
 
     const isWeb = deviceInfo.device_type === 'web';

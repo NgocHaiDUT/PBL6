@@ -138,18 +138,6 @@ function getRandomElement<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// Hàm lấy các giá trị ngẫu nhiên từ Enum
-function getRandomSkinType(): skin_type {
-  const skinTypes: skin_type[] = [
-    'normal',
-    'oily',
-    'dry',
-    'combination',
-    'sensitive',
-  ];
-  return getRandomElement(skinTypes);
-}
-
 async function main() {
   console.log('Bắt đầu seeding...');
 
@@ -408,7 +396,6 @@ async function main() {
             slug: productData.slug,
             description: productData.description,
             how_to_use: productData.how_to_use,
-            skin_type_compat: productData.skin_type_compat || 'normal',
             is_published: productData.is_published,
             moderation_status: productData.moderation_status,
             avg_rating: productData.avg_rating,
@@ -475,7 +462,6 @@ async function main() {
     const randomShop = getRandomElement(shops);
     const randomBrand = getRandomElement(brands);
     const randomCategory = getRandomElement(allCategories);
-    const randomSkinType = getRandomSkinType();
     const productName = faker.commerce.productName();
 
     await prisma.products.create({
@@ -486,7 +472,6 @@ async function main() {
         slug: faker.helpers.slugify(productName).toLowerCase() + '-' + faker.string.uuid(),
         description: faker.commerce.productDescription(),
         how_to_use: faker.lorem.paragraph(),
-        skin_type_compat: randomSkinType,
         is_published: true,
         avg_rating: faker.number.float({ min: 3.5, max: 5, fractionDigits: 1 }),
         review_count: faker.number.int({ min: 5, max: 200 }),

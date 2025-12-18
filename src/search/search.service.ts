@@ -43,6 +43,13 @@ export class SearchService {
             avatar_url: true,
           },
         },
+        shop: {
+          select: {
+            id: true,
+            name: true,
+            logo_url: true,
+          },
+        },
         post_media: {
           orderBy: {
             sort_order: 'asc',
@@ -60,11 +67,16 @@ export class SearchService {
       id: post.id,
       title: post.title,
       content_snippet: post.content_md?.substring(0, 150) || '',
-      user: {
+      user: post.user ? {
         id: post.user.id,
         full_name: post.user.full_name,
         avatar_url: post.user.avatar_url,
-      },
+      } : null,
+      shop: post.shop ? {
+        id: post.shop.id,
+        name: post.shop.name,
+        logo_url: post.shop.logo_url,
+      } : null,
       like_count: post.like_count || 0,
       comment_count: 0, // TODO: Add comment count if needed
       created_at: post.created_at.toISOString(),

@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -460,6 +461,14 @@ export class AuthService {
   }
 
   async createOAuthCode(dto: CreateOAuthCodeDto) {
+    console.log('[createOAuthCode] Received DTO:', dto);
+    console.log('[createOAuthCode] user_id type:', typeof dto.user_id, 'value:', dto.user_id);
+    console.log('[createOAuthCode] device_id type:', typeof dto.device_id, 'value:', dto.device_id);
+
+    if (!dto.device_id) {
+      throw new BadRequestException('device_id is required');
+    }
+
     const code = Math.random().toString().slice(-6);
     const saveCode = await this.PrismaService.oauth_login_codes.create({
       data: {

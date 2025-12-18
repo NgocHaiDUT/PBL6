@@ -290,7 +290,6 @@ export class ProductController {
       shop_id: string;
       name: string;
       slug?: string;
-      skin_type_compat: string;
       is_published: boolean;
       how_to_use?: string;
       description?: string;
@@ -299,26 +298,10 @@ export class ProductController {
     },
     @Req() req: any,
   ) {
-    if (!body.shop_id || !body.name || !body.skin_type_compat) {
+    if (!body.shop_id || !body.name) {
       return {
         success: false,
-        message: 'Thiếu trường bắt buộc (shop_id, name, skin_type_compat)',
-      };
-    }
-
-    const validSkinTypes = [
-      'unknown',
-      'normal',
-      'oily',
-      'dry',
-      'combination',
-      'sensitive',
-    ];
-    if (!validSkinTypes.includes(body.skin_type_compat)) {
-      return {
-        success: false,
-        message: `skin_type_compat không hợp lệ. Chỉ chấp nhận: ${validSkinTypes.join(', ')}`,
-        received: body.skin_type_compat,
+        message: 'Thiếu trường bắt buộc (shop_id, name)',
       };
     }
 
@@ -331,7 +314,6 @@ export class ProductController {
       Number(body.shop_id),
       body.name,
       body.slug || '',
-      body.skin_type_compat as any,
       body.is_published ?? false,
       body.how_to_use,
       body.description,
@@ -351,31 +333,12 @@ export class ProductController {
       slug?: string;
       description?: string;
       how_to_use?: string;
-      skin_type_compat?: string;
       is_published?: boolean;
       brand_id?: string;
       category_ids?: any[];
     },
     @Req() req: any,
   ) {
-    if (body.skin_type_compat) {
-      const validSkinTypes = [
-        'unknown',
-        'normal',
-        'oily',
-        'dry',
-        'combination',
-        'sensitive',
-      ];
-      if (!validSkinTypes.includes(body.skin_type_compat)) {
-        return {
-          success: false,
-          message: `skin_type_compat không hợp lệ. Chỉ chấp nhận: ${validSkinTypes.join(', ')}`,
-          received: body.skin_type_compat,
-        };
-      }
-    }
-
     const categoryIds = body.category_ids
       ? body.category_ids.map((id) => Number(id))
       : undefined;
@@ -388,7 +351,6 @@ export class ProductController {
       body.slug,
       body.description,
       body.how_to_use,
-      body.skin_type_compat as any,
       body.is_published,
       body.brand_id ? Number(body.brand_id) : undefined,
       categoryIds,
@@ -527,7 +489,6 @@ export class ProductController {
     @Query('category_id') category_id?: string,
     @Query('brand_id') brand_id?: string,
     @Query('is_published') is_published?: string,
-    @Query('skin_type') skin_type?: string,
     @Query('min_price') min_price?: string,
     @Query('max_price') max_price?: string,
     @Query('sort_field') sort_field?: string,
@@ -544,7 +505,6 @@ export class ProductController {
     if (brand_id) filters.brand_id = parseInt(brand_id);
     if (is_published !== undefined)
       filters.is_published = is_published === 'true';
-    if (skin_type) filters.skin_type = skin_type;
     if (min_price) filters.min_price = parseFloat(min_price);
     if (max_price) filters.max_price = parseFloat(max_price);
 
