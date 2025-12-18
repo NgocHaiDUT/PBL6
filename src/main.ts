@@ -17,12 +17,6 @@ async function bootstrap() {
   app.use(require('express').json({ limit: '200mb' }));
   app.use(require('express').urlencoded({ limit: '200mb', extended: true }));
   
-  // ✅ Log all incoming requests
-  app.use((req, res, next) => {
-    console.log(`📥 ${req.method} ${req.url} - Content-Type: ${req.headers['content-type']}`);
-    next();
-  });
-  
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false, transform: true,skipMissingProperties: true }));
   
   // ✅ Enable CORS FIRST (before static assets)
@@ -67,11 +61,14 @@ async function bootstrap() {
         scheme: 'bearer',
         bearerFormat: 'JWT',
         name: 'JWT',
-        description: 'Enter JWT token',
+        description:
+          "Use the access_token returned by POST /auth/login (paste: 'Bearer <access_token>')",
         in: 'header',
       },
       'JWT-auth',
     )
+    // Apply JWT security globally so Swagger "Authorize" works across protected endpoints
+    .addSecurityRequirements('JWT-auth')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
@@ -82,9 +79,5 @@ async function bootstrap() {
   
   // ✅ Increase timeout for file uploads (10 minutes)
   server.setTimeout(600000); // 10 minutes for large file uploads
-  
-  console.log(`🚀 Application is running on: http://localhost:${port}`);
-  console.log(`📚 Swagger documentation available at: http://localhost:${port}/api`);
-  console.log(`⏱️  Server timeout: 10 minutes for file uploads`);
 }
 bootstrap();

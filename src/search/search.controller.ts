@@ -15,7 +15,6 @@ export class SearchController {
   @Get()
   @UseGuards(JwtAuthGuard)
   async search(@Query() dto: SearchQueryDto) {
-    console.log('🔍 [SearchController] Search query:', dto);
     return this.searchService.searchAll(dto);
   }
 
@@ -26,7 +25,6 @@ export class SearchController {
   @Get('posts')
   @UseGuards(JwtAuthGuard)
   async searchPosts(@Query() dto: SearchQueryDto) {
-    console.log('🔍 [SearchController] Search posts:', dto.q);
     const results = await this.searchService.searchPosts(dto.q, dto.limit);
     return {
       success: true,
@@ -44,7 +42,6 @@ export class SearchController {
   @Get('users')
   @UseGuards(JwtAuthGuard)
   async searchUsers(@Query() dto: SearchQueryDto) {
-    console.log('🔍 [SearchController] Search users:', dto.q);
     const results = await this.searchService.searchUsers(dto.q, dto.limit);
     return {
       success: true,
@@ -62,7 +59,6 @@ export class SearchController {
   @Get('shops')
   @UseGuards(JwtAuthGuard)
   async searchShops(@Query() dto: SearchQueryDto) {
-    console.log('🔍 [SearchController] Search shops:', dto.q);
     const results = await this.searchService.searchShops(dto.q, dto.limit);
     return {
       success: true,
@@ -80,7 +76,6 @@ export class SearchController {
   @Get('hashtags')
   @UseGuards(JwtAuthGuard)
   async searchHashtags(@Query() dto: SearchQueryDto) {
-    console.log('🔍 [SearchController] Search hashtags:', dto.q);
     const results = await this.searchService.searchHashtags(dto.q, dto.limit);
     return {
       success: true,
@@ -98,7 +93,6 @@ export class SearchController {
   @Get('autocomplete')
   @UseGuards(JwtAuthGuard)
   async autocomplete(@Query() dto: AutocompleteDto) {
-    console.log('🔍 [SearchController] Autocomplete:', dto.q);
     return this.searchService.autocomplete(dto.q, dto.limit);
   }
 }

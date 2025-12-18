@@ -9,13 +9,34 @@ export class DataInitController {
     private readonly dataInitService: DataInitService,
   ) {}
 
+  // ============ S3 Upload APIs ============
+
+  @Post('upload-all-images')
+  async uploadAllImages() {
+    try {
+      await this.dataInitService.uploadAllImagesToS3();
+      return {
+        success: true,
+        message: 'All images uploaded to S3 successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to upload images',
+        error: error.message,
+      };
+    }
+  }
+
   @Post('upload-brand-logos')
   async uploadBrandLogos() {
     try {
-      await this.s3UploadService.uploadBrandLogosToS3();
+      const urlMap = await this.s3UploadService.uploadBrandLogos();
       return {
         success: true,
         message: 'Brand logos uploaded to S3 successfully',
+        count: urlMap.size,
+        files: Array.from(urlMap.keys()),
       };
     } catch (error) {
       return {
@@ -26,12 +47,114 @@ export class DataInitController {
     }
   }
 
-  @Get('brand-logos-status')
-  async checkBrandLogosStatus() {
-    // Có thể thêm logic kiểm tra xem logos đã được upload chưa
+  @Post('upload-products')
+  async uploadProductImages() {
+    try {
+      const urlMap = await this.s3UploadService.uploadProductImages();
+      return {
+        success: true,
+        message: 'Product images uploaded to S3 successfully',
+        count: urlMap.size,
+        files: Array.from(urlMap.keys()),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to upload product images',
+        error: error.message,
+      };
+    }
+  }
+
+  @Post('upload-avatars')
+  async uploadAvatars() {
+    try {
+      const urlMap = await this.s3UploadService.uploadAvatars();
+      return {
+        success: true,
+        message: 'Avatars uploaded to S3 successfully',
+        count: urlMap.size,
+        files: Array.from(urlMap.keys()),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to upload avatars',
+        error: error.message,
+      };
+    }
+  }
+
+  @Post('upload-shop-logos')
+  async uploadShopLogos() {
+    try {
+      const urlMap = await this.s3UploadService.uploadShopLogos();
+      return {
+        success: true,
+        message: 'Shop logos uploaded to S3 successfully',
+        count: urlMap.size,
+        files: Array.from(urlMap.keys()),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to upload shop logos',
+        error: error.message,
+      };
+    }
+  }
+
+  @Post('upload-shop-banners')
+  async uploadShopBanners() {
+    try {
+      const urlMap = await this.s3UploadService.uploadShopBanners();
+      return {
+        success: true,
+        message: 'Shop banners uploaded to S3 successfully',
+        count: urlMap.size,
+        files: Array.from(urlMap.keys()),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to upload shop banners',
+        error: error.message,
+      };
+    }
+  }
+
+  @Post('upload-post-images')
+  async uploadPostImages() {
+    try {
+      const urlMap = await this.s3UploadService.uploadPostImages();
+      return {
+        success: true,
+        message: 'Post images uploaded to S3 successfully',
+        count: urlMap.size,
+        files: Array.from(urlMap.keys()),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to upload post images',
+        error: error.message,
+      };
+    }
+  }
+
+  @Get('upload-status')
+  async checkUploadStatus() {
     return {
-      message:
-        'Use POST /data-init/upload-brand-logos to upload brand logos to S3',
+      message: 'Use POST endpoints to upload images to S3',
+      endpoints: {
+        all: '/data-init/upload-all-images',
+        brands: '/data-init/upload-brand-logos',
+        products: '/data-init/upload-products',
+        avatars: '/data-init/upload-avatars',
+        shopLogos: '/data-init/upload-shop-logos',
+        shopBanners: '/data-init/upload-shop-banners',
+        postImages: '/data-init/upload-post-images',
+      },
     };
   }
 

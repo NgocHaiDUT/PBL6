@@ -54,11 +54,6 @@ export class LikesController {
   ): Promise<LikeStatsResponse> {
     // Extract user ID from query or JWT token
     const finalUserId = userId || req.user?.id;
-    console.log('📊 [LikesController] Get stats:', {
-      targetType,
-      targetId,
-      userId: finalUserId,
-    });
     return this.likesService.getStats(targetType, targetId, finalUserId);
   }
 
@@ -79,11 +74,6 @@ export class LikesController {
   ): Promise<{ liked: boolean; total_likes: number }> {
     // Extract user ID from JWT token
     const userId = req.user.userId;
-    console.log('🔥 [LikesController] Toggle like:', {
-      targetType,
-      targetId,
-      userId,
-    });
     return this.likesService.toggleLike(targetType, targetId, userId);
   }
 

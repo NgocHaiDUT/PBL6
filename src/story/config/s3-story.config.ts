@@ -72,20 +72,12 @@ const getStoryStorage = () => {
 export const s3StoryMediaConfig = {
   storage: getStoryStorage(),
   fileFilter: (req, file, cb) => {
-    console.log('📋 [s3StoryConfig] File filter check:', {
-      originalname: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-    });
-
     const allowedImageTypes = /\/(jpg|jpeg|png|gif|heic|heif|webp)$/i;
     const allowedVideoTypes = /\/(mp4|mov|avi|mkv|webm|quicktime|x-msvideo|x-matroska)$/i;
     
     if (file.mimetype.match(allowedImageTypes)) {
-      console.log('✅ [s3StoryConfig] Image file accepted');
       cb(null, true);
     } else if (file.mimetype.match(allowedVideoTypes)) {
-      console.log('✅ [s3StoryConfig] Video file accepted');
       cb(null, true);
     } else {
       console.error('❌ [s3StoryConfig] File rejected - Invalid MIME type:', file.mimetype);

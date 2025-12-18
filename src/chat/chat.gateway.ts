@@ -170,17 +170,25 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const formattedMessage = {
         id: message.id,
         conversationId: message.conversation_id,
+        conversation_id: message.conversation_id,
         senderId: message.sender_id,
+        sender_id: message.sender_id, // ✅ Add snake_case for frontend compatibility
         senderShopId: message.sender_shop_id,
+        sender_shop_id: message.sender_shop_id, // ✅ Add snake_case
         senderType: message.sender_type,
+        sender_type: message.sender_type, // ✅ Add snake_case
         receiverId: data.receiverId,
+        receiver_id: data.receiverId, // ✅ Add snake_case
         content: message.content,
         type: message.type,
         payload: message.payload,
         productPayload: messageType === 'SHARE_PRODUCT' ? message.payload : null, // ✅ Include product payload
         createdAt: message.created_at.toISOString(),
+        created_at: message.created_at.toISOString(), // ✅ Add snake_case
         sharedPostId: (message as any).post_id || null, // ✅ Include shared post ID
+        post_id: (message as any).post_id || null, // ✅ Add snake_case
         sharedProfileId: (message as any).shared_profile_id || null, // ✅ Include shared profile ID
+        shared_profile_id: (message as any).shared_profile_id || null, // ✅ Add snake_case
         sharedProfile: sharedProfile, // ✅ Include shared profile data
         messageType: message.type, // ✅ Use the enum type
         sender: message.sender ? {
@@ -501,18 +509,26 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return {
           id: msg.id,
           conversationId: msg.conversation_id,
+          conversation_id: msg.conversation_id, // ✅ Add snake_case
           senderId: msg.sender_id,
+          sender_id: msg.sender_id, // ✅ Add snake_case
           senderShopId: msg.sender_shop_id,
+          sender_shop_id: msg.sender_shop_id, // ✅ Add snake_case
           senderType: msg.sender_type,
+          sender_type: msg.sender_type, // ✅ Add snake_case
           receiverId: data.targetId === msg.sender_id ? data.openerId : data.targetId,
+          receiver_id: data.targetId === msg.sender_id ? data.openerId : data.targetId, // ✅ Add snake_case
           content: msg.content,
           type: msg.type,
           payload: enrichedPayload,
           productPayload: msg.type === 'SHARE_PRODUCT' ? enrichedPayload : null, // ✅ Include product payload
           storyPayload: msg.type === 'STORY_REPLY' ? enrichedPayload : null, // ✅ Include story payload
           createdAt: msg.created_at.toISOString(),
+          created_at: msg.created_at.toISOString(), // ✅ Add snake_case
           sharedPostId: (msg as any).post_id, // ✅ Include shared post ID
+          post_id: (msg as any).post_id, // ✅ Add snake_case
           sharedProfileId: (msg as any).shared_profile_id, // ✅ Include shared profile ID
+          shared_profile_id: (msg as any).shared_profile_id, // ✅ Add snake_case
           messageType: msg.type, // ✅ Use 'type' field (enum message_type)
           reactions: formattedReactions, // ✅ Include reactions
           mediaFiles: mediaFiles, // ✅ Include media files
@@ -996,10 +1012,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // 5. Format message for frontend
       const formattedMessage = {
         id: message.id,
+        conversationId: conversation?.id,
+        conversation_id: conversation?.id, // ✅ Add snake_case
         senderId: message.sender_id,
+        sender_id: message.sender_id, // ✅ Add snake_case for frontend compatibility
         receiverId: data.receiverId,
+        receiver_id: data.receiverId, // ✅ Add snake_case
         content: message.content,
+        type: messageType,
         createdAt: message.created_at.toISOString(),
+        created_at: message.created_at.toISOString(), // ✅ Add snake_case
         messageType: messageType,
         mediaFiles: mediaEntries.map(m => ({
           id: m.id,
@@ -1010,7 +1032,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           duration: m.duration,
           thumbnailUrl: m.thumbnail_url,
         })),
-        sender: {
+        sender: message.sender ? {
+          id: message.sender.id,
+          fullName: message.sender.full_name || 'Unknown User',
+          avatarUrl: message.sender.avatar_url,
+        } : {
           Id: message.sender_id,
           Fullname: 'Unknown User',
           Avatar: null,

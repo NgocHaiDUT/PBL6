@@ -14,14 +14,6 @@ export class ReviewsService {
     const { product_id, rating, title, content, media_url, is_verified_purchase } = createReviewDto;
     const user_id = userId;
 
-    console.log('🔍 [ReviewsService] Creating review with data:', {
-      user_id,
-      product_id,
-      rating,
-      title,
-      content
-    });
-
     try {
       // Check if user already reviewed this product
       const existingReview = await this.prisma.reviews.findUnique({

@@ -82,8 +82,6 @@ export class MessagesController {
     @Req() req: any,
   ) {
     const userId = req.user?.sub || req.user?.userId;
-    console.log('📞 [findOrCreateShopConversation] userId from JWT:', userId);
-    console.log('📞 [findOrCreateShopConversation] shopId from param:', shopId);
 
     if (!userId || !shopId) {
       throw new Error('Missing userId or shopId');
@@ -254,12 +252,6 @@ export class MessagesController {
     @Req() req: any,
   ) {
     try {
-      console.log(
-        '📤 [uploadMessageMedia] Received files:',
-        files?.length || 0,
-      );
-      console.log('📤 [uploadMessageMedia] Request headers:', req.headers);
-      console.log('📤 [uploadMessageMedia] Request body:', req.body);
 
       if (!files || files.length === 0) {
         console.error('❌ [uploadMessageMedia] No files received');
@@ -267,17 +259,9 @@ export class MessagesController {
       }
 
       const userId = req.user?.sub || req.user?.userId;
-      console.log('📤 [uploadMessageMedia] User ID:', userId);
 
       // Format uploaded files info
       const uploadedFiles = files.map((file: any) => {
-        console.log('📎 Processing file:', {
-          originalname: file.originalname,
-          mimetype: file.mimetype,
-          filename: file.filename,
-          size: file.size,
-          path: file.path,
-        });
 
         const mediaType = file.mimetype.startsWith('image/')
           ? 'image'
@@ -295,8 +279,6 @@ export class MessagesController {
           fileSize: file.size,
         };
       });
-
-      console.log('✅ [uploadMessageMedia] Upload successful:', uploadedFiles);
 
       return {
         success: true,
@@ -325,13 +307,6 @@ export class MessagesController {
     },
   ) {
     const userId = req.user.userId || req.user.sub;
-
-    console.log('🔑 [MessagesController] Generating presigned URL:', {
-      userId,
-      fileName: body.fileName,
-      fileType: body.fileType,
-      mediaType: body.mediaType,
-    });
 
     // Validate
     if (!body.fileName || !body.fileType || !body.mediaType) {
@@ -387,8 +362,6 @@ export class MessagesController {
 
     const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 600 });
     const s3Url = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'ap-southeast-1'}.amazonaws.com/${key}`;
-
-    console.log('✅ [MessagesController] Presigned URL generated');
 
     return {
       success: true,

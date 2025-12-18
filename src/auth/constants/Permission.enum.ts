@@ -16,7 +16,7 @@ export enum Permission {
   MANAGE_USERS = 'manage_users',
 
   // ===== SHOP PERMISSIONS =====
-  /** Quản lý nhân viên shop */
+  /** Quản lý nhân viên shop (chỉ chủ shop) */
   MANAGE_SHOP_STAFF = 'manage_shop_staff',
   
   /** Chỉnh sửa thông tin shop */
@@ -25,15 +25,27 @@ export enum Permission {
   /** Quản lý shop (admin level) */
   MANAGE_SHOP_ADMIN = 'manage_shop_admin',
 
+  /** Quản lý đơn hàng */
+  MANAGE_ORDER = 'manage_order',
+
+  /** Thử nghiệm tính năng try-on */
+  TRY_ON_TESTER = 'try_on_tester',
+
+  /** Chat với khách hàng */
+  CHAT_WITH_CUSTOMER = 'chat_with_customer',
+
+  /** Quản lý cài đặt shop */
+  MANAGE_SHOP_SETTING = 'manage_shop_setting',
+
+  /** Xem dashboard thống kê */
+  VIEW_DASHBOARD = 'view_dashboard',
+
+  /** Xem hướng dẫn/tutorial của shop */
+  VIEW_SHOP_TUTORIAL = 'view_shop_tutorial',
+
   // ===== PRODUCT PERMISSIONS =====
-  /** Tạo sản phẩm mới */
-  CREATE_PRODUCT = 'create_product',
-  
-  /** Chỉnh sửa sản phẩm */
-  EDIT_PRODUCT = 'edit_product',
-  
-  /** Xóa sản phẩm */
-  DELETE_PRODUCT = 'delete_product',
+  /** Quản lý sản phẩm (tạo, sửa, xóa) */
+  MANAGE_PRODUCT = 'manage_product',
   
   /** Quản lý thương hiệu (brands) */
   MANAGE_BRANDS = 'manage_brands',
@@ -83,12 +95,16 @@ export const PermissionGroups = {
     Permission.MANAGE_SHOP_STAFF,
     Permission.EDIT_PROFILE_SHOP,
     Permission.MANAGE_SHOP_ADMIN,
+    Permission.MANAGE_ORDER,
+    Permission.TRY_ON_TESTER,
+    Permission.CHAT_WITH_CUSTOMER,
+    Permission.MANAGE_SHOP_SETTING,
+    Permission.VIEW_DASHBOARD,
+    Permission.VIEW_SHOP_TUTORIAL,
   ],
   
   PRODUCT: [
-    Permission.CREATE_PRODUCT,
-    Permission.EDIT_PRODUCT,
-    Permission.DELETE_PRODUCT,
+    Permission.MANAGE_PRODUCT,
     Permission.MANAGE_BRANDS,
     Permission.MANAGE_CATEGORYS,
   ],

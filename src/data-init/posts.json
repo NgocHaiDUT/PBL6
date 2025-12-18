@@ -1,0 +1,104 @@
+[
+  {
+    "user_id": 1,
+    "shop_id": null,
+    "post_type": "post",
+    "title": "Routine chăm sóc da buổi sáng của tôi",
+    "content_md": "# Routine buổi sáng\n\nChia sẻ routine chăm sóc da buổi sáng giúp da sáng khỏe cả ngày:\n\n1. Sữa rửa mặt dịu nhẹ\n2. Toner cân bằng da\n3. Serum Vitamin C\n4. Kem dưỡng ẩm\n5. Kem chống nắng SPF 50+\n\nĐây là routine tối giản nhưng hiệu quả mà tôi đã duy trì được 3 tháng!",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 256,
+    "like_count": 48,
+    "is_story": false,
+    "created_at": "2024-08-01T08:30:00Z",
+    "updated_at": "2024-08-01T08:30:00Z",
+    "media": [
+      {
+        "media_url": "/uploads/postimages/post1-routine.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      }
+    ],
+    "products": [1, 2, 3]
+  },
+  {
+    "user_id": 2,
+    "shop_id": null,
+    "post_type": "post",
+    "title": "Review kem chống nắng cho da dầu",
+    "content_md": "## Review chi tiết\n\nMình đã thử nhiều loại kem chống nắng và đây là top pick cho da dầu:\n\n**Ưu điểm:**\n- Không gây nhờn rít\n- Thấm nhanh\n- Không gây mụn\n- Chống nước tốt\n\n**Nhược điểm:**\n- Giá hơi cao\n- Dung tích nhỏ\n\n**Đánh giá: 4.5/5**",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 189,
+    "like_count": 32,
+    "is_story": false,
+    "created_at": "2024-08-05T14:20:00Z",
+    "updated_at": "2024-08-05T14:20:00Z",
+    "media": [],
+    "products": [1]
+  },
+  {
+    "user_id": 3,
+    "shop_id": 2,
+    "post_type": "post",
+    "title": "Bí quyết dưỡng da mùa đông",
+    "content_md": "# Chăm sóc da mùa đông\n\nMùa đông da dễ khô và bong tróc. Đây là những tips giúp da mềm mại:\n\n- Dùng kem dưỡng ẩm dày đặc hơn\n- Tăng cường essence và serum\n- Đắp mặt nạ giấy 2-3 lần/tuần\n- Uống nhiều nước\n- Tránh tắm nước quá nóng\n\nHy vọng sẽ hữu ích cho các bạn!",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 421,
+    "like_count": 87,
+    "is_story": false,
+    "created_at": "2024-08-10T10:15:00Z",
+    "updated_at": "2024-08-10T10:15:00Z",
+    "media": [
+      {
+        "media_url": "/uploads/postimages/post3-winter.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      }
+    ],
+    "products": [4, 7]
+  },
+  {
+    "user_id": 1,
+    "shop_id": null,
+    "post_type": "post",
+    "title": null,
+    "content_md": "Hôm nay thử makeup look tự nhiên 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 156,
+    "like_count": 43,
+    "is_story": true,
+    "story_type": "image",
+    "media_url": "/uploads/postimages/story1-makeup.jpg",
+    "caption": "Natural makeup look 💄",
+    "duration": null,
+    "expires_at": "2024-08-16T09:00:00Z",
+    "created_at": "2024-08-15T09:00:00Z",
+    "updated_at": "2024-08-15T09:00:00Z",
+    "media": [],
+    "products": []
+  },
+  {
+    "user_id": 2,
+    "shop_id": null,
+    "post_type": "post",
+    "title": null,
+    "content_md": "Unboxing sản phẩm mới 📦🎁",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 203,
+    "like_count": 56,
+    "is_story": true,
+    "story_type": "image",
+    "media_url": "/uploads/postimages/story2-unbox.jpg",
+    "caption": "New products! 🎉",
+    "duration": null,
+    "expires_at": "2024-08-17T15:30:00Z",
+    "created_at": "2024-08-16T15:30:00Z",
+    "updated_at": "2024-08-16T15:30:00Z",
+    "media": [],
+    "products": [2, 3]
+  }
+]

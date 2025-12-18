@@ -202,8 +202,6 @@ export class PostsService {
       },
     });
 
-    console.log('✅ [PostsService] Post created:', post.id);
-
     // Create media records from S3 URLs
     let sortOrder = 0;
 
@@ -217,7 +215,6 @@ export class PostsService {
           sort_order: sortOrder++,
         },
       });
-      console.log('✅ [PostsService] Cover image added');
     }
 
     // Add other images
@@ -232,10 +229,6 @@ export class PostsService {
       });
     }
 
-    if (mediaUrls.length > 0) {
-      console.log(`✅ [PostsService] ${mediaUrls.length} media files added`);
-    }
-
     // Add video
     if (videoUrl) {
       await this.prisma.post_media.create({
@@ -246,7 +239,6 @@ export class PostsService {
           sort_order: sortOrder++,
         },
       });
-      console.log('✅ [PostsService] Video added');
     }
 
     // Handle product tags
@@ -259,7 +251,6 @@ export class PostsService {
           },
         });
       }
-      console.log(`✅ [PostsService] ${product_ids.length} products tagged`);
     }
 
     // Handle tags
@@ -287,7 +278,6 @@ export class PostsService {
           },
         });
       }
-      console.log(`✅ [PostsService] ${tags.length} tags added`);
     }
 
     const createdPost = await this.getPostById(post.id);
@@ -487,14 +477,44 @@ export class PostsService {
   async updatePost(id: number, userId: number, updatePostDto: UpdatePostDto) {
     const post = await this.prisma.posts.findUnique({
       where: { id },
+      include: {
+        shop: {
+          select: {
+            owner_id: true,
+            shop_staffs: {
+              where: { user_id: userId },
+              select: { user_id: true }
+            }
+          }
+        }
+      }
     });
 
     if (!post) {
       throw new NotFoundException('Post not found');
     }
 
-    if (post.user_id !== userId) {
-      throw new ForbiddenException('You can only update your own posts');
+    // Kiểm tra quyền: cho phép sửa nếu:
+    // 1. Là người tạo post
+    // 2. Post thuộc shop VÀ (user là owner hoặc staff có quyền edit_post)
+    const isPostOwner = post.user_id === userId;
+    const isShopOwner = post.shop_id && post.shop?.owner_id === userId;
+    const isShopStaff = post.shop_id && post.shop?.shop_staffs && post.shop.shop_staffs.length > 0;
+    
+    // Check if staff has edit_post permission
+    let hasEditPostPermission = false;
+    if (isShopStaff && !isShopOwner && post.shop_id) {
+      const userPermissions = await this.prisma.userpermission.findMany({
+        where: { user_id: userId },
+        include: { permission: true },
+      });
+      hasEditPostPermission = userPermissions.some(
+        (up) => up.permission.name === 'edit_post',
+      );
+    }
+    
+    if (!isPostOwner && !isShopOwner && (!isShopStaff || !hasEditPostPermission)) {
+      throw new ForbiddenException('You can only update your own posts or posts in your shop');
     }
 
     const { media_urls, product_ids, tags, ...postData } = updatePostDto;
@@ -584,15 +604,46 @@ export class PostsService {
   async deletePost(id: number, userId: number) {
     const post = await this.prisma.posts.findUnique({
       where: { id },
-      select: { user_id: true },
+      select: { 
+        user_id: true,
+        shop_id: true,
+        shop: {
+          select: {
+            owner_id: true,
+            shop_staffs: {
+              where: { user_id: userId },
+              select: { user_id: true }
+            }
+          }
+        }
+      },
     });
 
     if (!post) {
       throw new NotFoundException('Post not found');
     }
 
-    if (post.user_id !== userId) {
-      throw new ForbiddenException('You can only delete your own posts');
+    // Kiểm tra quyền: cho phép xóa nếu:
+    // 1. Là người tạo post
+    // 2. Post thuộc shop VÀ (user là owner hoặc staff có quyền delete_post)
+    const isPostOwner = post.user_id === userId;
+    const isShopOwner = post.shop_id && post.shop?.owner_id === userId;
+    const isShopStaff = post.shop_id && post.shop?.shop_staffs && post.shop.shop_staffs.length > 0;
+    
+    // Check if staff has delete_post permission
+    let hasDeletePostPermission = false;
+    if (isShopStaff && !isShopOwner && post.shop_id) {
+      const userPermissions = await this.prisma.userpermission.findMany({
+        where: { user_id: userId },
+        include: { permission: true },
+      });
+      hasDeletePostPermission = userPermissions.some(
+        (up) => up.permission.name === 'delete_post',
+      );
+    }
+    
+    if (!isPostOwner && !isShopOwner && (!isShopStaff || !hasDeletePostPermission)) {
+      throw new ForbiddenException('You can only delete your own posts or posts in your shop');
     }
 
     // Xóa các dữ liệu liên quan
