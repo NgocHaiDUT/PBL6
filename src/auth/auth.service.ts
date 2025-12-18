@@ -706,12 +706,14 @@ export class AuthService {
       id: user.id,
       email: user.email,
       full_name: user.full_name,
-      avatar: user.avatar_url,
+      avatar_url: user.avatar_url,
       phone: user.phone,
       story: user.story,
       role: user.role?.name || 'user',
-      permissions: user.userPermissions.map((up) => up.permission.name),
+      role_id: user.role?.id,
       firstlogin: user.firstlogin,
+      is_active: true,
+      permissions: user.userPermissions.map((up) => up.permission.name),
     };
   }
 

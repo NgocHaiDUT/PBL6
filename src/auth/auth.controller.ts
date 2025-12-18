@@ -423,6 +423,7 @@ export class AuthController {
   @ApiBearerAuth('JWT-auth')
   async getCurentUser(@Req() req: any) {
     const userId = req.user.userId;
-    return this.authService.getCurrentUser(userId);
+    const user = await this.authService.getCurrentUser(userId);
+    return { success: true, user };
   }
 }
