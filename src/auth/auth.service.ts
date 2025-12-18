@@ -353,7 +353,11 @@ export class AuthService {
   async changepassword_forgotpassword(email: string, newPassword: string) {
     await this.PrismaService.users.update({
       where: { email },
-      data: { password_hash: newPassword },
+      data: {
+        password_hash: newPassword,
+        firstlogin: true, // ✅ Bắt buộc đổi mật khẩu sau khi đăng nhập bằng mật khẩu mới
+        updated_at: new Date(),
+      },
     });
     return true;
   }
@@ -416,11 +420,14 @@ export class AuthService {
   async exchangeToken(dto: ExchangeTokenDto) {
     const { code, device_id, device_name } = dto;
 
-    // Find OAuth code in database
+    console.log('🔄 [ExchangeToken] Exchanging code:', code);
+    console.log('🔄 [ExchangeToken] Device ID from mobile:', device_id);
+
+    // ✅ FIX: Chỉ tìm theo code, không check device_id trong WHERE
+    // Vì backend tạo default device_id, mobile gửi device_id thật
     const oauthCode = await this.PrismaService.oauth_login_codes.findFirst({
       where: {
         code,
-        device_id,
         expires_at: { gt: new Date() },
       },
       include: {
@@ -429,30 +436,15 @@ export class AuthService {
     });
 
     if (!oauthCode) {
+      console.error('❌ [ExchangeToken] OAuth code not found or expired');
       throw new UnauthorizedException({
         code: ERROR_CODE.OAUTH_CODE_INVALID,
-        message: 'Invalid OAuth code',
+        message: 'Invalid or expired OAuth code',
       });
     }
 
-    // Check if code is expired
-    if (oauthCode.expires_at < new Date()) {
-      await this.PrismaService.oauth_login_codes.delete({
-        where: { code },
-      });
-      throw new UnauthorizedException({
-        code: ERROR_CODE.OAUTH_CODE_EXPIRED,
-        message: 'OAuth code has expired',
-      });
-    }
-
-    // Verify device_id matches
-    if (oauthCode.device_id !== device_id) {
-      throw new UnauthorizedException({
-        code: ERROR_CODE.OAUTH_CODE_INVALID,
-        message: 'Device ID mismatch',
-      });
-    }
+    console.log('✅ [ExchangeToken] Found OAuth code for user:', oauthCode.user_id);
+    console.log('✅ [ExchangeToken] Code device_id:', oauthCode.device_id);
 
     // Delete the used code
     await this.PrismaService.oauth_login_codes.delete({
@@ -465,17 +457,28 @@ export class AuthService {
     });
 
     if (!user) {
+      console.error('❌ [ExchangeToken] User not found');
       throw new UnauthorizedException({
         code: ERROR_CODE.OAUTH_CODE_INVALID,
         message: 'User not found',
       });
     }
 
-    // Issue tokens using the device info from the code
-    const tokens = await this.issueTokens(user, device_id, device_name || 'Unknown Device');
+    console.log('✅ [ExchangeToken] User found:', user.email);
+
+    // ✅ Use device_id from mobile (real device), not from OAuth code (default)
+    const finalDeviceId = device_id || oauthCode.device_id;
+    const finalDeviceName = device_name || 'Google OAuth Device';
+
+    console.log('✅ [ExchangeToken] Using device_id:', finalDeviceId);
+    console.log('✅ [ExchangeToken] Using device_name:', finalDeviceName);
+
+    // Issue tokens using the device info from mobile
+    const tokens = await this.issueTokens(user, finalDeviceId, finalDeviceName);
+
+    console.log('✅ [ExchangeToken] Tokens issued successfully');
 
     return tokens;
-
   }
 
   async refreshToken(dto: RefreshAccessTokenDto) {
