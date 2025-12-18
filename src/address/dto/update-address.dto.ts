@@ -8,109 +8,109 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateAddressDto {
-  @ApiProperty({ 
-    description: 'Address ID to update', 
+  @ApiProperty({
+    description: 'Address ID to update',
     example: 1,
-    type: Number 
+    type: Number
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
-  addressid: number;
+  addressid?: number;
 
-  @ApiPropertyOptional({ 
-    description: 'Address label/name', 
+  @ApiPropertyOptional({
+    description: 'Address label/name',
     example: 'Office',
-    type: String 
+    type: String
   })
   @IsOptional()
   @IsString()
   label?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'Receiver name', 
+  @ApiPropertyOptional({
+    description: 'Receiver name',
     example: 'Jane Smith',
-    type: String 
+    type: String
   })
   @IsOptional()
   @IsString()
   receiver_name?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'Receiver phone number', 
+  @ApiPropertyOptional({
+    description: 'Receiver phone number',
     example: '0987654321',
-    type: String 
+    type: String
   })
   @IsOptional()
   @IsString()
   phone?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'Province/City', 
+  @ApiPropertyOptional({
+    description: 'Province/City',
     example: 'Hanoi',
-    type: String 
+    type: String
   })
   @IsOptional()
   @IsString()
   province?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'District', 
+  @ApiPropertyOptional({
+    description: 'District',
     example: 'Ba Dinh District',
-    type: String 
+    type: String
   })
   @IsOptional()
   @IsString()
   district?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'Ward/Commune', 
+  @ApiPropertyOptional({
+    description: 'Ward/Commune',
     example: 'Dien Bien Ward',
-    type: String 
+    type: String
   })
   @IsOptional()
   @IsString()
   ward?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'Street address', 
+  @ApiPropertyOptional({
+    description: 'Street address',
     example: '456 Hoang Dieu Street',
-    type: String 
+    type: String
   })
   @IsOptional()
   @IsString()
   street?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'Set as default address', 
+  @ApiPropertyOptional({
+    description: 'Set as default address',
     example: false,
-    type: Boolean 
+    type: Boolean
   })
   @IsOptional()
   @IsBoolean()
   is_default?: boolean;
 
-  @ApiPropertyOptional({ 
-    description: 'Province/City ID from GHN API', 
+  @ApiPropertyOptional({
+    description: 'Province/City ID from GHN API',
     example: 201,
-    type: Number 
+    type: Number
   })
   @IsOptional()
   @IsNumber()
   ghn_province_id?: number;
 
-  @ApiPropertyOptional({ 
-    description: 'District ID from GHN API', 
+  @ApiPropertyOptional({
+    description: 'District ID from GHN API',
     example: 1484,
-    type: Number 
+    type: Number
   })
   @IsOptional()
   @IsNumber()
   ghn_district_id?: number;
 
-  @ApiPropertyOptional({ 
-    description: 'Ward code from GHN API', 
+  @ApiPropertyOptional({
+    description: 'Ward code from GHN API',
     example: '1A0203',
-    type: String 
+    type: String
   })
   @IsOptional()
   @IsString()

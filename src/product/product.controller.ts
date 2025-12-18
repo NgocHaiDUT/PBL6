@@ -199,6 +199,57 @@ export class ProductController {
     return this.productservice.filterProducts(query);
   }
 
+  // Wishlist
+  @Get('wishlist')
+  @UseGuards(JwtAuthGuard)
+  async getWishlist(@Req() req: any) {
+    const userId = req.user.userId;
+    return this.productservice.getWishlist(userId);
+  }
+
+  @Post('wishlist')
+  @UseGuards(JwtAuthGuard)
+  async addToWishlist(
+    @Body('productId', ParseIntPipe) productId: number,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.productservice.addToWishlist(productId, userId);
+  }
+
+  @Delete('wishlist/:productId')
+  @UseGuards(JwtAuthGuard)
+  async removeFromWishlist(
+    @Param('productId', ParseIntPipe) productId: number,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.productservice.removeFromWishlist(productId, userId);
+  }
+
+  // Cart (Optional/Legacy routes in ProductController if needed)
+  @Get('cart')
+  @UseGuards(JwtAuthGuard)
+  async getCart(@Req() req: any) {
+    const userId = req.user.userId;
+    return this.productservice.getCart(userId);
+  }
+
+  @Post('cart')
+  @UseGuards(JwtAuthGuard)
+  async addToCart(
+    @Body() body: { productId: number; variantId?: number; quantity: number },
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.productservice.addToCart(
+      body.productId,
+      body.variantId,
+      body.quantity,
+      userId,
+    );
+  }
+
   @Get(':productId')
   async getProductById(@Param('productId', ParseIntPipe) productId: number) {
     return this.productservice.getProductById(productId);
@@ -573,73 +624,5 @@ export class ProductController {
     );
   }
 
-  // Wishlist
-  @Get('wishlist')
-  @UseGuards(JwtAuthGuard)
-  async getWishlist(@Req() req: any) {
-    const userId = req.user.userId;
-    return this.productservice.getWishlist(userId);
-  }
 
-  @Post('wishlist')
-  @UseGuards(JwtAuthGuard)
-  async addToWishlist(
-    @Body('productId', ParseIntPipe) productId: number,
-    @Req() req: any,
-  ) {
-    const userId = req.user.userId;
-    return this.productservice.addToWishlist(productId, userId);
-  }
-
-  @Delete('wishlist/:productId')
-  @UseGuards(JwtAuthGuard)
-  async removeFromWishlist(
-    @Param('productId', ParseIntPipe) productId: number,
-    @Req() req: any,
-  ) {
-    const userId = req.user.userId;
-    return this.productservice.removeFromWishlist(productId, userId);
-  }
-
-  // Cart
-  @Get('cart')
-  @UseGuards(JwtAuthGuard)
-  async getCart(@Req() req: any) {
-    const userId = req.user.userId;
-    return this.productservice.getCart(userId);
-  }
-
-  @Post('cart')
-  @UseGuards(JwtAuthGuard)
-  async addToCart(
-    @Body() body: { productId: number; variantId?: number; quantity: number },
-    @Req() req: any,
-  ) {
-    const userId = req.user.userId;
-    return this.productservice.addToCart(
-      body.productId,
-      body.variantId,
-      body.quantity,
-      userId,
-    );
-  }
-
-  @Put('cart/items/:itemId')
-  @UseGuards(JwtAuthGuard)
-  async updateCartItem(
-    @Param('itemId', ParseIntPipe) itemId: number,
-    @Body('quantity', ParseIntPipe) quantity: number,
-    @Req() req: any,
-  ) {
-    return this.productservice.updateCartItem(itemId, quantity);
-  }
-
-  @Delete('cart/items/:itemId')
-  @UseGuards(JwtAuthGuard)
-  async removeFromCart(
-    @Param('itemId', ParseIntPipe) itemId: number,
-    @Req() req: any,
-  ) {
-    return this.productservice.removeFromCart(itemId);
-  }
 }

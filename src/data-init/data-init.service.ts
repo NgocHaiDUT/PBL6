@@ -5,7 +5,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as bcrypt from 'bcrypt';
 import { getAllPermissions } from '../auth/constants/Permission.enum';
-import { getAllRoles, RolePermissions, Role } from '../auth/constants/Role.enum';
+import {
+  getAllRoles,
+  RolePermissions,
+  Role,
+} from '../auth/constants/Role.enum';
 
 @Injectable()
 export class DataInitService implements OnModuleInit {
@@ -42,7 +46,9 @@ export class DataInitService implements OnModuleInit {
 
       // await this.uploadBrandLogosIfNeeded();
 
-      this.logger.log('Dữ liệu khởi tạo cơ bản thành công. Gọi các API riêng để tạo data có foreign key.');
+      this.logger.log(
+        'Dữ liệu khởi tạo cơ bản thành công. Gọi các API riêng để tạo data có foreign key.',
+      );
     } catch (error) {
       this.logger.error('Lỗi khi tạo dữ liệu : ', error);
     }
@@ -152,10 +158,12 @@ export class DataInitService implements OnModuleInit {
   private async seedRoles() {
     const allRoles = getAllRoles();
 
-    const existing = await this.prisma.role.findMany({ select: { name: true } });
-    const existingNames = existing.map(r => r.name);
+    const existing = await this.prisma.role.findMany({
+      select: { name: true },
+    });
+    const existingNames = existing.map((r) => r.name);
 
-    const missingRoles = allRoles.filter(r => !existingNames.includes(r));
+    const missingRoles = allRoles.filter((r) => !existingNames.includes(r));
 
     if (missingRoles.length === 0) {
       this.logger.log('Tất cả roles đã tồn tại, không có role mới để tạo');
@@ -170,7 +178,9 @@ export class DataInitService implements OnModuleInit {
       });
     }
 
-    this.logger.log(`Đã tạo ${missingRoles.length} role từ Role.enum: ${missingRoles.join(', ')}`);
+    this.logger.log(
+      `Đã tạo ${missingRoles.length} role từ Role.enum: ${missingRoles.join(', ')}`,
+    );
   }
 
   private async seedPermissions() {
@@ -188,7 +198,9 @@ export class DataInitService implements OnModuleInit {
       });
     }
 
-    this.logger.log(`Đã tạo ${allPermissions.length} permission từ Permission.enum`);
+    this.logger.log(
+      `Đã tạo ${allPermissions.length} permission từ Permission.enum`,
+    );
   }
 
   private async seedRolePermissions() {
@@ -246,10 +258,7 @@ export class DataInitService implements OnModuleInit {
           `Đã gán ${permissions.length} permissions cho role "${roleName}"`,
         );
       } catch (error) {
-        this.logger.error(
-          `Lỗi khi xử lý role "${roleName}":`,
-          error,
-        );
+        this.logger.error(`Lỗi khi xử lý role "${roleName}":`, error);
       }
     }
 
@@ -428,14 +437,14 @@ export class DataInitService implements OnModuleInit {
         name: 'SkincareShop',
         phone: '0345671392',
         province: 'Đà Nẵng',
-        district: 'Hải Châu',
-        ward: 'Hải Châu 1',
-        street: '95 Hùng Vương',
+        district: 'Liên Chiểu',
+        ward: 'Hoà Hiệp Nam',
+        street: '541 Nguyễn Lương Bằng',
         is_default: true,
         // Placeholder GHN IDs
         ghn_province_id: 203,
-        ghn_district_id: 1526,
-        ghn_ward_code: '40103',
+        ghn_district_id: 1530,
+        ghn_ward_code: '40502',
       },
     });
     this.logger.log(
@@ -991,7 +1000,10 @@ export class DataInitService implements OnModuleInit {
           });
           successCount++;
         } catch (error) {
-          this.logger.error(`Lỗi khi tạo cart cho user ${cart.user_id}:`, error);
+          this.logger.error(
+            `Lỗi khi tạo cart cho user ${cart.user_id}:`,
+            error,
+          );
           errorCount++;
         }
       }

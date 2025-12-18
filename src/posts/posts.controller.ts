@@ -56,6 +56,17 @@ export class PostsController {
     return this.postsService.getPosts(queryDto);
   }
 
+  // Get posts by user ID - Must be before :id route
+  @Get('user/:userId')
+  getPostsByUserId(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Query() queryDto: QueryPostsDto,
+  ) {
+    // Override user_id in queryDto with the userId from params
+    const query = { ...queryDto, user_id: userId };
+    return this.postsService.getPosts(query);
+  }
+
   // Save/Unsave Posts Endpoints - Must be before :id route
   @Get('saved')
   @UseGuards(JwtAuthGuard)
