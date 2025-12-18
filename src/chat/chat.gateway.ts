@@ -31,7 +31,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private messagesService: MessagesService,
     private prisma: PrismaService,
-  ) {}
+  ) { }
 
   handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
@@ -66,12 +66,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
-    @MessageBody() data: { 
-      senderId: number; 
-      receiverId: number; 
+    @MessageBody() data: {
+      senderId: number;
+      receiverId: number;
       senderShopId?: number;
-      content: string; 
-      postId?: number; 
+      content: string;
+      postId?: number;
       sharedProfileId?: number;
       productPayload?: any;
       messageType?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHARE_POST' | 'SHARE_PRODUCT' | 'SHARE_PROFILE';
@@ -108,7 +108,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // 2. Determine message type
       let messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHARE_POST' | 'SHARE_PRODUCT' | 'SHARE_PROFILE' = 'TEXT';
-      
+
       if (data.postId) {
         messageType = 'SHARE_POST';
       } else if (data.sharedProfileId) {
@@ -351,7 +351,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const formattedMessages = await Promise.all(messageHistory.data.map(async (msg) => {
         // ✅ Debug log raw reactions from database
         this.logger.log(`🔍 Message ${msg.id} raw message_reactions from DB:`, (msg as any).message_reactions);
-        
+
         // Group reactions by emoji
         const reactionsGrouped = ((msg as any).message_reactions || []).reduce((acc: any, r: any) => {
           if (!acc[r.emoji]) {
@@ -386,15 +386,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         // ✅ Enrich payload with story details if STORY_REPLY or product details if SHARE_PRODUCT
         let enrichedPayload = msg.payload;
-        
+
         // ✅ Enrich product payload for SHARE_PRODUCT
         if (msg.type === 'SHARE_PRODUCT') {
           const payloadData = (msg.payload as any) || {};
           this.logger.log(`🛒 Message ${msg.id} is SHARE_PRODUCT, payload:`, payloadData);
-          
+
           // ✅ Try to get product_id from payload, or extract from content
           let productId = payloadData.product_id;
-          
+
           if (productId) {
             this.logger.log(`🔍 Loading product ${payloadData.product_id} from database...`);
             try {
@@ -430,9 +430,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 // Get price from first variant, image from first media
                 const price = product.product_variants[0]?.price || 0;
                 const image = product.product_media[0]?.url || '';
-                
+
                 this.logger.log(`💰 Price: ${price}, 🖼️ Image: ${image}`);
-                
+
                 // Enrich payload with full product data
                 enrichedPayload = {
                   product_id: product.id,
@@ -451,7 +451,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             this.logger.warn(`⚠️ Message ${msg.id} has SHARE_PRODUCT type but no product_id in payload`);
           }
         }
-        
+
         // ✅ Enrich story payload for STORY_REPLY
         if (msg.type === 'STORY_REPLY' && msg.payload) {
           const payloadData = msg.payload as any;
@@ -534,27 +534,27 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           mediaFiles: mediaFiles, // ✅ Include media files
           sender: msg.sender
             ? {
-                id: msg.sender.id,
-                fullName: msg.sender.full_name || 'Unknown User',
-                avatarUrl: msg.sender.avatar_url,
-              }
+              id: msg.sender.id,
+              fullName: msg.sender.full_name || 'Unknown User',
+              avatarUrl: msg.sender.avatar_url,
+            }
             : msg.sender_shop
               ? {
-                  id: msg.sender_shop.id,
-                  fullName: msg.sender_shop.name,
-                  avatarUrl: msg.sender_shop.logo_url,
-                }
+                id: msg.sender_shop.id,
+                fullName: msg.sender_shop.name,
+                avatarUrl: msg.sender_shop.logo_url,
+              }
               : {
-                  Id: msg.sender_id,
-                  Fullname: 'Unknown User',
-                  Avatar: null,
-                }
+                Id: msg.sender_id,
+                Fullname: 'Unknown User',
+                Avatar: null,
+              }
         };
       }));
 
       // 4. Notify target user (optional)
-      this.server.to(`${data.targetId}`).emit('openChat', { 
-        from: data.openerId, 
+      this.server.to(`${data.targetId}`).emit('openChat', {
+        from: data.openerId,
         user: {
           Id: targetUser.id,
           Fullname: targetUser.full_name || 'Unknown User',
@@ -591,7 +591,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           hasMore: false,
         },
       };
-      
+
       // ✅ Log what we're about to emit
       this.logger.log(`📤 Emitting conversation with ${formattedMessages.length} messages`);
       const productMsgsToEmit = conversationData.messages.filter(m => m.messageType === 'SHARE_PRODUCT');
@@ -601,7 +601,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           this.logger.log(`  Message ${pm.id}: productPayload = ${JSON.stringify(pm.productPayload)}`);
         });
       }
-      
+
       client.emit('conversation', conversationData);
       client.emit('chatOpened', {
         success: true,
@@ -690,7 +690,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // ✅ If user clicked the same emoji they already used, remove it (toggle off)
       const sameEmojiReaction = existingUserReactions.find(r => r.emoji === data.emoji);
-      
+
       if (sameEmojiReaction) {
         // Remove the same reaction (toggle off)
         await this.prisma.message_reactions.delete({
@@ -913,10 +913,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('sendMessageWithMedia')
   async handleSendMessageWithMedia(
-    @MessageBody() data: { 
-      senderId: number; 
-      receiverId: number; 
-      content?: string; 
+    @MessageBody() data: {
+      senderId: number;
+      receiverId: number;
+      content?: string;
       mediaFiles: Array<{
         url: string;
         type: 'image' | 'video' | 'file';
@@ -940,9 +940,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       let conversation = conversations.find(conv => {
         const userIds = conv.participants.map(p => p.user_id).sort();
         const targetIds = [data.senderId, data.receiverId].sort();
-        return userIds.length === 2 && 
-               userIds[0] === targetIds[0] && 
-               userIds[1] === targetIds[1];
+        return userIds.length === 2 &&
+          userIds[0] === targetIds[0] &&
+          userIds[1] === targetIds[1];
       });
 
       if (!conversation) {
@@ -962,7 +962,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // 2. Determine message type based on enum message_type
       let messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHARE_POST' | 'SHARE_PRODUCT' = 'TEXT';
-      
+
       if (data.mediaFiles.length > 0) {
         const firstMediaType = data.mediaFiles[0].type;
         if (firstMediaType === 'image') {
@@ -994,7 +994,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // 4. Create message media entries
       const mediaEntries = await Promise.all(
-        data.mediaFiles.map(media => 
+        data.mediaFiles.map(media =>
           this.prisma.message_media.create({
             data: {
               message_id: message.id,
