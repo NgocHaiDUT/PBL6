@@ -40,7 +40,17 @@ export class CheckoutDto {
 }
 
 export class QueryOrdersDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
   page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
   limit?: number;
+
+  @IsOptional()
+  @IsString()
   status?: string;
 }

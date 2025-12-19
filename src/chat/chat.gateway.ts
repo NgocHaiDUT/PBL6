@@ -86,7 +86,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       );
 
       // 1. Determine conversation based on sender type
-      let conversation;
+      let conversation: any;
 
       if (data.senderShopId) {
         // Shop sending to user
@@ -326,11 +326,27 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         `User ${data.openerId} opening chat with ${data.targetId}`,
       );
 
-      // 1. Find or create conversation
-      const conversation = await this.messagesService.findOrCreateConversation(
-        data.openerId,
-        data.targetId,
-      );
+      // ✅ Check if targetId is a shop
+      const isShop = await this.prisma.shops.findUnique({
+        where: { id: data.targetId },
+        select: { id: true, name: true, logo_url: true }
+      });
+
+      let conversation: any;
+      if (isShop) {
+        // Opening chat with shop
+        this.logger.log(`User ${data.openerId} opening chat with shop ${data.targetId}`);
+        conversation = await this.messagesService.findOrCreateShopConversation(
+          data.openerId, // userId
+          data.targetId, // shopId
+        );
+      } else {
+        // Opening chat with user
+        conversation = await this.messagesService.findOrCreateConversation(
+          data.openerId,
+          data.targetId,
+        );
+      }
 
       if (!conversation) {
         throw new Error('Failed to create or find conversation');
@@ -343,22 +359,37 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         { page: 1, limit: 50 }, // Load last 50 messages
       );
 
-      // 3. Get target user info
-      const targetUser = await this.prisma.users.findUnique({
-        where: { id: data.targetId },
-        select: {
-          id: true,
-          full_name: true,
-          avatar_url: true,
-        },
-      });
+      // 3. Get target info (user or shop)
+      let targetInfo: {
+        id: number;
+        full_name: string | null;
+        avatar_url: string | null;
+      };
 
-      if (!targetUser) {
-        client.emit('chatOpened', {
-          success: false,
-          error: 'Target user not found',
+      if (isShop) {
+        targetInfo = {
+          id: isShop.id,
+          full_name: isShop.name,
+          avatar_url: isShop.logo_url,
+        };
+      } else {
+        const targetUser = await this.prisma.users.findUnique({
+          where: { id: data.targetId },
+          select: {
+            id: true,
+            full_name: true,
+            avatar_url: true,
+          },
         });
-        return;
+
+        if (!targetUser) {
+          client.emit('chatOpened', {
+            success: false,
+            error: 'Target user not found',
+          });
+          return;
+        }
+        targetInfo = targetUser;
       }
 
       // 4. Format messages for frontend
@@ -570,9 +601,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.to(`${data.targetId}`).emit('openChat', {
         from: data.openerId,
         user: {
-          Id: targetUser.id,
-          Fullname: targetUser.full_name || 'Unknown User',
-          Avatar: targetUser.avatar_url,
+          Id: targetInfo.id,
+          Fullname: targetInfo.full_name || 'Unknown',
+          Avatar: targetInfo.avatar_url,
         }
       });
 
@@ -595,9 +626,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // 5. Send conversation to opener
       const conversationData = {
         with: {
-          Id: targetUser.id, // ✅ Use uppercase 'Id' to match frontend
-          Fullname: targetUser.full_name || 'Unknown User',
-          Avatar: targetUser.avatar_url,
+          Id: targetInfo.id, // ✅ Use uppercase 'Id' to match frontend
+          Fullname: targetInfo.full_name || 'Unknown',
+          Avatar: targetInfo.avatar_url,
         },
         messages: formattedMessages,
         pagination: {
@@ -946,32 +977,49 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(`User ${data.senderId} sending message with media to ${data.receiverId}`);
 
       // 1. Find or create conversation
-      const conversations = await this.prisma.conversations.findMany({
-        where: { type: 'private' },
-        include: { participants: true }
+      // ✅ Check if receiverId is a shop
+      const isShop = await this.prisma.shops.findUnique({
+        where: { id: data.receiverId },
+        select: { id: true }
       });
 
-      let conversation = conversations.find(conv => {
-        const userIds = conv.participants.map(p => p.user_id).sort();
-        const targetIds = [data.senderId, data.receiverId].sort();
-        return userIds.length === 2 &&
-          userIds[0] === targetIds[0] &&
-          userIds[1] === targetIds[1];
-      });
-
-      if (!conversation) {
-        conversation = await this.prisma.conversations.create({
-          data: {
-            type: 'private',
-            participants: {
-              create: [
-                { user_id: data.senderId, entity_type: 'user' },
-                { user_id: data.receiverId, entity_type: 'user' }
-              ]
-            }
-          },
+      let conversation;
+      if (isShop) {
+        // User sending media to shop
+        this.logger.log(`User ${data.senderId} sending media to shop ${data.receiverId}`);
+        conversation = await this.messagesService.findOrCreateShopConversation(
+          data.senderId, // userId
+          data.receiverId, // shopId
+        );
+      } else {
+        // User sending media to user
+        const conversations = await this.prisma.conversations.findMany({
+          where: { type: 'private' },
           include: { participants: true }
         });
+
+        conversation = conversations.find(conv => {
+          const userIds = conv.participants.map(p => p.user_id).sort();
+          const targetIds = [data.senderId, data.receiverId].sort();
+          return userIds.length === 2 &&
+            userIds[0] === targetIds[0] &&
+            userIds[1] === targetIds[1];
+        });
+
+        if (!conversation) {
+          conversation = await this.prisma.conversations.create({
+            data: {
+              type: 'private',
+              participants: {
+                create: [
+                  { user_id: data.senderId, entity_type: 'user' },
+                  { user_id: data.receiverId, entity_type: 'user' }
+                ]
+              }
+            },
+            include: { participants: true }
+          });
+        }
       }
 
       // 2. Determine message type based on enum message_type
