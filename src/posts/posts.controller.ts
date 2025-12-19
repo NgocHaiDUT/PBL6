@@ -21,6 +21,7 @@ import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { QueryPostsDto } from './dto/query-posts.dto';
+import { ModeratePostDto } from './dto/moderate-post.dto';
 import {
   s3PostCoverConfig,
   s3PostVideoConfig,
@@ -36,7 +37,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('posts')
 export class PostsController {
-  constructor(private readonly postsService: PostsService) {}
+  constructor(private readonly postsService: PostsService) { }
 
   @Post()
   @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -73,6 +74,26 @@ export class PostsController {
   getSavedPosts(@Query() query: QueryPostsDto, @Req() req: any) {
     const userId = req.user.userId;
     return this.postsService.getSavedPosts(userId, query);
+  }
+
+  // Moderation endpoints - Must be before :id route
+  @Patch(':id/moderate')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.MODERATE_POST)
+  async moderatePost(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() moderateDto: ModeratePostDto,
+    @Req() req: any,
+  ) {
+    const adminId = req.user.userId;
+    return this.postsService.moderatePost(id, adminId, moderateDto);
+  }
+
+  @Get('stats/moderation')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.VIEW_MODERATION_STATS)
+  async getModerationStats() {
+    return this.postsService.getModerationStats();
   }
 
   @Get(':id')
@@ -211,7 +232,7 @@ export class PostsController {
     if (storageDriver !== 's3') {
       throw new ForbiddenException(
         'Presigned URL only available for S3 storage. Current: ' +
-          storageDriver,
+        storageDriver,
       );
     }
 

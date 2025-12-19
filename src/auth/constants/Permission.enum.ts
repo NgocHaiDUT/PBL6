@@ -18,7 +18,7 @@ export enum Permission {
   // ===== SHOP PERMISSIONS =====
   /** Quản lý nhân viên shop (chỉ chủ shop) */
   MANAGE_SHOP_STAFF = 'manage_shop_staff',
-  
+
   /** Chỉnh sửa thông tin shop */
   EDIT_PROFILE_SHOP = 'edit_profile_shop',
 
@@ -46,22 +46,28 @@ export enum Permission {
   // ===== PRODUCT PERMISSIONS =====
   /** Quản lý sản phẩm (tạo, sửa, xóa) */
   MANAGE_PRODUCT = 'manage_product',
-  
+
   /** Quản lý thương hiệu (brands) */
   MANAGE_BRANDS = 'manage_brands',
-  
+
   /** Quản lý danh mục (categories) */
   MANAGE_CATEGORYS = 'manage_categorys',
 
   // ===== POST PERMISSIONS =====
   /** Tạo bài viết mới */
   CREATE_POST = 'create_post',
-  
+
   /** Chỉnh sửa bài viết */
   EDIT_POST = 'edit_post',
-  
+
   /** Xóa bài viết */
   DELETE_POST = 'delete_post',
+
+  /** Kiểm duyệt bài viết (admin) */
+  MODERATE_POST = 'moderate_post',
+
+  /** Xem thống kê kiểm duyệt (admin) */
+  VIEW_MODERATION_STATS = 'view_moderation_stats',
 
   // ===== ADDRESS PERMISSIONS =====
   /** Quản lý địa chỉ shop */
@@ -90,7 +96,7 @@ export const PermissionGroups = {
   USER: [
     Permission.MANAGE_USERS,
   ],
-  
+
   SHOP: [
     Permission.MANAGE_SHOP_STAFF,
     Permission.EDIT_PROFILE_SHOP,
@@ -102,19 +108,21 @@ export const PermissionGroups = {
     Permission.VIEW_DASHBOARD,
     Permission.VIEW_SHOP_TUTORIAL,
   ],
-  
+
   PRODUCT: [
     Permission.MANAGE_PRODUCT,
     Permission.MANAGE_BRANDS,
     Permission.MANAGE_CATEGORYS,
   ],
-  
+
   POST: [
     Permission.CREATE_POST,
     Permission.EDIT_POST,
     Permission.DELETE_POST,
+    Permission.MODERATE_POST,
+    Permission.VIEW_MODERATION_STATS,
   ],
-  
+
   ADDRESS: [
     Permission.MANAGE_SHOP_ADDRESS,
   ],

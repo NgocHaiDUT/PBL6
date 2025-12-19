@@ -1,5 +1,6 @@
 import { IsOptional, IsInt, IsString, IsEnum } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { moderation_status } from '@prisma/client';
 
 export class QueryPostsDto {
   @IsOptional()
@@ -33,4 +34,9 @@ export class QueryPostsDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @IsOptional()
+  @IsEnum(moderation_status)
+  moderation_status?: moderation_status;
 }
+

@@ -160,6 +160,27 @@ async function main() {
     },
   });
 
+  // Tạo 10 User thường để test social features
+  console.log('Tạo regular users...');
+  const regularUsers: any[] = [];
+  for (let i = 1; i <= 10; i++) {
+    const user = await prisma.users.create({
+      data: {
+        email: `user${i}@test.com`,
+        password_hash: 'hashed_password',
+        full_name: faker.person.fullName(),
+        avatar_url: faker.image.avatar(),
+        phone: faker.phone.number(),
+        story: faker.lorem.sentence(),
+        role_id: userRoleId,
+        firstlogin: false,
+      },
+    });
+    regularUsers.push(user);
+  }
+
+  const allUsers = [adminUser, seller1, seller2, ...regularUsers];
+
   // --- 6. Tạo UserPermissions (Gán full permission của role cho user cụ thể) ---
   // Yêu cầu: "thêm các userpermission cho hai shop và 1 admin"
   console.log('Tạo UserPermissions...');
@@ -402,6 +423,140 @@ async function main() {
         },
       },
     });
+  }
+
+  // --- 12. Tạo Posts để test moderation ---
+  console.log('Tạo posts cho moderation...');
+  const allProducts = await prisma.products.findMany({ take: 20 });
+  const posts: any[] = [];
+
+  const moderationStatuses = ['pending', 'approved', 'rejected'];
+  for (let i = 0; i < 30; i++) {
+    const randomUser = getRandomElement(allUsers);
+    const randomShop = faker.helpers.maybe(() => getRandomElement(shops), { probability: 0.3 });
+    const isStory = faker.datatype.boolean();
+
+    const post = await prisma.posts.create({
+      data: {
+        user_id: randomUser.id,
+        shop_id: randomShop?.id || null,
+        content_md: faker.lorem.paragraph(),
+        is_story: isStory,
+        expires_at: isStory ? faker.date.future() : null,
+        moderation_status: getRandomElement(moderationStatuses) as any,
+      },
+    });
+    posts.push(post);
+
+    // Thêm media cho post
+    const mediaCount = faker.number.int({ min: 1, max: 3 });
+    for (let j = 0; j < mediaCount; j++) {
+      await prisma.post_media.create({
+        data: {
+          post_id: post.id,
+          media_url: faker.image.url(),
+          media_type: faker.helpers.arrayElement(['image', 'video']),
+        },
+      });
+    }
+
+    // Thêm products cho một số posts
+    if (faker.datatype.boolean({ probability: 0.4 })) {
+      const productCount = faker.number.int({ min: 1, max: 3 });
+      for (let j = 0; j < productCount; j++) {
+        const product = getRandomElement(allProducts);
+        await prisma.post_products.create({
+          data: {
+            post_id: post.id,
+            product_id: product.id,
+          },
+        }).catch(() => { }); // Ignore duplicates
+      }
+    }
+  }
+
+  // --- 13. Tạo Reviews ---
+  console.log('Tạo product reviews...');
+  for (let i = 0; i < 50; i++) {
+    const randomUser = getRandomElement(regularUsers);
+    const randomProduct = getRandomElement(allProducts);
+
+    await prisma.reviews.create({
+      data: {
+        user_id: randomUser.id,
+        product_id: randomProduct.id,
+        rating: faker.number.int({ min: 3, max: 5 }),
+        content: faker.lorem.paragraph(),
+      },
+    }).catch(() => { }); // Ignore duplicates (user can only review product once)
+  }
+
+  // --- 14. Tạo Addresses ---
+  console.log('Tạo addresses...');
+  for (const user of regularUsers) {
+    const addressCount = faker.number.int({ min: 1, max: 3 });
+    for (let i = 0; i < addressCount; i++) {
+      await prisma.addresses.create({
+        data: {
+          user_id: user.id,
+          label: faker.helpers.arrayElement(['Nhà', 'Công ty', 'Khác']),
+          recipient: user.full_name,
+          phone: user.phone || faker.phone.number(),
+          province: 'Hồ Chí Minh',
+          district: faker.location.county(),
+          ward: faker.location.streetAddress(),
+          street: faker.location.street(),
+          is_default: i === 0,
+        },
+      });
+    }
+  }
+
+  // --- 15. Tạo Follows ---
+  console.log('Tạo follows...');
+  for (let i = 0; i < 30; i++) {
+    const follower = getRandomElement(regularUsers);
+    const following = getRandomElement(allUsers);
+
+    if (follower.id !== following.id) {
+      await prisma.follows.create({
+        data: {
+          follower_id: follower.id,
+          following_id: following.id,
+        },
+      }).catch(() => { }); // Ignore duplicates
+    }
+  }
+
+  // --- 16. Tạo Comments ---
+  console.log('Tạo comments...');
+  for (let i = 0; i < 50; i++) {
+    const randomPost = getRandomElement(posts);
+    const randomUser = getRandomElement(allUsers);
+
+    await prisma.comments.create({
+      data: {
+        user_id: randomUser.id,
+        target_type: 'post',
+        target_id: randomPost.id,
+        content: faker.lorem.sentence(),
+      },
+    });
+  }
+
+  // --- 17. Tạo Likes ---
+  console.log('Tạo likes...');
+  for (let i = 0; i < 100; i++) {
+    const randomPost = getRandomElement(posts);
+    const randomUser = getRandomElement(allUsers);
+
+    await prisma.likes.create({
+      data: {
+        user_id: randomUser.id,
+        target_type: 'post',
+        target_id: randomPost.id,
+      },
+    }).catch(() => { }); // Ignore duplicates
   }
 
   console.log('Seeding hoàn tất!');

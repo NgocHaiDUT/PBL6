@@ -12,7 +12,7 @@ import { QueryPostsDto } from './dto/query-posts.dto';
 
 @Injectable()
 export class PostsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   // Helper function to normalize URLs for frontend
   private normalizeUrl(url: string | null): string | null {
@@ -30,9 +30,9 @@ export class PostsService {
     // Process post_media and extract cover/video URLs
     const processedMedia = post.post_media
       ? post.post_media.map((media: any) => ({
-          ...media,
-          media_url: this.normalizeUrl(media.media_url),
-        }))
+        ...media,
+        media_url: this.normalizeUrl(media.media_url),
+      }))
       : [];
 
     // Find cover image (sort_order: 0) and first video
@@ -50,15 +50,15 @@ export class PostsService {
       video_url: firstVideo ? firstVideo.media_url : null,
       user: post.user
         ? {
-            ...post.user,
-            avatar_url: this.normalizeUrl(post.user.avatar_url),
-          }
+          ...post.user,
+          avatar_url: this.normalizeUrl(post.user.avatar_url),
+        }
         : null,
       shop: post.shop
         ? {
-            ...post.shop,
-            logo_url: this.normalizeUrl(post.shop.logo_url),
-          }
+          ...post.shop,
+          logo_url: this.normalizeUrl(post.shop.logo_url),
+        }
         : null,
       post_media: processedMedia,
     };
@@ -177,7 +177,7 @@ export class PostsService {
     const rawMd = (postData as any)?.content_md as string | undefined;
     const trimmedMd = typeof rawMd === 'string' ? rawMd.trim() : '';
     const hasMedia = mediaUrls.length > 0 || coverUrl || videoUrl;
-    
+
     if (!trimmedMd && !hasMedia) {
       throw new Error('content_md is required when no media is provided');
     }
@@ -258,7 +258,7 @@ export class PostsService {
       for (const tagName of tags) {
         // Create slug from tag name
         const slug = tagName.toLowerCase().replace(/\s+/g, '-');
-        
+
         // Find or create tag
         let tag = await this.prisma.tags.findUnique({
           where: { slug },
@@ -297,18 +297,19 @@ export class PostsService {
       post_type,
       visibility,
       search,
+      moderation_status,
     } = queryDto;
     const skip = (page - 1) * limit;
 
     const where: any = {
       is_story: false, // Exclude stories from posts list
-      // moderation_status: 'approved', // Temporary comment for testing
     };
 
     if (user_id) where.user_id = user_id;
     if (shop_id) where.shop_id = shop_id;
     if (post_type) where.post_type = post_type;
     if (visibility) where.visibility = visibility;
+    if (moderation_status) where.moderation_status = moderation_status;
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
@@ -500,7 +501,7 @@ export class PostsService {
     const isPostOwner = post.user_id === userId;
     const isShopOwner = post.shop_id && post.shop?.owner_id === userId;
     const isShopStaff = post.shop_id && post.shop?.shop_staffs && post.shop.shop_staffs.length > 0;
-    
+
     // Check if staff has edit_post permission
     let hasEditPostPermission = false;
     if (isShopStaff && !isShopOwner && post.shop_id) {
@@ -512,7 +513,7 @@ export class PostsService {
         (up) => up.permission.name === 'edit_post',
       );
     }
-    
+
     if (!isPostOwner && !isShopOwner && (!isShopStaff || !hasEditPostPermission)) {
       throw new ForbiddenException('You can only update your own posts or posts in your shop');
     }
@@ -604,7 +605,7 @@ export class PostsService {
   async deletePost(id: number, userId: number) {
     const post = await this.prisma.posts.findUnique({
       where: { id },
-      select: { 
+      select: {
         user_id: true,
         shop_id: true,
         shop: {
@@ -623,34 +624,45 @@ export class PostsService {
       throw new NotFoundException('Post not found');
     }
 
-    // Kiểm tra quyền: cho phép xóa nếu:
-    // 1. Là người tạo post
-    // 2. Post thuộc shop VÀ (user là owner hoặc staff có quyền delete_post)
+    // Check if user has delete_post permission (admin or authorized user)
+    const userPermissions = await this.prisma.userpermission.findMany({
+      where: { user_id: userId },
+      include: { permission: true },
+    });
+
+    const hasDeletePermission = userPermissions.some(
+      (up) => up.permission.name === 'delete_post',
+    );
+
+    // If user has delete_post permission, allow deletion of any post
+    if (hasDeletePermission) {
+      // Admin or user with explicit delete permission - can delete any post
+      await this.deletePostData(id);
+      return { message: 'Post deleted successfully' };
+    }
+
+    // Otherwise, check ownership
     const isPostOwner = post.user_id === userId;
     const isShopOwner = post.shop_id && post.shop?.owner_id === userId;
     const isShopStaff = post.shop_id && post.shop?.shop_staffs && post.shop.shop_staffs.length > 0;
-    
-    // Check if staff has delete_post permission
-    let hasDeletePostPermission = false;
-    if (isShopStaff && !isShopOwner && post.shop_id) {
-      const userPermissions = await this.prisma.userpermission.findMany({
-        where: { user_id: userId },
-        include: { permission: true },
-      });
-      hasDeletePostPermission = userPermissions.some(
-        (up) => up.permission.name === 'delete_post',
-      );
-    }
-    
-    if (!isPostOwner && !isShopOwner && (!isShopStaff || !hasDeletePostPermission)) {
+
+    if (!isPostOwner && !isShopOwner && !isShopStaff) {
       throw new ForbiddenException('You can only delete your own posts or posts in your shop');
     }
 
+    // Delete post and related data
+    await this.deletePostData(id);
+    return { message: 'Post deleted successfully' };
+  }
+
+  // Helper method to delete post and all related data
+  private async deletePostData(id: number) {
     // Xóa các dữ liệu liên quan
     await Promise.all([
       this.prisma.post_media.deleteMany({ where: { post_id: id } }),
       this.prisma.post_products.deleteMany({ where: { post_id: id } }),
       this.prisma.post_tags.deleteMany({ where: { post_id: id } }),
+      this.prisma.saved_posts.deleteMany({ where: { post_id: id } }),
       this.prisma.likes.deleteMany({
         where: { target_type: 'post', target_id: id },
       }),
@@ -663,8 +675,6 @@ export class PostsService {
     await this.prisma.posts.delete({
       where: { id },
     });
-
-    return { message: 'Post deleted successfully' };
   }
 
   // Upload cover image for post
@@ -1065,5 +1075,112 @@ export class PostsService {
         post_id: postId,
       };
     }
+  }
+
+  /**
+   * Moderate a post (Admin only)
+   */
+  async moderatePost(
+    postId: number,
+    adminId: number,
+    moderateDto: { action: string; reason?: string },
+  ) {
+    // Verify post exists
+    const post = await this.prisma.posts.findUnique({
+      where: { id: postId },
+    });
+
+    if (!post) {
+      throw new NotFoundException(`Post with ID ${postId} not found`);
+    }
+
+    // Update post moderation status
+    const updatedPost = await this.prisma.posts.update({
+      where: { id: postId },
+      data: {
+        moderation_status: moderateDto.action as any,
+        updated_at: new Date(),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            full_name: true,
+            email: true,
+            avatar_url: true,
+          },
+        },
+        shop: {
+          select: {
+            id: true,
+            name: true,
+            logo_url: true,
+          },
+        },
+        post_media: {
+          orderBy: { sort_order: 'asc' },
+        },
+        post_products: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        post_tags: {
+          include: {
+            tag: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const normalizedPost = this.normalizePostUrls(updatedPost);
+
+    return {
+      success: true,
+      message: `Post ${moderateDto.action} successfully`,
+      data: normalizedPost,
+    };
+  }
+
+  /**
+   * Get moderation statistics (Admin only)
+   */
+  async getModerationStats() {
+    const [pending, approved, rejected, removed, total] = await Promise.all([
+      this.prisma.posts.count({
+        where: { moderation_status: 'pending' },
+      }),
+      this.prisma.posts.count({
+        where: { moderation_status: 'approved' },
+      }),
+      this.prisma.posts.count({
+        where: { moderation_status: 'rejected' },
+      }),
+      this.prisma.posts.count({
+        where: { moderation_status: 'removed' },
+      }),
+      this.prisma.posts.count(),
+    ]);
+
+    return {
+      success: true,
+      data: {
+        pending,
+        approved,
+        rejected,
+        removed,
+        total,
+      },
+    };
   }
 }
