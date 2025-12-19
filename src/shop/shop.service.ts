@@ -520,6 +520,43 @@ export class ShopService {
       return { success: false, message: 'Shop not found' };
     }
 
+    // Get follower count - counting users following shop owner
+    const followerCount = await this.prisma.follows.count({
+      where: { following_id: shop.owner_id },
+    });
+
+    // Get published AND approved products for shop
+    const publishedProducts = await this.prisma.products.findMany({
+      where: {
+        shop_id: shopid,
+        is_published: true,
+        moderation_status: 'approved', // Only count approved products
+      },
+      select: {
+        id: true,
+        avg_rating: true,
+      },
+    });
+
+    // Calculate average rating across all products
+    const totalRating = publishedProducts.reduce(
+      (sum, p) => sum + (p.avg_rating ? Number(p.avg_rating) : 0),
+      0,
+    );
+    const avgShopRating =
+      publishedProducts.length > 0
+        ? totalRating / publishedProducts.length
+        : 0;
+
+    // Get total review count
+    const totalReviews = await this.prisma.reviews.count({
+      where: {
+        product: {
+          shop_id: shopid,
+        },
+      },
+    });
+
     return {
       success: true,
       data: {
@@ -537,6 +574,95 @@ export class ShopService {
         owner: shop.owner,
         staff_count: shop._count.shop_staffs,
         product_count: shop._count.products,
+        follower_count: followerCount,
+        avg_rating: Number(avgShopRating.toFixed(1)),
+        total_reviews: totalReviews,
+      },
+    };
+  }
+
+  // Public method - no auth required, limited info
+  async getPublicShopDetails(shopid: number) {
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopid },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            full_name: true,
+            avatar_url: true,
+          },
+        },
+        _count: {
+          select: {
+            shop_staffs: true,
+          },
+        },
+      },
+    });
+
+    if (!shop) {
+      return { success: false, message: 'Shop not found' };
+    }
+
+    // Get follower count - counting users following shop owner
+    const followerCount = await this.prisma.follows.count({
+      where: { following_id: shop.owner_id },
+    });
+
+    // Get published AND approved products for shop
+    const publishedProducts = await this.prisma.products.findMany({
+      where: {
+        shop_id: shopid,
+        is_published: true,
+        moderation_status: 'approved', // Only count approved products
+      },
+      select: {
+        id: true,
+        avg_rating: true,
+      },
+    });
+
+    // Calculate average rating across all products
+    const totalRating = publishedProducts.reduce(
+      (sum, p) => sum + (p.avg_rating ? Number(p.avg_rating) : 0),
+      0,
+    );
+    const avgShopRating =
+      publishedProducts.length > 0
+        ? totalRating / publishedProducts.length
+        : 0;
+
+    // Get total review count (only for published products)
+    const totalReviews = await this.prisma.reviews.count({
+      where: {
+        product: {
+          shop_id: shopid,
+          is_published: true,
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        id: shop.id,
+        name: shop.name,
+        slug: shop.slug,
+        description: shop.description,
+        logo_url: shop.logo_url,
+        cover_url: shop.cover_url,
+        phone: shop.phone,
+        email: shop.email,
+        is_verified: shop.is_verified,
+        created_at: shop.created_at,
+        updated_at: shop.updated_at,
+        owner: shop.owner,
+        staff_count: shop._count.shop_staffs,
+        product_count: publishedProducts.length, // Only count published products
+        follower_count: followerCount,
+        avg_rating: Number(avgShopRating.toFixed(1)),
+        total_reviews: totalReviews,
       },
     };
   }

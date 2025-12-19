@@ -95,18 +95,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           data.senderShopId,
         );
       } else {
-        // ✅ Check if receiverId is a shop
-        const isShop = await this.prisma.shops.findUnique({
+        // Check if receiverId is a shop ID by checking if shop exists
+        const shop = await this.prisma.shops.findUnique({
           where: { id: data.receiverId },
           select: { id: true }
         });
-
-        if (isShop) {
+        
+        if (shop) {
           // User sending to shop
-          this.logger.log(`User ${data.senderId} sending to shop ${data.receiverId}`);
           conversation = await this.messagesService.findOrCreateShopConversation(
-            data.senderId, // userId
-            data.receiverId, // shopId
+            data.senderId, // User ID
+            data.receiverId, // Shop ID
           );
         } else {
           // User sending to user
