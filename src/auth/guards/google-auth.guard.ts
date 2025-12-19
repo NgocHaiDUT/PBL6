@@ -6,17 +6,29 @@ export class GoogleAuthGuard extends AuthGuard('google') {
   getAuthenticateOptions(context: ExecutionContext) {
     const req = context.switchToHttp().getRequest();
 
-    const { device_id, device_type } = req.query;
+    const { device_id, device_type, state } = req.query;
 
-    const statePayload = {
-      device_id,
-      device_type,
-    };
+    // If state is already provided (from web app), use it
+    if (state) {
+      console.log('🌐 [GoogleAuthGuard] Using state from web app:', state);
+      return { state };
+    }
 
-    const state = Buffer.from(JSON.stringify(statePayload)).toString('base64');
+    // Otherwise, create state from device params (for mobile)
+    if (device_id || device_type) {
+      const statePayload = {
+        device_id,
+        device_type,
+      };
 
-    return {
-      state,
-    };
+      const generatedState = Buffer.from(JSON.stringify(statePayload)).toString('base64');
+      console.log('📱 [GoogleAuthGuard] Generated state for mobile:', generatedState);
+
+      return { state: generatedState };
+    }
+
+    // No state and no device params - let it pass without state
+    console.log('⚠️ [GoogleAuthGuard] No state or device params provided');
+    return {};
   }
 }
