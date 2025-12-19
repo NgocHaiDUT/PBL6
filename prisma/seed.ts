@@ -1,6 +1,10 @@
 // prisma/seed.ts
-import { PrismaClient } from '@prisma/client';
-import { faker } from '@faker-js/faker/locale/vi'; // Sử dụng locale Tiếng Việt
+import { PrismaClient, skin_type } from '@prisma/client';
+import { faker } from '@faker-js/faker/locale/vi';
+import * as fs from 'fs';
+import * as path from 'path';
+import { Role, RolePermissions } from '../src/auth/constants/Role.enum';
+import { Permission } from '../src/auth/constants/Permission.enum';
 
 const prisma = new PrismaClient();
 
@@ -12,11 +16,8 @@ function getRandomElement<T>(arr: T[]): T {
 async function main() {
   console.log('Bắt đầu seeding...');
 
-  // --- 1. Dọn dẹp DB (Tùy chọn) ---
-  // Cẩn thận: Xóa toàn bộ dữ liệu cũ
-  // Xóa theo thứ tự từ bảng con đến bảng cha để tránh lỗi foreign key constraint
-
-  // Xóa các bảng liên quan đến messages và chat
+  // --- 1. Dọn dẹp DB ---
+  console.log('Dọn dẹp DB...');
   await prisma.message_media.deleteMany({});
   await prisma.message_reactions.deleteMany({});
   await prisma.message_reads.deleteMany({});
@@ -24,7 +25,6 @@ async function main() {
   await prisma.conversation_participants.deleteMany({});
   await prisma.conversations.deleteMany({});
 
-  // Xóa các bảng liên quan đến community
   await prisma.post_tags.deleteMany({});
   await prisma.tags.deleteMany({});
   await prisma.post_products.deleteMany({});
@@ -34,7 +34,6 @@ async function main() {
   await prisma.likes.deleteMany({});
   await prisma.follows.deleteMany({});
 
-  // Xóa các bảng liên quan đến orders
   await prisma.order_coupons.deleteMany({});
   await prisma.shipments.deleteMany({});
   await prisma.payments.deleteMany({});
@@ -42,11 +41,9 @@ async function main() {
   await prisma.orders.deleteMany({});
   await prisma.coupons.deleteMany({});
 
-  // Xóa các bảng liên quan đến cart
   await prisma.cart_items.deleteMany({});
   await prisma.carts.deleteMany({});
 
-  // Xóa các bảng liên quan đến products
   await prisma.wishlists.deleteMany({});
   await prisma.reviews.deleteMany({});
   await prisma.tryon_items.deleteMany({});
@@ -55,66 +52,102 @@ async function main() {
   await prisma.product_variants.deleteMany({});
   await prisma.products.deleteMany({});
 
-  // Xóa các bảng liên quan đến AI
   await prisma.recommendations.deleteMany({});
   await prisma.tryon_sessions.deleteMany({});
   await prisma.skin_analyses.deleteMany({});
 
-  // Xóa các bảng admin
   await prisma.audit_logs.deleteMany({});
   await prisma.notifications.deleteMany({});
   await prisma.moderation_logs.deleteMany({});
 
-  // Xóa categories và brands
   await prisma.categories.deleteMany({});
   await prisma.brands.deleteMany({});
 
-  // Xóa shop staffs trước khi xóa shops
   await prisma.shop_staffs.deleteMany({});
   await prisma.shops.deleteMany({});
 
-  // Xóa addresses và auth_identities trước khi xóa users
   await prisma.addresses.deleteMany({});
   await prisma.auth_identities.deleteMany({});
 
-  // Xóa permissions
   await prisma.userpermission.deleteMany({});
   await prisma.rolepermission.deleteMany({});
   await prisma.permission.deleteMany({});
   await prisma.role.deleteMany({});
-
-  // Cuối cùng xóa users
   await prisma.users.deleteMany({});
 
   // --- 2. Tạo Roles ---
   console.log('Tạo roles...');
-  const adminRole = await prisma.role.create({
+  const rolesMap = new Map<Role, number>();
+  for (const roleName of Object.values(Role)) {
+    const role = await prisma.role.create({
+      data: { name: roleName },
+    });
+    rolesMap.set(roleName, role.id);
+  }
+
+  // --- 3. Tạo Permissions ---
+  console.log('Tạo permissions...');
+  const permissionsMap = new Map<Permission, number>();
+  for (const permName of Object.values(Permission)) {
+    // Sử dụng upsert để tránh lỗi nếu chạy lại mà không xóa
+    const perm = await prisma.permission.upsert({
+      where: { name: permName },
+      update: {},
+      create: { name: permName },
+    });
+    permissionsMap.set(permName, perm.id);
+  }
+
+  // --- 4. Map Permissions to Roles (RolePermission) ---
+  console.log('Mapping permissions to roles...');
+  for (const role of Object.keys(RolePermissions) as Role[]) {
+    const roleId = rolesMap.get(role);
+    if (!roleId) continue;
+
+    const perms = RolePermissions[role];
+    for (const perm of perms) {
+      const permId = permissionsMap.get(perm);
+      if (!permId) {
+        console.warn(`Permission ${perm} not found in map for role ${role}`);
+        continue;
+      }
+
+      await prisma.rolepermission.create({
+        data: {
+          role_id: roleId,
+          permission_id: permId,
+        },
+      });
+    }
+  }
+
+  // --- 5. Tạo Users (Sellers + Admin) ---
+  console.log('Tạo users...');
+  const adminRoleId = rolesMap.get(Role.ADMIN);
+  const sellerRoleId = rolesMap.get(Role.SELLER);
+  const userRoleId = rolesMap.get(Role.USER);
+
+  if (!adminRoleId || !sellerRoleId || !userRoleId) {
+    throw new Error('Không tìm thấy role ID cần thiết');
+  }
+
+  // Tạo Admin
+  const adminUser = await prisma.users.create({
     data: {
-      name: 'admin',
+      email: 'admin@system.com',
+      password_hash: 'hashed_password',
+      full_name: 'Super Admin',
+      role_id: adminRoleId,
     },
   });
 
-  const userRole = await prisma.role.create({
-    data: {
-      name: 'user',
-    },
-  });
-
-  const sellerRole = await prisma.role.create({
-    data: {
-      name: 'seller',
-    },
-  });
-
-  // --- 3. Tạo Users (Sellers) ---
-  // Cần user có role 'seller' để làm chủ shop (owner_id trong 'shops')
-  console.log('Tạo users (sellers)...');
+  // Tạo 2 Seller (Owner 2 shop)
   const seller1 = await prisma.users.create({
     data: {
       email: 'seller1@shop.com',
       password_hash: 'hashed_password',
-      full_name: 'Chủ Shop 1',
-      role_id: sellerRole.id,
+      full_name: 'Chủ Shop 1 (My Pham Auth)',
+      role_id: sellerRoleId,
     },
   });
 
@@ -122,12 +155,36 @@ async function main() {
     data: {
       email: 'seller2@shop.com',
       password_hash: 'hashed_password',
-      full_name: 'Chủ Shop 2',
-      role_id: sellerRole.id,
+      full_name: 'Chủ Shop 2 (Skincare Viet)',
+      role_id: sellerRoleId,
     },
   });
 
-  // --- 4. Tạo Shops ---
+  // --- 6. Tạo UserPermissions (Gán full permission của role cho user cụ thể) ---
+  // Yêu cầu: "thêm các userpermission cho hai shop và 1 admin"
+  console.log('Tạo UserPermissions...');
+
+  const assignPermissionsToUser = async (userId: number, role: Role) => {
+    const perms = RolePermissions[role];
+    for (const perm of perms) {
+      const permId = permissionsMap.get(perm);
+      if (permId) {
+        await prisma.userpermission.create({
+          data: {
+            user_id: userId,
+            permission_id: permId,
+          },
+        });
+      }
+    }
+  };
+
+  await assignPermissionsToUser(adminUser.id, Role.ADMIN);
+  await assignPermissionsToUser(seller1.id, Role.SELLER);
+  await assignPermissionsToUser(seller2.id, Role.SELLER);
+
+
+  // --- 7. Tạo Shops ---
   console.log('Tạo shops...');
   const shop1 = await prisma.shops.create({
     data: {
@@ -150,7 +207,7 @@ async function main() {
   });
   const shops = [shop1, shop2];
 
-  // --- 5. Tạo Brands ---
+  // --- 8. Tạo Brands ---
   console.log('Tạo brands...');
   const brandNames = ['L\'Oréal', 'Innisfree', 'CeraVe', 'La Roche-Posay', 'Some By Mi'];
   const brands = await Promise.all(
@@ -165,19 +222,15 @@ async function main() {
     )
   );
 
-  // --- 6. Tạo Categories ---
-  // Bảng 'categories' có quan hệ cha-con (parent_id)
+  // --- 9. Tạo Categories ---
   console.log('Tạo categories...');
-  
-  // Import dữ liệu từ categorys.json
-  const fs = require('fs');
-  const path = require('path');
+
   const categoryFilePath = path.join(__dirname, '..', 'src', 'data-init', 'categorys.json');
   const categoryDataRaw = fs.readFileSync(categoryFilePath, 'utf8');
   const categoryData = JSON.parse(categoryDataRaw);
 
   const allCategories: any[] = [];
-  
+
   for (const parentCategory of categoryData) {
     const createdParent = await prisma.categories.create({
       data: {
@@ -186,9 +239,9 @@ async function main() {
         parent_id: null,
       },
     });
-    
+
     allCategories.push(createdParent);
-    
+
     if (parentCategory.children && Array.isArray(parentCategory.children)) {
       for (const childCategory of parentCategory.children) {
         const createdChild = await prisma.categories.create({
@@ -203,7 +256,7 @@ async function main() {
     }
   }
 
-  // --- 7. Tạo Products từ products.json ---
+  // --- 10. Tạo Products từ products.json ---
   console.log('Tạo sản phẩm từ products.json...');
   const productsFilePath = path.join(__dirname, '..', 'src', 'data-init', 'products.json');
   const productsDataRaw = fs.readFileSync(productsFilePath, 'utf8');
@@ -278,7 +331,7 @@ async function main() {
     }
   }
 
-  // --- 8. Tạo 100 sản phẩm faker (bổ sung) ---
+  // --- 11. Tạo 100 sản phẩm faker ---
   console.log('Tạo 100 sản phẩm faker bổ sung...');
   for (let i = 0; i < 100; i++) {
     const randomShop = getRandomElement(shops);
@@ -298,9 +351,7 @@ async function main() {
         avg_rating: faker.number.float({ min: 3.5, max: 5, fractionDigits: 1 }),
         review_count: faker.number.int({ min: 5, max: 200 }),
 
-        // Tạo lồng các bảng liên quan
         product_media: {
-          // Thêm media cho sản phẩm
           create: [
             {
               url: faker.image.urlLoremFlickr({
@@ -324,7 +375,6 @@ async function main() {
         },
 
         product_variants: {
-          // Thêm biến thể (SKU) cho sản phẩm
           create: [
             {
               sku: `SKU-${faker.string.alphanumeric(10).toUpperCase()}`,
@@ -344,7 +394,6 @@ async function main() {
         },
 
         product_categories: {
-          // Liên kết sản phẩm với category
           create: [
             {
               category_id: randomCategory.id,

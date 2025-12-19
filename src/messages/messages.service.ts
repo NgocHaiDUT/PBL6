@@ -375,6 +375,8 @@ export class MessagesService {
 
   // Gửi tin nhắn (từ user hoặc shop)
   async sendMessage(userId: number, createMessageDto: CreateMessageDto, shopId?: number) {
+    console.log('🔍 [sendMessage] Called with:', { userId, shopId, createMessageDto });
+
     const { conversation_id, sender_id, receiver_id, content, postId, sharedProfileId, messageType, payload } = createMessageDto;
 
     let finalConversationId = conversation_id;
@@ -425,6 +427,8 @@ export class MessagesService {
 
     // Nếu gửi từ shop, kiểm tra user có quyền quản lý shop không
     if (shopId) {
+      console.log('🏪 [sendMessage] Sending as SHOP:', shopId);
+
       // Kiểm tra user có phải là owner của shop không
       const shop = await this.prisma.shops.findFirst({
         where: {
@@ -446,11 +450,17 @@ export class MessagesService {
           throw new ForbiddenException('You do not have permission to send messages as this shop');
         }
       }
+
+      console.log('✅ [sendMessage] User has permission to send as shop');
+    } else {
+      console.log('👤 [sendMessage] Sending as USER:', userId);
     }
 
     // Xác định sender type và sender id
     const senderType = shopId ? 'shop' : 'user';
     const senderId = shopId || userId;
+
+    console.log('📝 [sendMessage] Sender info:', { senderType, senderId, shopId, userId });
 
     // Kiểm tra quyền gửi tin nhắn trong conversation này
     const participant = await this.prisma.conversation_participants.findFirst({
@@ -464,24 +474,36 @@ export class MessagesService {
     });
 
     if (!participant) {
+      console.log('❌ [sendMessage] Not a participant!', {
+        conversationId: finalConversationId,
+        shopId,
+        userId: sender_id || userId,
+        entityType: shopId ? 'shop' : 'user'
+      });
       throw new ForbiddenException(
         'You are not a participant in this conversation',
       );
     }
 
+    console.log('✅ [sendMessage] Participant check passed');
+
     // Tạo tin nhắn
+    const messageData = {
+      conversation_id: finalConversationId,
+      sender_id: shopId ? null : sender_id || userId,
+      sender_shop_id: shopId || null,
+      sender_type: senderType,
+      content,
+      post_id: postId, // ✅ Include postId
+      shared_profile_id: sharedProfileId, // ✅ Include sharedProfileId
+      type: messageType, // ✅ Include messageType as enum
+      payload: payload, // ✅ Include payload for SHARE_PRODUCT and other types
+    };
+
+    console.log('💾 [sendMessage] Creating message with data:', messageData);
+
     const message = await this.prisma.messages.create({
-      data: {
-        conversation_id: finalConversationId,
-        sender_id: shopId ? null : sender_id || userId,
-        sender_shop_id: shopId || null,
-        sender_type: senderType,
-        content,
-        post_id: postId, // ✅ Include postId
-        shared_profile_id: sharedProfileId, // ✅ Include sharedProfileId
-        type: messageType, // ✅ Include messageType as enum
-        payload: payload, // ✅ Include payload for SHARE_PRODUCT and other types
-      },
+      data: messageData,
       include: {
         sender: {
           select: {
@@ -499,6 +521,37 @@ export class MessagesService {
         },
       },
     });
+
+    console.log('✅ [sendMessage] Message created:', { id: message.id, sender_id: message.sender_id, sender_shop_id: message.sender_shop_id });
+
+    // ✅ Create message_media records if payload contains media info
+    if (payload && (payload.mediaUrl || payload.mediaFiles)) {
+      console.log('📎 [sendMessage] Creating message_media records from payload');
+
+      const mediaFiles = payload.mediaFiles || [{
+        url: payload.mediaUrl,
+        type: payload.mediaType,
+        fileName: payload.fileName
+      }];
+
+      await Promise.all(
+        mediaFiles.map((media: any) =>
+          this.prisma.message_media.create({
+            data: {
+              message_id: message.id,
+              media_url: media.url || media.mediaUrl,
+              media_type: media.type || media.mediaType || 'image',
+              file_name: media.fileName,
+              file_size: media.fileSize,
+              duration: media.duration,
+              thumbnail_url: media.thumbnailUrl,
+            },
+          })
+        )
+      );
+
+      console.log('✅ [sendMessage] Created message_media records for message:', message.id);
+    }
 
     // Tự động đánh dấu là đã đọc cho người gửi (chỉ với user)
     if (!shopId) {
@@ -595,6 +648,17 @@ export class MessagesService {
               logo_url: true,
             },
           },
+          message_media: {
+            select: {
+              id: true,
+              media_url: true,
+              media_type: true,
+              file_name: true,
+              file_size: true,
+              duration: true,
+              thumbnail_url: true,
+            },
+          },
           message_reads: {
             select: {
               user_id: true,
@@ -648,6 +712,17 @@ export class MessagesService {
               id: true,
               name: true,
               logo_url: true,
+            },
+          },
+          message_media: {
+            select: {
+              id: true,
+              media_url: true,
+              media_type: true,
+              file_name: true,
+              file_size: true,
+              duration: true,
+              thumbnail_url: true,
             },
           },
           message_reads: {
@@ -1039,7 +1114,7 @@ export class MessagesService {
 
   // Tìm kiếm cuộc hội thoại với user khác
   async findOrCreateConversation(userId: number, otherUserId: number) {
-    
+
     if (userId === otherUserId) {
       throw new BadRequestException('Cannot create conversation with yourself');
     }

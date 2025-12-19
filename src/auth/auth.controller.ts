@@ -44,7 +44,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly mailerService: MailerService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user account' })
@@ -202,7 +202,7 @@ export class AuthController {
   @Post('change-password-first-time')
   @ApiOperation({
     summary:
-      'Change password on first login (no need to re-enter temp password)',
+      'Change password on first login with temporary password',
   })
   @ApiResponse({
     status: 200,
@@ -211,26 +211,36 @@ export class AuthController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad request - newPassword is required',
+    description: 'Bad request - email, temporaryPassword, and newPassword are required',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Temporary password is incorrect',
   })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @UseGuards(JwtAuthGuard)
   async changePasswordFirstTime(
     @Body() changePasswordFirstTimeDto: ChangePasswordFirstTimeDto,
-    @Req() req: any,
   ) {
     if (
       !changePasswordFirstTimeDto ||
+      !changePasswordFirstTimeDto.email ||
+      !changePasswordFirstTimeDto.temporaryPassword ||
       !changePasswordFirstTimeDto.newPassword
     ) {
-      throw new BadRequestException('newPassword is required');
+      throw new BadRequestException(
+        'email, temporaryPassword, and newPassword are required',
+      );
     }
 
-    const userId = req.user.userId;
+    // Xác thực mật khẩu tạm thời
+    const user = await this.authService.validateUser(
+      changePasswordFirstTimeDto.email,
+      changePasswordFirstTimeDto.temporaryPassword,
+    );
 
-    // Đổi mật khẩu và set firstlogin = false (không cần nhập lại mật khẩu tạm)
+    // Đổi mật khẩu và set firstlogin = false
     const result = await this.authService.changePasswordFirstTime(
-      userId,
+      user.id,
       changePasswordFirstTimeDto.newPassword,
     );
 
@@ -245,7 +255,7 @@ export class AuthController {
   })
   @ApiExcludeEndpoint()
   @UseGuards(GoogleAuthGuard)
-  async googleLogin() {}
+  async googleLogin() { }
 
   @Get('google/callback')
   @ApiOperation({
@@ -270,39 +280,17 @@ export class AuthController {
       });
     }
 
-    const { state } = req.query;
-    if (!state) {
-      throw new UnauthorizedException({
-        code: ERROR_CODE.GOOGLE_UNAUTHORIZED,
-      });
-    }
+    console.log('[GoogleCallback] User authenticated:', user.email);
 
-    let deviceInfo;
-    try {
-      deviceInfo = JSON.parse(Buffer.from(state, 'base64').toString());
-    } catch {
-      throw new UnauthorizedException({
-        code: ERROR_CODE.GOOGLE_UNAUTHORIZED,
-      });
-    }
+    // Tạo OAuth code chỉ với user_id, không cần device_id
+    // Device_id sẽ được cung cấp khi exchange token
+    const code = await this.authService.createOAuthCodeWithoutDevice(user.id);
 
-    const dto: CreateOAuthCodeDto = {
-      user_id: user.id,
-      device_id: deviceInfo.device_id,
-    };
+    console.log('[GoogleCallback] Created OAuth code:', code);
 
-    const code = await this.authService.createOAuthCode(dto);
-
-    const isWeb = deviceInfo.device_type === 'web';
-
-    if (isWeb) {
-      return res.redirect(
-        `${process.env.FRONTEND_URL}/auth/callback?code=${code}`,
-      );
-    }
-
+    // Redirect về mobile app với code
     return res.redirect(`${process.env.MOBILE_URL}/auth/callback?code=${code}`);
-  } 
+  }
 
   @Post('exchange')
   @ApiOperation({
@@ -327,7 +315,7 @@ export class AuthController {
   })
   @ApiExcludeEndpoint() // Exclude from Swagger UI as it's a redirect endpoint
   @UseGuards(AuthGuard('facebook'))
-  async facebookLogin() {}
+  async facebookLogin() { }
 
   @Get('facebook/callback')
   @ApiOperation({
@@ -402,7 +390,10 @@ export class AuthController {
   @ApiBearerAuth('JWT-auth')
   async getCurentUser(@Req() req: any) {
     const userId = req.user.userId;
+
     const user = await this.authService.getCurrentUser(userId);
+
+
     return { success: true, user };
   }
 }
