@@ -282,39 +282,36 @@ export class AuthController {
 
     console.log('[GoogleCallback] User authenticated:', user.email);
 
-    // Parse state directly from query
-    const state = req.query?.state as string;
-    let platform = 'mobile'; // default
+    // Xử lý thông tin thiết bị từ state
+    const state = req.query.state as string;
+    let deviceType = 'mobile';
+    let deviceId: string | undefined = undefined;
 
     if (state) {
       try {
-        const decoded = Buffer.from(state, 'base64').toString();
-        const stateData = JSON.parse(decoded);
-        platform = stateData.platform || 'mobile';
-        console.log('[GoogleCallback] Parsed platform from state:', platform);
-      } catch (e) {
-        console.log('[GoogleCallback] Failed to parse state, using default');
+        const decodedState = JSON.parse(
+          Buffer.from(state, 'base64').toString(),
+        );
+        console.log('[GoogleCallback] Decoded state:', decodedState);
+        deviceType = decodedState.device_type || 'mobile';
+        deviceId = decodedState.device_id || undefined;
+      } catch (error) {
+        console.error('[GoogleCallback] Error parsing state:', error);
       }
     }
 
-    console.log('[GoogleCallback] Platform:', platform);
+    // Tạo OAuth code với user_id và device_id (nếu có)
+    const code = await this.authService.createOAuthCodeWithOptionalDevice(user.id, deviceId);
 
-    if (platform === 'web') {
-      // Web flow: Generate JWT tokens directly and redirect to frontend
-      const payload = { sub: user.id, email: user.email };
-      const accessToken = await this.jwtService.signAsync(payload, {
-        expiresIn: '15m',
-        secret: process.env.JWT_ACCESS_SECRET,
-      });
+    console.log('[GoogleCallback] Created OAuth code:', code);
 
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-      return res.redirect(`${frontendUrl}/auth/callback?access_token=${accessToken}`);
-    } else {
-      // Mobile flow: Create OAuth code for token exchange
-      const code = await this.authService.createOAuthCodeWithoutDevice(user.id);
-      console.log('[GoogleCallback] Created OAuth code:', code);
-      return res.redirect(`${process.env.MOBILE_URL}/auth/callback?code=${code}`);
-    }
+    const redirectBase = deviceType === 'web'
+      ? (process.env.FRONTEND_URL)
+      : process.env.MOBILE_URL;
+
+    console.log(`[GoogleCallback] Redirecting to ${deviceType}: ${redirectBase}/auth/callback?code=${code}`);
+
+    return res.redirect(`${redirectBase}/auth/callback?code=${code}`);
   }
 
   @Post('exchange')
