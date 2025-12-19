@@ -130,6 +130,7 @@ model users {
   oauth_login_codes         oauth_login_codes[]
   deviceOtps                device_otps[]
   story_views               story_views[]
+  shop_follows              shop_follows[]
 }
 
 model auth_identities {
@@ -266,6 +267,7 @@ model shops {
   ghn_shop_id               Int?                        @unique
   conversation_participants conversation_participants[]
   messages                  messages[]
+  shop_follows              shop_follows[]
 }
 
 model shop_addresses {
@@ -537,6 +539,16 @@ model follows {
   following    users    @relation("following", fields: [following_id], references: [id])
 
   @@id([follower_id, following_id])
+}
+
+model shop_follows {
+  user_id    Int
+  shop_id    Int
+  created_at DateTime @default(now())
+  user       users    @relation(fields: [user_id], references: [id])
+  shop       shops    @relation(fields: [shop_id], references: [id])
+
+  @@id([user_id, shop_id])
 }
 
 model posts {

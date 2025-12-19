@@ -582,7 +582,7 @@ export class ShopService {
   }
 
   // Public method - no auth required, limited info
-  async getPublicShopDetails(shopid: number) {
+  async getPublicShopDetails(shopid: number, currentUserId?: number) {
     const shop = await this.prisma.shops.findUnique({
       where: { id: shopid },
       include: {
@@ -596,6 +596,7 @@ export class ShopService {
         _count: {
           select: {
             shop_staffs: true,
+            shop_follows: true, // Count directly from shop_follows
           },
         },
       },
@@ -605,10 +606,21 @@ export class ShopService {
       return { success: false, message: 'Shop not found' };
     }
 
-    // Get follower count - counting users following shop owner
-    const followerCount = await this.prisma.follows.count({
-      where: { following_id: shop.owner_id },
-    });
+    const followerCount = shop._count.shop_follows;
+
+    // Check if current user is following this shop
+    let isFollowing = false;
+    if (currentUserId) {
+      const follow = await this.prisma.shop_follows.findUnique({
+        where: {
+          user_id_shop_id: {
+            user_id: currentUserId,
+            shop_id: shopid
+          }
+        }
+      });
+      isFollowing = !!follow;
+    }
 
     // Get published AND approved products for shop
     const publishedProducts = await this.prisma.products.findMany({
@@ -661,10 +673,71 @@ export class ShopService {
         staff_count: shop._count.shop_staffs,
         product_count: publishedProducts.length, // Only count published products
         follower_count: followerCount,
+        is_following: isFollowing,
         avg_rating: Number(avgShopRating.toFixed(1)),
         total_reviews: totalReviews,
       },
     };
+  }
+
+  async followShop(userId: number, shopId: number) {
+    // Check if shop exists
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopId }
+    });
+    if (!shop) {
+      throw new NotFoundException('Shop not found');
+    }
+
+    // Check if already following
+    const existingFollow = await this.prisma.shop_follows.findUnique({
+      where: {
+        user_id_shop_id: {
+          user_id: userId,
+          shop_id: shopId
+        }
+      }
+    });
+
+    if (existingFollow) {
+      return { success: true, message: 'Already following' };
+    }
+
+    await this.prisma.shop_follows.create({
+      data: {
+        user_id: userId,
+        shop_id: shopId
+      }
+    });
+
+    return { success: true, message: 'Followed shop successfully' };
+  }
+
+  async unfollowShop(userId: number, shopId: number) {
+    const deleteResult = await this.prisma.shop_follows.deleteMany({
+      where: {
+        user_id: userId,
+        shop_id: shopId
+      }
+    });
+
+    if (deleteResult.count === 0) {
+      return { success: false, message: 'Not following this shop' };
+    }
+
+    return { success: true, message: 'Unfollowed shop successfully' };
+  }
+
+  async getShopFollowStatus(userId: number, shopId: number) {
+    const follow = await this.prisma.shop_follows.findUnique({
+      where: {
+        user_id_shop_id: {
+          user_id: userId,
+          shop_id: shopId
+        }
+      }
+    });
+    return { is_following: !!follow };
   }
 
   // ============================================

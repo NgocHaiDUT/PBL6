@@ -622,6 +622,49 @@ export class ShopController {
     status: 404,
     description: 'Shop not found',
   })
-  async getPublicShopDetails(@Param('shopid', ParseIntPipe) shopid: number) {
-    return this.shopService.getPublicShopDetails(shopid);
-  }}
+  async getPublicShopDetails(
+    @Param('shopid', ParseIntPipe) shopid: number,
+    @Query('currentUserId') currentUserId?: string,
+  ) {
+    const userId = currentUserId ? parseInt(currentUserId) : undefined;
+    return this.shopService.getPublicShopDetails(shopid, userId);
+  }
+
+  // Follow Shop
+  @Post(':shopid/follow')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Follow a shop' })
+  @ApiResponse({ status: 201, description: 'Followed successfully' })
+  async followShop(
+    @Param('shopid', ParseIntPipe) shopid: number,
+    @Req() req: any
+  ) {
+    return this.shopService.followShop(req.user.userId, shopid);
+  }
+
+  // Unfollow Shop
+  @Delete(':shopid/follow')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Unfollow a shop' })
+  @ApiResponse({ status: 200, description: 'Unfollowed successfully' })
+  async unfollowShop(
+    @Param('shopid', ParseIntPipe) shopid: number,
+    @Req() req: any
+  ) {
+    return this.shopService.unfollowShop(req.user.userId, shopid);
+  }
+
+  // Check Follow Status
+  @Get(':shopid/follow/status')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Check if user follows shop' })
+  async getFollowStatus(
+    @Param('shopid', ParseIntPipe) shopid: number,
+    @Req() req: any
+  ) {
+    return this.shopService.getShopFollowStatus(req.user.userId, shopid);
+  }
+}
