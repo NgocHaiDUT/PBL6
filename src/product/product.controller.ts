@@ -248,6 +248,12 @@ export class ProductController {
     );
   }
 
+  // Public endpoint to get product by slug (must come before :productId)
+  @Get('slug/:slug')
+  async getProductBySlug(@Param('slug') slug: string) {
+    return this.productservice.getProductBySlug(slug);
+  }
+
   @Get(':productId')
   async getProductById(@Param('productId', ParseIntPipe) productId: number) {
     return this.productservice.getProductById(productId);

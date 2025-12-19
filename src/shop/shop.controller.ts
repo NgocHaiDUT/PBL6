@@ -480,4 +480,59 @@ export class ShopController {
   async getShopDetails(@Param('shopid', ParseIntPipe) shopid: number) {
     return this.shopService.getShopDetails(shopid);
   }
-}
+
+  // Public endpoint - Anyone can view shop details
+  @Get('public/:shopid')
+  @ApiOperation({ summary: 'Get public shop details (no auth required)' })
+  @ApiParam({
+    name: 'shopid',
+    type: 'number',
+    description: 'Shop ID',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Shop details retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 1 },
+            name: { type: 'string', example: 'My Beauty Shop' },
+            slug: { type: 'string', example: 'my-beauty-shop' },
+            description: { type: 'string' },
+            logo_url: { type: 'string' },
+            cover_url: { type: 'string' },
+            phone: { type: 'string' },
+            email: { type: 'string' },
+            is_verified: { type: 'boolean' },
+            created_at: { type: 'string', format: 'date-time' },
+            updated_at: { type: 'string', format: 'date-time' },
+            owner: {
+              type: 'object',
+              properties: {
+                id: { type: 'number' },
+                full_name: { type: 'string' },
+                avatar_url: { type: 'string' },
+              },
+            },
+            staff_count: { type: 'number', example: 5 },
+            product_count: { type: 'number', example: 120 },
+            follower_count: { type: 'number', example: 1500 },
+            avg_rating: { type: 'number', example: 4.8 },
+            total_reviews: { type: 'number', example: 450 },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Shop not found',
+  })
+  async getPublicShopDetails(@Param('shopid', ParseIntPipe) shopid: number) {
+    return this.shopService.getPublicShopDetails(shopid);
+  }}
