@@ -830,6 +830,9 @@ model messages {
 
   @@index([sender_id])
   @@index([sender_shop_id])
+  @@index([conversation_id])
+  @@index([created_at])
+  @@index([conversation_id, created_at(sort: Desc)])
 }
 
 model message_reads {
