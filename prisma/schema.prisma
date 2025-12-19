@@ -178,13 +178,13 @@ model refresh_tokens {
 model oauth_login_codes {
   code       String   @id
   user_id    Int
-  device_id  String
+  device_id  String?
   expires_at DateTime
   used       Boolean  @default(false)
   user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id])
-  @@index([code, device_id])
+  @@index([code])
   @@index([expires_at])
 }
 

@@ -280,48 +280,15 @@ export class AuthController {
       });
     }
 
-    const { state } = req.query;
-    if (!state) {
-      throw new UnauthorizedException({
-        code: ERROR_CODE.GOOGLE_UNAUTHORIZED,
-      });
-    }
+    console.log('[GoogleCallback] User authenticated:', user.email);
 
-    let deviceInfo;
-    try {
-      const decodedState = Buffer.from(state as string, 'base64').toString();
-      console.log('[GoogleCallback] Decoded state:', decodedState);
-      deviceInfo = JSON.parse(decodedState);
-      console.log('[GoogleCallback] Parsed deviceInfo:', deviceInfo);
-    } catch (error) {
-      console.error('[GoogleCallback] Failed to parse state:', error);
-      throw new UnauthorizedException({
-        code: ERROR_CODE.GOOGLE_UNAUTHORIZED,
-      });
-    }
+    // Tạo OAuth code chỉ với user_id, không cần device_id
+    // Device_id sẽ được cung cấp khi exchange token
+    const code = await this.authService.createOAuthCodeWithoutDevice(user.id);
 
-    // Validate device_id exists
-    if (!deviceInfo.device_id) {
-      console.error('[GoogleCallback] Missing device_id in deviceInfo:', deviceInfo);
-      throw new BadRequestException('Missing device_id in state parameter');
-    }
+    console.log('[GoogleCallback] Created OAuth code:', code);
 
-    const dto: CreateOAuthCodeDto = {
-      user_id: user.id,
-      device_id: deviceInfo.device_id,
-    };
-
-    console.log('[GoogleCallback] Creating OAuth code with DTO:', dto);
-    const code = await this.authService.createOAuthCode(dto);
-
-    const isWeb = deviceInfo.device_type === 'web';
-
-    if (isWeb) {
-      return res.redirect(
-        `${process.env.FRONTEND_URL}/auth/callback?code=${code}`,
-      );
-    }
-
+    // Redirect về mobile app với code
     return res.redirect(`${process.env.MOBILE_URL}/auth/callback?code=${code}`);
   }
 
@@ -423,7 +390,10 @@ export class AuthController {
   @ApiBearerAuth('JWT-auth')
   async getCurentUser(@Req() req: any) {
     const userId = req.user.userId;
+
     const user = await this.authService.getCurrentUser(userId);
+
+
     return { success: true, user };
   }
 }
