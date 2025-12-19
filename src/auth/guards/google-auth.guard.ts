@@ -8,10 +8,14 @@ export class GoogleAuthGuard extends AuthGuard('google') {
 
     const { device_id, device_type } = req.query;
 
+    console.log('[GoogleAuthGuard] Query paramsreceived:', req.query);
+
     const statePayload = {
-      device_id,
-      device_type,
+      device_id: device_id || null,
+      device_type: device_type || 'mobile',
     };
+
+    console.log('[GoogleAuthGuard] State payload created:', statePayload);
 
     const state = Buffer.from(JSON.stringify(statePayload)).toString('base64');
 

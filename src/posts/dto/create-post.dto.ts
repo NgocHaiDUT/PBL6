@@ -6,6 +6,7 @@ import {
   IsInt,
   IsBoolean,
 } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 
 export class CreatePostDto {
   @IsOptional()
@@ -40,11 +41,20 @@ export class CreatePostDto {
   visibility?: string = 'public';
 
   @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return [Number(value)];
+    if (Array.isArray(value)) return value.map(Number);
+    return value;
+  })
   @IsArray()
   @IsInt({ each: true })
   product_ids?: number[];
 
   @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return [value];
+    return value;
+  })
   @IsArray()
   @IsString({ each: true })
   tags?: string[];

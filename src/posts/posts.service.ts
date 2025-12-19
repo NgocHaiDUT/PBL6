@@ -12,7 +12,7 @@ import { QueryPostsDto } from './dto/query-posts.dto';
 
 @Injectable()
 export class PostsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   // Helper function to normalize URLs for frontend
   private normalizeUrl(url: string | null): string | null {
@@ -30,9 +30,9 @@ export class PostsService {
     // Process post_media and extract cover/video URLs
     const processedMedia = post.post_media
       ? post.post_media.map((media: any) => ({
-          ...media,
-          media_url: this.normalizeUrl(media.media_url),
-        }))
+        ...media,
+        media_url: this.normalizeUrl(media.media_url),
+      }))
       : [];
 
     // Find cover image (sort_order: 0) and first video
@@ -50,16 +50,28 @@ export class PostsService {
       video_url: firstVideo ? firstVideo.media_url : null,
       user: post.user
         ? {
-            ...post.user,
-            avatar_url: this.normalizeUrl(post.user.avatar_url),
-          }
+          ...post.user,
+          avatar_url: this.normalizeUrl(post.user.avatar_url),
+        }
         : null,
       shop: post.shop
         ? {
-            ...post.shop,
-            logo_url: this.normalizeUrl(post.shop.logo_url),
-          }
+          ...post.shop,
+          logo_url: this.normalizeUrl(post.shop.logo_url),
+        }
         : null,
+      // Process products to add first image if available
+      post_products: post.post_products
+        ? post.post_products.map((pp: any) => ({
+          ...pp,
+          product: {
+            ...pp.product,
+            image: pp.product.product_media?.[0]?.url
+              ? this.normalizeUrl(pp.product.product_media[0].url)
+              : null,
+          }
+        }))
+        : [],
       post_media: processedMedia,
     };
   }
@@ -177,7 +189,7 @@ export class PostsService {
     const rawMd = (postData as any)?.content_md as string | undefined;
     const trimmedMd = typeof rawMd === 'string' ? rawMd.trim() : '';
     const hasMedia = mediaUrls.length > 0 || coverUrl || videoUrl;
-    
+
     if (!trimmedMd && !hasMedia) {
       throw new Error('content_md is required when no media is provided');
     }
@@ -258,7 +270,7 @@ export class PostsService {
       for (const tagName of tags) {
         // Create slug from tag name
         const slug = tagName.toLowerCase().replace(/\s+/g, '-');
-        
+
         // Find or create tag
         let tag = await this.prisma.tags.findUnique({
           where: { slug },
@@ -347,6 +359,11 @@ export class PostsService {
                   id: true,
                   name: true,
                   slug: true,
+                  product_media: {
+                    take: 1,
+                    orderBy: { sort_order: 'asc' },
+                    select: { url: true },
+                  },
                 },
               },
             },
@@ -438,6 +455,11 @@ export class PostsService {
                 id: true,
                 name: true,
                 slug: true,
+                product_media: {
+                  take: 1,
+                  orderBy: { sort_order: 'asc' },
+                  select: { url: true },
+                },
               },
             },
           },
@@ -474,7 +496,12 @@ export class PostsService {
     };
   }
 
-  async updatePost(id: number, userId: number, updatePostDto: UpdatePostDto) {
+  async updatePost(
+    id: number,
+    userId: number,
+    updatePostDto: UpdatePostDto,
+    files?: any[],
+  ) {
     const post = await this.prisma.posts.findUnique({
       where: { id },
       include: {
@@ -500,7 +527,7 @@ export class PostsService {
     const isPostOwner = post.user_id === userId;
     const isShopOwner = post.shop_id && post.shop?.owner_id === userId;
     const isShopStaff = post.shop_id && post.shop?.shop_staffs && post.shop.shop_staffs.length > 0;
-    
+
     // Check if staff has edit_post permission
     let hasEditPostPermission = false;
     if (isShopStaff && !isShopOwner && post.shop_id) {
@@ -512,7 +539,7 @@ export class PostsService {
         (up) => up.permission.name === 'edit_post',
       );
     }
-    
+
     if (!isPostOwner && !isShopOwner && (!isShopStaff || !hasEditPostPermission)) {
       throw new ForbiddenException('You can only update your own posts or posts in your shop');
     }
@@ -528,17 +555,24 @@ export class PostsService {
       },
     });
 
-    // Xử lý media nếu có
-    if (media_urls !== undefined) {
-      // Xóa media cũ
+    // Xử lý media nếu có media_urls hoặc có files mới
+    if (media_urls !== undefined || (files && files.length > 0)) {
+      let finalMediaUrls = Array.isArray(media_urls) ? [...media_urls] : [];
+
+      // Nếu có file mới, thêm vào danh sách
+      if (files && files.length > 0) {
+        const newFileUrls = files.map((file) => file.location);
+        finalMediaUrls = [...finalMediaUrls, ...newFileUrls];
+      }
+
+      // Xóa tất cả media cũ và thay bằng danh sách mới
       await this.prisma.post_media.deleteMany({
         where: { post_id: id },
       });
 
-      // Thêm media mới
-      if (media_urls.length > 0) {
+      if (finalMediaUrls.length > 0) {
         await this.prisma.post_media.createMany({
-          data: media_urls.map((url, index) => ({
+          data: finalMediaUrls.map((url, index) => ({
             post_id: id,
             media_url: url,
             media_type:
@@ -604,7 +638,7 @@ export class PostsService {
   async deletePost(id: number, userId: number) {
     const post = await this.prisma.posts.findUnique({
       where: { id },
-      select: { 
+      select: {
         user_id: true,
         shop_id: true,
         shop: {
@@ -629,7 +663,7 @@ export class PostsService {
     const isPostOwner = post.user_id === userId;
     const isShopOwner = post.shop_id && post.shop?.owner_id === userId;
     const isShopStaff = post.shop_id && post.shop?.shop_staffs && post.shop.shop_staffs.length > 0;
-    
+
     // Check if staff has delete_post permission
     let hasDeletePostPermission = false;
     if (isShopStaff && !isShopOwner && post.shop_id) {
@@ -641,7 +675,7 @@ export class PostsService {
         (up) => up.permission.name === 'delete_post',
       );
     }
-    
+
     if (!isPostOwner && !isShopOwner && (!isShopStaff || !hasDeletePostPermission)) {
       throw new ForbiddenException('You can only delete your own posts or posts in your shop');
     }

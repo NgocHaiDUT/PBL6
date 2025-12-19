@@ -36,7 +36,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('posts')
 export class PostsController {
-  constructor(private readonly postsService: PostsService) {}
+  constructor(private readonly postsService: PostsService) { }
 
   @Post()
   @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -83,13 +83,15 @@ export class PostsController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_POST)
+  @UseInterceptors(FilesInterceptor('media', 10, s3PostMediaConfig))
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updatePostDto: UpdatePostDto,
+    @UploadedFiles() files: any[],
     @Req() req: any,
   ) {
     const userId = req.user.userId;
-    return this.postsService.updatePost(id, userId, updatePostDto);
+    return this.postsService.updatePost(id, userId, updatePostDto, files);
   }
 
   @Delete(':id')
@@ -211,7 +213,7 @@ export class PostsController {
     if (storageDriver !== 's3') {
       throw new ForbiddenException(
         'Presigned URL only available for S3 storage. Current: ' +
-          storageDriver,
+        storageDriver,
       );
     }
 

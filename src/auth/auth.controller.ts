@@ -282,14 +282,36 @@ export class AuthController {
 
     console.log('[GoogleCallback] User authenticated:', user.email);
 
-    // Tạo OAuth code chỉ với user_id, không cần device_id
-    // Device_id sẽ được cung cấp khi exchange token
-    const code = await this.authService.createOAuthCodeWithoutDevice(user.id);
+    // Xử lý thông tin thiết bị từ state
+    const state = req.query.state as string;
+    let deviceType = 'mobile';
+    let deviceId: string | undefined = undefined;
+
+    if (state) {
+      try {
+        const decodedState = JSON.parse(
+          Buffer.from(state, 'base64').toString(),
+        );
+        console.log('[GoogleCallback] Decoded state:', decodedState);
+        deviceType = decodedState.device_type || 'mobile';
+        deviceId = decodedState.device_id || undefined;
+      } catch (error) {
+        console.error('[GoogleCallback] Error parsing state:', error);
+      }
+    }
+
+    // Tạo OAuth code với user_id và device_id (nếu có)
+    const code = await this.authService.createOAuthCodeWithOptionalDevice(user.id, deviceId);
 
     console.log('[GoogleCallback] Created OAuth code:', code);
 
-    // Redirect về mobile app với code
-    return res.redirect(`${process.env.MOBILE_URL}/auth/callback?code=${code}`);
+    const redirectBase = deviceType === 'web'
+      ? (process.env.FRONTEND_URL)
+      : process.env.MOBILE_URL;
+
+    console.log(`[GoogleCallback] Redirecting to ${deviceType}: ${redirectBase}/auth/callback?code=${code}`);
+
+    return res.redirect(`${redirectBase}/auth/callback?code=${code}`);
   }
 
   @Post('exchange')
