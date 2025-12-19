@@ -32,4 +32,13 @@ export class QueryFollowsDto {
   })
   @IsInt({ message: 'Limit must be a valid integer' })
   limit?: number = 20;
+
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    const parsed = parseInt(value);
+    return isNaN(parsed) ? value : parsed;
+  })
+  @IsInt({ message: 'Current User ID must be a valid integer' })
+  current_user_id?: number;
 }

@@ -108,7 +108,8 @@ export class MessagesService {
     const { page = 1, limit = 10 } = queryDto;
     const skip = (page - 1) * limit;
 
-    const [conversations, total] = await Promise.all([
+    // First, get all conversations with their last message
+    const [allConversations, total] = await Promise.all([
       this.prisma.conversations.findMany({
         where: {
           participants: {
@@ -118,9 +119,6 @@ export class MessagesService {
             },
           },
         },
-        skip,
-        take: limit,
-        orderBy: { created_at: 'desc' },
         include: {
           participants: {
             include: {
@@ -174,9 +172,19 @@ export class MessagesService {
       }),
     ]);
 
+    // Sort by last message timestamp (most recent first)
+    const sortedConversations = allConversations.sort((a, b) => {
+      const aTime = a.messages[0]?.created_at?.getTime() || a.created_at.getTime();
+      const bTime = b.messages[0]?.created_at?.getTime() || b.created_at.getTime();
+      return bTime - aTime; // Descending order (newest first)
+    });
+
+    // Apply pagination after sorting
+    const paginatedConversations = sortedConversations.slice(skip, skip + limit);
+
     // Thêm thông tin unread count cho mỗi conversation
     const conversationsWithUnread = await Promise.all(
-      conversations.map(async (conversation) => {
+      paginatedConversations.map(async (conversation) => {
         const unreadCount = await this.getUnreadMessagesCount(
           conversation.id,
           userId,
@@ -273,7 +281,8 @@ export class MessagesService {
     const { page = 1, limit = 10 } = queryDto;
     const skip = (page - 1) * limit;
 
-    const [conversations, total] = await Promise.all([
+    // Get all conversations with their last message
+    const [allConversations, total] = await Promise.all([
       this.prisma.conversations.findMany({
         where: {
           participants: {
@@ -283,9 +292,6 @@ export class MessagesService {
             }
           }
         },
-        skip,
-        take: limit,
-        orderBy: { created_at: 'desc' },
         include: {
           participants: {
             include: {
@@ -339,9 +345,19 @@ export class MessagesService {
       })
     ]);
 
+    // Sort by last message timestamp (most recent first)
+    const sortedConversations = allConversations.sort((a, b) => {
+      const aTime = a.messages[0]?.created_at?.getTime() || a.created_at.getTime();
+      const bTime = b.messages[0]?.created_at?.getTime() || b.created_at.getTime();
+      return bTime - aTime; // Descending order (newest first)
+    });
+
+    // Apply pagination after sorting
+    const paginatedConversations = sortedConversations.slice(skip, skip + limit);
+
     // Thêm thông tin unread count cho mỗi conversation
     // Note: Shop không có message_reads, chỉ user mới có
-    const conversationsWithInfo = conversations.map(conversation => {
+    const conversationsWithInfo = paginatedConversations.map(conversation => {
       return {
         ...conversation,
         last_message: conversation.messages[0] || null,
