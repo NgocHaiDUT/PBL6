@@ -69,6 +69,9 @@ export class PostsService {
             image: pp.product.product_media?.[0]?.url
               ? this.normalizeUrl(pp.product.product_media[0].url)
               : null,
+            hasTryOn: pp.product.product_variants?.some(
+              (v: any) => v.shade_hex !== null && v.shade_hex !== '',
+            ) || false,
           }
         }))
         : [],
@@ -365,6 +368,9 @@ export class PostsService {
                     orderBy: { sort_order: 'asc' },
                     select: { url: true },
                   },
+                  product_variants: {
+                    select: { shade_hex: true },
+                  },
                 },
               },
             },
@@ -460,6 +466,9 @@ export class PostsService {
                   take: 1,
                   orderBy: { sort_order: 'asc' },
                   select: { url: true },
+                },
+                product_variants: {
+                  select: { shade_hex: true },
                 },
               },
             },

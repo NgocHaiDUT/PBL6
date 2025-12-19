@@ -5,6 +5,30 @@ import { moderation_status, Prisma } from '@prisma/client';
 export class ProductService {
   constructor(private prisma: PrismaService) { }
 
+  private normalizeProduct(product: any) {
+    if (!product) return null;
+
+    // Check if any variant has shade_hex (indicates AR try-on capability)
+    const hasTryOn = product.product_variants?.some(
+      (v: any) => v.shade_hex !== null && v.shade_hex !== '',
+    );
+
+    // Get first image for convenience
+    const firstImage = product.product_media?.[0]?.url || null;
+
+    // Calculate rating/reviews if missing/zero using actual data if available
+    // (Prisma already provides avg_rating and review_count in the model, but we ensure field names match frontend)
+
+    return {
+      ...product,
+      hasTryOn: hasTryOn || false,
+      first_image: firstImage,
+      rating: Number(product.avg_rating) || 0,
+      reviews: product.review_count || 0,
+      inStock: product.product_variants?.some((v: any) => v.stock > 0) || false,
+    };
+  }
+
   private generateSlug(text: string): string {
     return text
       .toLowerCase()
@@ -1182,13 +1206,7 @@ export class ProductService {
       }
 
       // Transform products to include first image
-      const productsWithFirstImage = filteredProducts.map((product) => ({
-        ...product,
-        first_image:
-          product.product_media.length > 0
-            ? product.product_media[0].url
-            : null,
-      }));
+      const productsWithFirstImage = filteredProducts.map((product) => this.normalizeProduct(product));
 
       // Calculate pagination metadata
       const totalPages = Math.ceil(totalProducts / limit);
@@ -1306,7 +1324,7 @@ export class ProductService {
 
       return {
         success: true,
-        products,
+        products: products.map(p => this.normalizeProduct(p)),
         pagination: {
           page: Number(page),
           limit: Number(limit),
@@ -1354,7 +1372,7 @@ export class ProductService {
         return { success: false, message: 'Sản phẩm không tồn tại hoặc chưa được duyệt' };
       }
 
-      return { success: true, product };
+      return { success: true, product: this.normalizeProduct(product) };
     } catch (error) {
       console.error('Error fetching product:', error);
       return { success: false, message: 'Lỗi khi tải sản phẩm' };
@@ -1393,7 +1411,7 @@ export class ProductService {
         return { success: false, message: 'Sản phẩm không tồn tại hoặc chưa được duyệt' };
       }
 
-      return { success: true, product };
+      return { success: true, product: this.normalizeProduct(product) };
     } catch (error) {
       console.error('Error fetching product by slug:', error);
       return { success: false, message: 'Lỗi khi tải sản phẩm' };
@@ -1502,7 +1520,7 @@ export class ProductService {
 
       return {
         success: true,
-        products,
+        products: products.map(p => this.normalizeProduct(p)),
         pagination: {
           page: Number(page),
           limit: Number(limit),
