@@ -104,13 +104,15 @@ export class PostsController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.EDIT_POST)
+  @UseInterceptors(FilesInterceptor('media', 10, s3PostMediaConfig))
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updatePostDto: UpdatePostDto,
+    @UploadedFiles() files: any[],
     @Req() req: any,
   ) {
     const userId = req.user.userId;
-    return this.postsService.updatePost(id, userId, updatePostDto);
+    return this.postsService.updatePost(id, userId, updatePostDto, files);
   }
 
   @Delete(':id')

@@ -503,18 +503,17 @@ export class AuthService {
   }
 
   /**
-   * Create OAuth code without device_id (for Google OAuth callback)
-   * Device_id will be provided later during token exchange
+   * Create OAuth code with optional device_id (for Google OAuth callback)
    */
-  async createOAuthCodeWithoutDevice(userId: number) {
-    console.log('[createOAuthCodeWithoutDevice] Creating code for user:', userId);
+  async createOAuthCodeWithOptionalDevice(userId: number, deviceId?: string) {
+    console.log('[createOAuthCodeWithOptionalDevice] Creating code for user:', userId, 'device:', deviceId);
 
     const code = Math.random().toString().slice(-6);
     const saveCode = await this.PrismaService.oauth_login_codes.create({
       data: {
         code,
         user_id: userId,
-        // device_id will be provided during exchange
+        device_id: deviceId || null,
         expires_at: new Date(Date.now() + 5 * 60 * 1000),
       },
     });

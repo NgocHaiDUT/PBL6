@@ -60,6 +60,21 @@ export class PostsService {
           logo_url: this.normalizeUrl(post.shop.logo_url),
         }
         : null,
+      // Process products to add first image if available
+      post_products: post.post_products
+        ? post.post_products.map((pp: any) => ({
+          ...pp,
+          product: {
+            ...pp.product,
+            image: pp.product.product_media?.[0]?.url
+              ? this.normalizeUrl(pp.product.product_media[0].url)
+              : null,
+            hasTryOn: pp.product.product_variants?.some(
+              (v: any) => v.shade_hex !== null && v.shade_hex !== '',
+            ) || false,
+          }
+        }))
+        : [],
       post_media: processedMedia,
     };
   }
@@ -93,7 +108,7 @@ export class PostsService {
         content_md: trimmedMd,
         ...sanitizedBase,
         user_id: userId,
-        moderation_status: 'pending',
+        moderation_status: 'approved',
       },
     });
 
@@ -198,7 +213,7 @@ export class PostsService {
         content_md: trimmedMd,
         ...sanitizedBase,
         user_id: userId,
-        moderation_status: 'pending',
+        moderation_status: 'approved',
       },
     });
 
@@ -335,6 +350,7 @@ export class PostsService {
             select: {
               id: true,
               name: true,
+              slug: true,
               logo_url: true,
             },
           },
@@ -348,6 +364,14 @@ export class PostsService {
                   id: true,
                   name: true,
                   slug: true,
+                  product_media: {
+                    take: 1,
+                    orderBy: { sort_order: 'asc' },
+                    select: { url: true },
+                  },
+                  product_variants: {
+                    select: { shade_hex: true },
+                  },
                 },
               },
             },
@@ -426,6 +450,7 @@ export class PostsService {
           select: {
             id: true,
             name: true,
+            slug: true,
             logo_url: true,
           },
         },
@@ -439,6 +464,14 @@ export class PostsService {
                 id: true,
                 name: true,
                 slug: true,
+                product_media: {
+                  take: 1,
+                  orderBy: { sort_order: 'asc' },
+                  select: { url: true },
+                },
+                product_variants: {
+                  select: { shade_hex: true },
+                },
               },
             },
           },
@@ -475,7 +508,12 @@ export class PostsService {
     };
   }
 
-  async updatePost(id: number, userId: number, updatePostDto: UpdatePostDto) {
+  async updatePost(
+    id: number,
+    userId: number,
+    updatePostDto: UpdatePostDto,
+    files?: any[],
+  ) {
     const post = await this.prisma.posts.findUnique({
       where: { id },
       include: {
@@ -529,17 +567,24 @@ export class PostsService {
       },
     });
 
-    // Xử lý media nếu có
-    if (media_urls !== undefined) {
-      // Xóa media cũ
+    // Xử lý media nếu có media_urls hoặc có files mới
+    if (media_urls !== undefined || (files && files.length > 0)) {
+      let finalMediaUrls = Array.isArray(media_urls) ? [...media_urls] : [];
+
+      // Nếu có file mới, thêm vào danh sách
+      if (files && files.length > 0) {
+        const newFileUrls = files.map((file) => file.location);
+        finalMediaUrls = [...finalMediaUrls, ...newFileUrls];
+      }
+
+      // Xóa tất cả media cũ và thay bằng danh sách mới
       await this.prisma.post_media.deleteMany({
         where: { post_id: id },
       });
 
-      // Thêm media mới
-      if (media_urls.length > 0) {
+      if (finalMediaUrls.length > 0) {
         await this.prisma.post_media.createMany({
-          data: media_urls.map((url, index) => ({
+          data: finalMediaUrls.map((url, index) => ({
             post_id: id,
             media_url: url,
             media_type:
@@ -624,29 +669,26 @@ export class PostsService {
       throw new NotFoundException('Post not found');
     }
 
-    // Check if user has delete_post permission (admin or authorized user)
-    const userPermissions = await this.prisma.userpermission.findMany({
-      where: { user_id: userId },
-      include: { permission: true },
-    });
-
-    const hasDeletePermission = userPermissions.some(
-      (up) => up.permission.name === 'delete_post',
-    );
-
-    // If user has delete_post permission, allow deletion of any post
-    if (hasDeletePermission) {
-      // Admin or user with explicit delete permission - can delete any post
-      await this.deletePostData(id);
-      return { message: 'Post deleted successfully' };
-    }
-
-    // Otherwise, check ownership
+    // Kiểm tra quyền: cho phép xóa nếu:
+    // 1. Là người tạo post
+    // 2. Post thuộc shop VÀ (user là owner hoặc staff có quyền delete_post)
     const isPostOwner = post.user_id === userId;
     const isShopOwner = post.shop_id && post.shop?.owner_id === userId;
     const isShopStaff = post.shop_id && post.shop?.shop_staffs && post.shop.shop_staffs.length > 0;
 
-    if (!isPostOwner && !isShopOwner && !isShopStaff) {
+    // Check if staff has delete_post permission
+    let hasDeletePostPermission = false;
+    if (isShopStaff && !isShopOwner && post.shop_id) {
+      const userPermissions = await this.prisma.userpermission.findMany({
+        where: { user_id: userId },
+        include: { permission: true },
+      });
+      hasDeletePostPermission = userPermissions.some(
+        (up) => up.permission.name === 'delete_post',
+      );
+    }
+
+    if (!isPostOwner && !isShopOwner && (!isShopStaff || !hasDeletePostPermission)) {
       throw new ForbiddenException('You can only delete your own posts or posts in your shop');
     }
 
@@ -987,6 +1029,7 @@ export class PostsService {
                 select: {
                   id: true,
                   name: true,
+                  slug: true,
                   logo_url: true,
                 },
               },
@@ -1114,6 +1157,7 @@ export class PostsService {
           select: {
             id: true,
             name: true,
+            slug: true,
             logo_url: true,
           },
         },

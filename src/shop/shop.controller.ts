@@ -10,6 +10,8 @@ import {
   Query,
   UseGuards,
   Req,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,6 +20,7 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiBody,
+  ApiConsumes,
   ApiQuery,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -29,9 +32,17 @@ import {
   AddStaffDto,
   RemoveStaffDto,
   UpdateStaffPermissionsDto,
+  UpdateShopDto,
 } from './dto';
 import { GetShopProductsDto } from './dto/get-shop-products.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import {
+  shopLogoConfig,
+  shopCoverConfig,
+  getShopLogoUrl,
+  getShopCoverUrl,
+} from './config/s3-shop.config';
 
 @ApiTags('Shop Management')
 @Controller('shop')
@@ -86,8 +97,8 @@ export class ShopController {
     status: 404,
     description: 'Shop not found',
   })
-  async getShopProfile(@Param('shopId', ParseIntPipe) shopId: number) {
-    return this.shopService.getShopPublicProfile(shopId);
+  async getShopProfile(@Param('shopId') shopId: string) {
+    return this.shopService.getShopDetails(shopId);
   }
 
   @Get(':shopId/products')
@@ -117,7 +128,7 @@ export class ShopController {
     @Param('shopId', ParseIntPipe) shopId: number,
     @Query() query: GetShopProductsDto,
   ) {
-    return this.shopService.getShopProducts(shopId, query);
+    return this.shopService.getproduct(shopId);
   }
 
   // ============================================
@@ -584,7 +595,7 @@ export class ShopController {
   @ApiOperation({
     summary: 'Get shop details',
     description:
-      'Get detailed information about a shop including owner info, staff count, and product count. Requires MANAGE_SHOP_ADMIN permission.',
+      'Get detailed information about a shop including owner info, full staff list with details, and total product count. Requires MANAGE_SHOP_ADMIN permission.',
   })
   @ApiParam({
     name: 'shopid',
@@ -594,7 +605,7 @@ export class ShopController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Shop details retrieved successfully',
+    description: 'Shop details retrieved successfully with full staff list and product count',
     schema: {
       type: 'object',
       properties: {
@@ -623,6 +634,29 @@ export class ShopController {
                 phone: { type: 'string', example: '0912345678' },
               },
             },
+            staffs: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', example: 1 },
+                  user_id: { type: 'number', example: 5 },
+                  is_manager: { type: 'boolean', example: false },
+                  created_at: { type: 'string', format: 'date-time' },
+                  user: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'number', example: 5 },
+                      email: { type: 'string', example: 'staff@example.com' },
+                      full_name: { type: 'string', example: 'Staff Name' },
+                      avatar_url: { type: 'string', example: 'https://example.com/avatar.jpg' },
+                      phone: { type: 'string', example: '0987654321' },
+                      role: { type: 'string', example: 'staff' },
+                    },
+                  },
+                },
+              },
+            },
             staff_count: { type: 'number', example: 5 },
             product_count: { type: 'number', example: 120 },
           },
@@ -646,101 +680,241 @@ export class ShopController {
     return this.shopService.getShopDetails(shopid);
   }
 
-  // Public endpoint - Anyone can view shop details
-  @Get('public/:shopid')
-  @ApiOperation({ summary: 'Get public shop details (no auth required)' })
-  @ApiParam({
-    name: 'shopid',
-    type: 'number',
-    description: 'Shop ID',
-    example: 1,
+  @Get('list')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Get all shops with pagination',
+    description:
+      'Get a paginated list of all shops in the system with filters. Requires authentication.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Shop details retrieved successfully',
+    description: 'Shops list retrieved successfully',
     schema: {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
         data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 1 },
+              name: { type: 'string', example: 'Beauty Store' },
+              slug: { type: 'string', example: 'beauty-store' },
+              description: { type: 'string', example: 'Best beauty products' },
+              logo_url: { type: 'string', example: 'https://example.com/logo.jpg' },
+              cover_url: { type: 'string', example: 'https://example.com/cover.jpg' },
+              phone: { type: 'string', example: '0912345678' },
+              email: { type: 'string', example: 'shop@example.com' },
+              is_verified: { type: 'boolean', example: true },
+              created_at: { type: 'string', format: 'date-time' },
+              updated_at: { type: 'string', format: 'date-time' },
+              owner: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number', example: 1 },
+                  email: { type: 'string', example: 'owner@example.com' },
+                  full_name: { type: 'string', example: 'Shop Owner' },
+                  avatar_url: { type: 'string', example: 'https://example.com/avatar.jpg' },
+                },
+              },
+              staff_count: { type: 'number', example: 5 },
+              product_count: { type: 'number', example: 120 },
+            },
+          },
+        },
+        pagination: {
           type: 'object',
           properties: {
-            id: { type: 'number', example: 1 },
-            name: { type: 'string', example: 'My Beauty Shop' },
-            slug: { type: 'string', example: 'my-beauty-shop' },
-            description: { type: 'string' },
-            logo_url: { type: 'string' },
-            cover_url: { type: 'string' },
-            phone: { type: 'string' },
-            email: { type: 'string' },
-            is_verified: { type: 'boolean' },
-            created_at: { type: 'string', format: 'date-time' },
-            updated_at: { type: 'string', format: 'date-time' },
-            owner: {
-              type: 'object',
-              properties: {
-                id: { type: 'number' },
-                full_name: { type: 'string' },
-                avatar_url: { type: 'string' },
-              },
-            },
-            staff_count: { type: 'number', example: 5 },
-            product_count: { type: 'number', example: 120 },
-            follower_count: { type: 'number', example: 1500 },
-            avg_rating: { type: 'number', example: 4.8 },
-            total_reviews: { type: 'number', example: 450 },
+            page: { type: 'number', example: 1 },
+            limit: { type: 'number', example: 10 },
+            total: { type: 'number', example: 50 },
+            totalPages: { type: 'number', example: 5 },
           },
         },
       },
     },
   })
   @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Not logged in',
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search by shop name or description' })
+  @ApiQuery({ name: 'isVerified', required: false, type: String, example: 'true', description: 'Filter by verification status' })
+  async getShops(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+    @Query('isVerified') isVerified?: string,
+  ) {
+    const pageNum = page ? parseInt(page) : 1;
+    const limitNum = limit ? parseInt(limit) : 10;
+    const isVerifiedBool = isVerified === 'true' ? true : isVerified === 'false' ? false : undefined;
+    return this.shopService.getShops(pageNum, limitNum, search, isVerifiedBool);
+  }
+
+  @Put(':shopid')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'logo', maxCount: 1 },
+        { name: 'cover', maxCount: 1 },
+      ],
+      shopCoverConfig, // Use cover config as it has larger limit
+    ),
+  )
+  @ApiBearerAuth('JWT-auth')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Update shop information',
+    description:
+      'Update shop details including name, description, logo (upload to S3/Local), cover image (upload to S3/Local), phone, and email. Only shop owner or manager can perform this action (checked by business logic). Logo and cover are optional file uploads.',
+  })
+  @ApiParam({
+    name: 'shopid',
+    description: 'Shop ID to update',
+    type: Number,
+    example: 1,
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', example: 'Updated Shop Name', description: 'Shop name' },
+        description: { type: 'string', example: 'Updated description', description: 'Shop description' },
+        phone: { type: 'string', example: '0987654321', description: 'Contact phone' },
+        email: { type: 'string', example: 'contact@shop.com', description: 'Contact email' },
+        logo: { type: 'string', format: 'binary', description: 'Shop logo image file (JPG, PNG, GIF, WebP - max 10MB)' },
+        cover: { type: 'string', format: 'binary', description: 'Shop cover image file (JPG, PNG, GIF, WebP - max 10MB)' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Shop updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Cập nhật thông tin cửa hàng thành công' },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 1 },
+            name: { type: 'string', example: 'Updated Shop Name' },
+            slug: { type: 'string', example: 'updated-shop-name' },
+            description: { type: 'string', example: 'Updated description' },
+            logo_url: { type: 'string', example: 'https://example.com/new-logo.jpg' },
+            cover_url: { type: 'string', example: 'https://example.com/new-cover.jpg' },
+            phone: { type: 'string', example: '0987654321' },
+            email: { type: 'string', example: 'newcontact@shop.com' },
+            is_verified: { type: 'boolean', example: true },
+            created_at: { type: 'string', format: 'date-time' },
+            updated_at: { type: 'string', format: 'date-time' },
+            owner: {
+              type: 'object',
+              properties: {
+                id: { type: 'number', example: 1 },
+                email: { type: 'string', example: 'owner@example.com' },
+                full_name: { type: 'string', example: 'Shop Owner' },
+                avatar_url: { type: 'string', example: 'https://example.com/avatar.jpg' },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Not logged in',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Not shop owner/manager',
+  })
+  @ApiResponse({
     status: 404,
     description: 'Shop not found',
   })
-  async getPublicShopDetails(
+  async updateShop(
     @Param('shopid', ParseIntPipe) shopid: number,
-    @Query('currentUserId') currentUserId?: string,
+    @Body() body: UpdateShopDto,
+    @UploadedFiles() files: { logo?: Express.Multer.File[]; cover?: Express.Multer.File[] },
+    @Req() req: any,
   ) {
-    const userId = currentUserId ? parseInt(currentUserId) : undefined;
-    return this.shopService.getPublicShopDetails(shopid, userId);
+    const userId = req.user.userId;
+
+    // Generate URLs for uploaded files (S3 or local)
+    const updateData = { ...body };
+
+    if (files?.logo && files.logo[0]) {
+      const logoFile = files.logo[0] as any;
+      // For S3: use location property, for local: use getShopLogoUrl
+      updateData.logo_url = logoFile.location || getShopLogoUrl(files.logo[0]);
+    }
+
+    if (files?.cover && files.cover[0]) {
+      const coverFile = files.cover[0] as any;
+      // For S3: use location property, for local: use getShopCoverUrl
+      updateData.cover_url = coverFile.location || getShopCoverUrl(files.cover[0]);
+    }
+
+    return this.shopService.updateShop(userId, shopid, updateData);
   }
 
-  // Follow Shop
-  @Post(':shopid/follow')
-  @UseGuards(JwtAuthGuard)
+  @Put(':shopid/ban')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_SHOP_ADMIN)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Follow a shop' })
-  @ApiResponse({ status: 201, description: 'Followed successfully' })
-  async followShop(
+  @ApiOperation({
+    summary: 'Ban a shop',
+    description:
+      'Ban a shop by setting is_verified to false. Only admin can perform this action. This will make the shop inactive.',
+  })
+  @ApiParam({
+    name: 'shopid',
+    description: 'Shop ID to ban',
+    type: Number,
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Shop banned successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Shop "Beauty Store" đã bị ban (is_verified = false)' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Not logged in',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Only admin can ban shops',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Shop not found',
+  })
+  async banShop(
     @Param('shopid', ParseIntPipe) shopid: number,
-    @Req() req: any
+    @Req() req: any,
   ) {
-    return this.shopService.followShop(req.user.userId, shopid);
-  }
-
-  // Unfollow Shop
-  @Delete(':shopid/follow')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Unfollow a shop' })
-  @ApiResponse({ status: 200, description: 'Unfollowed successfully' })
-  async unfollowShop(
-    @Param('shopid', ParseIntPipe) shopid: number,
-    @Req() req: any
-  ) {
-    return this.shopService.unfollowShop(req.user.userId, shopid);
-  }
-
-  // Check Follow Status
-  @Get(':shopid/follow/status')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Check if user follows shop' })
-  async getFollowStatus(
-    @Param('shopid', ParseIntPipe) shopid: number,
-    @Req() req: any
-  ) {
-    return this.shopService.getShopFollowStatus(req.user.userId, shopid);
+    const userId = req.user.userId;
+    return this.shopService.banShop(userId, shopid);
   }
 }

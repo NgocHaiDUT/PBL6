@@ -9,7 +9,11 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -17,6 +21,7 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiBody,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
@@ -24,6 +29,7 @@ import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/constants/Permission.enum';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserWithAvatarDto } from './dto/create-user-with-avatar.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUsersDto } from './dto/query-users.dto';
 import { SetUserRoleDto } from './dto/set-user-role.dto';
@@ -32,6 +38,7 @@ import { CreatePermissionDto } from './dto/create-permission.dto';
 import { SetRolePermissionDto } from './dto/set-role-permission.dto';
 import { GetAllPermissionsResponseDto } from './dto/get-all-permissions-response.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { avatarConfig, generateAvatarUrl } from './config/avatar.config';
 
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')
@@ -133,7 +140,12 @@ export class UsersController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Create a new user' })
+  @ApiOperation({ 
+    summary: 'Create a new user',
+    description: 'Create a new user with optional avatar upload. Avatar file should be sent as multipart/form-data with field name "avatar"'
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: CreateUserWithAvatarDto })
   @ApiResponse({ status: 201, description: 'User created successfully' })
   @ApiResponse({ status: 400, description: 'Bad request - Invalid data' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -144,8 +156,28 @@ export class UsersController {
   @ApiResponse({ status: 409, description: 'Conflict - Email already exists' })
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_USERS)
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  @UseInterceptors(FileInterceptor('avatar', avatarConfig))
+  create(
+    @Body() createUserDto: CreateUserWithAvatarDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    // Nếu có file upload, tạo URL cho avatar
+    const createData: CreateUserDto = {
+      email: createUserDto.email,
+      password: createUserDto.password,
+      full_name: createUserDto.full_name,
+      phone: createUserDto.phone,
+      is_active: createUserDto.is_active,
+      firstlogin: createUserDto.firstlogin,
+      role_id: createUserDto.role_id,
+    };
+    
+    if (file) {
+      const avatarUrl = generateAvatarUrl(file);
+      createData.avatar_url = avatarUrl;
+    }
+    
+    return this.usersService.create(createData);
   }
 
   @Get()
@@ -179,7 +211,31 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update user by ID' })
+  @ApiOperation({ 
+    summary: 'Update user by ID',
+    description: 'Update user information including optional avatar upload to S3. Send avatar as multipart/form-data with field name "avatar"'
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', format: 'email' },
+        full_name: { type: 'string' },
+        phone: { type: 'string' },
+        is_active: { type: 'boolean' },
+        firstlogin: { type: 'boolean' },
+        role_id: { type: 'number' },
+        password: { type: 'string' },
+        story: { type: 'string' },
+        avatar: {
+          type: 'string',
+          format: 'binary',
+          description: 'Avatar image file (JPG, PNG, GIF, HEIC, HEIF, WebP, max 5MB)',
+        },
+      },
+    },
+  })
   @ApiParam({ name: 'id', description: 'User ID', type: Number })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
   @ApiResponse({ status: 400, description: 'Bad request - Invalid data' })
@@ -191,11 +247,59 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'User not found' })
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(Permission.MANAGE_USERS)
+  @UseInterceptors(FileInterceptor('avatar', avatarConfig))
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
+    @UploadedFile() file?: Express.Multer.File,
   ) {
+    // If avatar file is uploaded, generate URL and add to updateUserDto
+    if (file) {
+      const avatarUrl = generateAvatarUrl(file);
+      updateUserDto.avatar_url = avatarUrl;
+    }
     return this.usersService.update(id, updateUserDto);
+  }
+
+  @Patch(':id/avatar')
+  @ApiOperation({ 
+    summary: 'Update user avatar',
+    description: 'Update user avatar by uploading a new image file. Supports both S3 and local storage based on configuration.'
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        avatar: {
+          type: 'string',
+          format: 'binary',
+          description: 'Avatar image file (JPG, PNG, GIF, HEIC, HEIF, WebP, max 5MB)',
+        },
+      },
+    },
+  })
+  @ApiParam({ name: 'id', description: 'User ID', type: Number })
+  @ApiResponse({ status: 200, description: 'Avatar updated successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request - No file provided or invalid file type' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Requires manage_users permission',
+  })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_USERS)
+  @UseInterceptors(FileInterceptor('avatar', avatarConfig))
+  updateAvatar(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No avatar file provided');
+    }
+    const avatarUrl = generateAvatarUrl(file);
+    return this.usersService.updateAvatar(id, avatarUrl);
   }
 
   @Delete(':id')
