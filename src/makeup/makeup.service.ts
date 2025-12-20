@@ -75,6 +75,150 @@ export class MakeupService {
     mascara: ['Mascara', 'Trang điểm mi'],
   };
 
+  /**
+   * Tìm kiếm sản phẩm makeup theo tên
+   */
+  async searchMakeupProducts(query: string, limit: number = 20, page: number = 1) {
+    const skip = (page - 1) * limit;
+    
+    // Lấy tất cả các category IDs cho makeup products
+    const makeupCategories = Object.values(this.categoryMap).flat();
+    
+    const categories = await this.prisma.categories.findMany({
+      where: {
+        name: {
+          in: makeupCategories,
+        },
+      },
+    });
+
+    const categoryIds = categories.map((cat) => cat.id);
+
+    // Tìm kiếm sản phẩm theo tên và có category makeup
+    const [products, total] = await Promise.all([
+      this.prisma.products.findMany({
+        where: {
+          AND: [
+            {
+              name: {
+                contains: query,
+                mode: 'insensitive',
+              },
+            },
+            {
+              is_published: true,
+              moderation_status: 'approved',
+            },
+            {
+              product_categories: {
+                some: {
+                  category_id: {
+                    in: categoryIds,
+                  },
+                },
+              },
+            },
+          ],
+        },
+        include: {
+          product_media: {
+            orderBy: {
+              sort_order: 'asc',
+            },
+            take: 1,
+          },
+          product_variants: {
+            where: {
+              is_active: true,
+            },
+            orderBy: {
+              price: 'asc',
+            },
+            take: 1,
+          },
+          product_categories: {
+            include: {
+              category: true,
+            },
+          },
+          brand: true,
+          shop: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: [
+          { avg_rating: 'desc' },
+          { review_count: 'desc' },
+          { created_at: 'desc' },
+        ],
+      }),
+      this.prisma.products.count({
+        where: {
+          AND: [
+            {
+              name: {
+                contains: query,
+                mode: 'insensitive',
+              },
+            },
+            {
+              is_published: true,
+              moderation_status: 'approved',
+            },
+            {
+              product_categories: {
+                some: {
+                  category_id: {
+                    in: categoryIds,
+                  },
+                },
+              },
+            },
+          ],
+        },
+      }),
+    ]);
+
+    const formattedProducts = products.map((product) => ({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      description: product.description,
+      avgRating: product.avg_rating ? parseFloat(product.avg_rating.toString()) : 0,
+      reviewCount: product.review_count,
+      image: product.product_media[0]?.url || null,
+      price: product.product_variants[0]?.price
+        ? parseFloat(product.product_variants[0].price.toString())
+        : null,
+      compareAtPrice: product.product_variants[0]?.compare_at_price
+        ? parseFloat(product.product_variants[0].compare_at_price.toString())
+        : null,
+      categories: product.product_categories.map((pc) => pc.category.name),
+      brand: product.brand
+        ? {
+            id: product.brand.id,
+            name: product.brand.name,
+            slug: product.brand.slug,
+          }
+        : null,
+      shop: product.shop,
+    }));
+
+    return {
+      products: formattedProducts,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
   // Hàm chuyển hex sang RGB
   private hexToRgb(hex: string): { r: number; g: number; b: number } | null {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);

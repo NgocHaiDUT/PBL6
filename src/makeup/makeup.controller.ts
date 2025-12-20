@@ -12,6 +12,47 @@ export class MakeupController {
   constructor(private readonly makeupService: MakeupService) {}
 
   /**
+   * API tìm kiếm sản phẩm makeup theo tên
+   * GET /makeup/search?q=foundation&limit=20&page=1
+   */
+  @Get('search')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Search makeup products by name', description: 'Tìm kiếm sản phẩm makeup theo tên. Query params: q (tên sản phẩm), limit (số lượng), page (trang)' })
+  @ApiQuery({ name: 'q', required: true, description: 'Tên sản phẩm cần tìm kiếm' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Số lượng sản phẩm mỗi trang (mặc định 20)' })
+  @ApiQuery({ name: 'page', required: false, description: 'Số trang (mặc định 1)' })
+  @ApiResponse({ status: 200, description: 'Success - returns search results with pagination', schema: { example: { success: true, data: { products: [], total: 0, page: 1, limit: 20, totalPages: 0 } } } })
+  @ApiResponse({ status: 400, description: 'Bad request - Search query is required' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT token required' })
+  async searchProducts(
+    @Query('q') query: string,
+    @Query('limit') limit?: string,
+    @Query('page') page?: string,
+  ) {
+    if (!query || query.trim().length === 0) {
+      throw new HttpException('Search query is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const limitNum = limit ? parseInt(limit, 10) : 20;
+    const pageNum = page ? parseInt(page, 10) : 1;
+
+    if (limitNum < 1 || limitNum > 100) {
+      throw new HttpException('Limit must be between 1 and 100', HttpStatus.BAD_REQUEST);
+    }
+
+    if (pageNum < 1) {
+      throw new HttpException('Page must be greater than 0', HttpStatus.BAD_REQUEST);
+    }
+
+    const result = await this.makeupService.searchMakeupProducts(query.trim(), limitNum, pageNum);
+
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  /**
    * API gợi ý danh sách sản phẩm phù hợp với skintone
    * GET /makeup/recommend?skintone=fair
    */
