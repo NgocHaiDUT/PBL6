@@ -71,9 +71,13 @@ export const RolePermissions: Record<Role, Permission[]> = {
     Permission.MANAGE_CATEGORYS,
 
     // Shop management - Admin quản lý toàn bộ
-    Permission.MANAGE_SHOP_ADMIN,
-    Permission.MANAGE_SHOP_STAFF,
+    Permission.MANAGE_SHOP_STAFF, // Chỉ chủ shop mới có quyền này
+    Permission.EDIT_PROFILE_SHOP,
+    Permission.MANAGE_SHOP_ADDRESS,
     Permission.MANAGE_ORDER,
+    Permission.TRY_ON_TESTER,
+    Permission.CHAT_WITH_CUSTOMER,
+    Permission.MANAGE_SHOP_SETTING,
     Permission.VIEW_DASHBOARD,
   ],
 

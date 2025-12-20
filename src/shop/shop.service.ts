@@ -36,7 +36,15 @@ export class ShopService {
       select: { id: true },
     });
 
-    if (!isOwner && !isManager) {
+    // Allow admin users as well
+    const caller = await this.prisma.users.findUnique({
+      where: { id: userid },
+      select: { role: { select: { name: true } } },
+    });
+
+    const isAdmin = caller?.role?.name === 'admin';
+
+    if (!isOwner && !isManager && !isAdmin) {
       return {
         success: false,
         message: 'Bạn không có quyền quản lý cửa hàng này',
@@ -507,9 +515,26 @@ export class ShopService {
             phone: true,
           },
         },
+        shop_staffs: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                full_name: true,
+                avatar_url: true,
+                phone: true,
+                role: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         _count: {
           select: {
-            shop_staffs: true,
             products: true,
           },
         },
@@ -535,8 +560,251 @@ export class ShopService {
         created_at: shop.created_at,
         updated_at: shop.updated_at,
         owner: shop.owner,
+        staffs: shop.shop_staffs.map((staff) => ({
+          id: staff.id,
+          user_id: staff.user_id,
+          is_manager: staff.is_manager,
+          created_at: staff.created_at,
+          user: {
+            id: staff.user.id,
+            email: staff.user.email,
+            full_name: staff.user.full_name,
+            avatar_url: staff.user.avatar_url,
+            phone: staff.user.phone,
+            role: staff.user.role?.name,
+          },
+        })),
+        staff_count: shop.shop_staffs.length,
+        product_count: shop._count.products,
+      },
+    };
+  }
+
+  async getShops(
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+    isVerified?: boolean,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (isVerified !== undefined) {
+      where.is_verified = isVerified;
+    }
+
+    const [shops, total] = await Promise.all([
+      this.prisma.shops.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          owner: {
+            select: {
+              id: true,
+              email: true,
+              full_name: true,
+              avatar_url: true,
+            },
+          },
+          _count: {
+            select: {
+              shop_staffs: true,
+              products: true,
+            },
+          },
+        },
+        orderBy: { created_at: 'desc' },
+      }),
+      this.prisma.shops.count({ where }),
+    ]);
+
+    return {
+      success: true,
+      data: shops.map((shop) => ({
+        id: shop.id,
+        name: shop.name,
+        slug: shop.slug,
+        description: shop.description,
+        logo_url: shop.logo_url,
+        cover_url: shop.cover_url,
+        phone: shop.phone,
+        email: shop.email,
+        is_verified: shop.is_verified,
+        created_at: shop.created_at,
+        updated_at: shop.updated_at,
+        owner: shop.owner,
         staff_count: shop._count.shop_staffs,
         product_count: shop._count.products,
+      })),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async banShop(userid: number, shopid: number) {
+    // Check if user is admin
+    const user = await this.prisma.users.findUnique({
+      where: { id: userid },
+      select: {
+        role: {
+          select: { name: true },
+        },
+      },
+    });
+
+    if (user?.role?.name !== 'admin') {
+      return {
+        success: false,
+        message: 'Chỉ admin mới có quyền ban shop',
+      };
+    }
+
+    // Check if shop exists
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopid },
+      select: { id: true, is_verified: true, name: true },
+    });
+
+    if (!shop) {
+      return { success: false, message: 'Cửa hàng không tồn tại' };
+    }
+
+    // Update shop verification status
+    await this.prisma.shops.update({
+      where: { id: shopid },
+      data: {
+        is_verified: false,
+        updated_at: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      message: `Shop "${shop.name}" đã bị ban (is_verified = false)`,
+    };
+  }
+
+  async updateShop(
+    userid: number,
+    shopid: number,
+    updateData: {
+      name?: string;
+      description?: string;
+      logo_url?: string;
+      cover_url?: string;
+      phone?: string;
+      email?: string;
+    },
+  ) {
+    // Check if shop exists
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopid },
+      select: { owner_id: true },
+    });
+
+    if (!shop) {
+      return { success: false, message: 'Cửa hàng không tồn tại' };
+    }
+
+    // Check if user is admin, owner, or manager
+    const user = await this.prisma.users.findUnique({
+      where: { id: userid },
+      select: {
+        role: {
+          select: { name: true },
+        },
+      },
+    });
+
+    const isAdmin = user?.role?.name === 'admin';
+    const isOwner = shop.owner_id === userid;
+    const isManager = await this.prisma.shop_staffs.findFirst({
+      where: { shop_id: shopid, user_id: userid, is_manager: true },
+      select: { id: true },
+    });
+
+    if (!isAdmin && !isOwner && !isManager) {
+      return {
+        success: false,
+        message: 'Bạn không có quyền chỉnh sửa cửa hàng này',
+      };
+    }
+
+    // Generate slug if name is updated
+    let slug: string | undefined;
+    if (updateData.name) {
+      slug = updateData.name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+
+      // Check if slug already exists (for other shops)
+      const existingShop = await this.prisma.shops.findFirst({
+        where: {
+          slug,
+          NOT: { id: shopid },
+        },
+      });
+
+      if (existingShop) {
+        slug = `${slug}-${Date.now()}`;
+      }
+    }
+
+    // Update shop
+    const updatedShop = await this.prisma.shops.update({
+      where: { id: shopid },
+      data: {
+        ...updateData,
+        ...(slug && { slug }),
+        updated_at: new Date(),
+      },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            email: true,
+            full_name: true,
+            avatar_url: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Cập nhật thông tin cửa hàng thành công',
+      data: {
+        id: updatedShop.id,
+        name: updatedShop.name,
+        slug: updatedShop.slug,
+        description: updatedShop.description,
+        logo_url: updatedShop.logo_url,
+        cover_url: updatedShop.cover_url,
+        phone: updatedShop.phone,
+        email: updatedShop.email,
+        is_verified: updatedShop.is_verified,
+        created_at: updatedShop.created_at,
+        updated_at: updatedShop.updated_at,
+        owner: updatedShop.owner,
       },
     };
   }

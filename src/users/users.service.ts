@@ -227,6 +227,7 @@ export class UsersService {
     if (updateUserDto.is_active !== undefined) data.is_active = updateUserDto.is_active;
     if (updateUserDto.firstlogin !== undefined) data.firstlogin = updateUserDto.firstlogin;
     if (updateUserDto.role_id !== undefined) data.role_id = updateUserDto.role_id;
+    if (updateUserDto.story !== undefined) data.story = updateUserDto.story;
 
     if (updateUserDto.password) {
       data.password_hash = await bcrypt.hash(updateUserDto.password, 10);
@@ -250,6 +251,31 @@ export class UsersService {
       }
     });
     return this.sanitizeUser(user);
+  }
+
+  async updateAvatar(id: number, avatarUrl: string): Promise<any> {
+    await this.getUserOrThrow(id);
+    const user = await this.prisma.users.update({
+      where: { id },
+      data: {
+        avatar_url: avatarUrl,
+        updated_at: new Date(),
+      },
+      include: {
+        role: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Avatar updated successfully',
+      data: this.sanitizeUser(user),
+    };
   }
 
   // ================== ROLE & PERMISSION MANAGEMENT ==================

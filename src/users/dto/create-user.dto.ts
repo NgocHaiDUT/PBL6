@@ -1,5 +1,6 @@
 import { IsBoolean, IsEmail, IsInt, IsOptional, IsString, MinLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type, Transform } from 'class-transformer';
 
 export class CreateUserDto {
 	@ApiProperty({
@@ -49,6 +50,11 @@ export class CreateUserDto {
 		default: true
 	})
 	@IsOptional()
+	@Transform(({ value }) => {
+		if (value === 'true' || value === true) return true;
+		if (value === 'false' || value === false) return false;
+		return value;
+	})
 	@IsBoolean()
 	is_active?: boolean;
 
@@ -58,6 +64,11 @@ export class CreateUserDto {
 		default: false
 	})
 	@IsOptional()
+	@Transform(({ value }) => {
+		if (value === 'true' || value === true) return true;
+		if (value === 'false' || value === false) return false;
+		return value;
+	})
 	@IsBoolean()
 	firstlogin?: boolean;
 
@@ -66,6 +77,15 @@ export class CreateUserDto {
 		example: 1
 	})
 	@IsOptional()
+	@Type(() => Number)
 	@IsInt()
 	role_id?: number;
+
+	@ApiPropertyOptional({
+		description: 'User story text',
+		example: 'My story about beauty and makeup'
+	})
+	@IsOptional()
+	@IsString()
+	story?: string;
 }
