@@ -36,7 +36,7 @@ export class NotificationsService {
     try {
       this.chatGateway.server
         .to(`${createNotificationData.user_id}`)
-        .emit('newNotification', notification);
+        .emit('notification', notification);
     } catch (error) {
       console.error('Failed to emit notification socket event:', error);
     }
