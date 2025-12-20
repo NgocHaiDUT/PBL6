@@ -14,8 +14,26 @@ import {
 export class AnalyticsService {
   constructor(private prisma: PrismaService) {}
 
+  // Helper: Check if user is admin
+  private async isAdmin(userId: number): Promise<boolean> {
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      include: {
+        role: true,
+      },
+    });
+
+    return user?.role?.name === 'admin';
+  }
+
   // Helper: Check if user has access to shop
   private async checkShopAccess(shopId: number, userId: number) {
+    // Admin có quyền truy cập tất cả các shop
+    const isUserAdmin = await this.isAdmin(userId);
+    if (isUserAdmin) {
+      return;
+    }
+
     const shop = await this.prisma.shops.findFirst({
       where: {
         id: shopId,

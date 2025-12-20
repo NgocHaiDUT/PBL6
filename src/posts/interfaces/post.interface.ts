@@ -21,6 +21,7 @@ export interface PostResponse {
   shop?: {
     id: number;
     name: string;
+    slug: string;
     logo_url: string;
   };
   post_media: PostMedia[];

@@ -1,6 +1,6 @@
-import { IsOptional, IsString, IsInt, Min } from 'class-validator';
+import { IsOptional, IsString, IsInt, Min, IsBoolean, IsEnum } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export class GetShopProductsDto {
     @ApiPropertyOptional({
@@ -40,4 +40,49 @@ export class GetShopProductsDto {
     @IsOptional()
     @IsString()
     order?: 'asc' | 'desc' = 'desc';
+
+    @ApiPropertyOptional({
+        description: 'Search products by name',
+        example: 'lipstick',
+    })
+    @IsOptional()
+    @IsString()
+    search?: string;
+
+    @ApiPropertyOptional({
+        description: 'Filter by category ID',
+        example: '1',
+    })
+    @IsOptional()
+    @IsString()
+    category_id?: string;
+
+    @ApiPropertyOptional({
+        description: 'Filter by brand ID',
+        example: '2',
+    })
+    @IsOptional()
+    @IsString()
+    brand_id?: string;
+
+    @ApiPropertyOptional({
+        description: 'Filter by publication status',
+        example: true,
+    })
+    @IsOptional()
+    @Transform(({ value }) => {
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        return value;
+    })
+    is_published?: boolean | string;
+
+    @ApiPropertyOptional({
+        description: 'Filter by moderation status',
+        example: 'approved',
+        enum: ['pending', 'approved', 'rejected'],
+    })
+    @IsOptional()
+    @IsString()
+    moderation_status?: 'pending' | 'approved' | 'rejected';
 }

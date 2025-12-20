@@ -30,6 +30,7 @@ const getStorage = (directory: string, dynamicPath: boolean = false) => {
     return multerS3({
       s3: s3,
       bucket: process.env.AWS_S3_BUCKET_NAME!,
+      contentType: multerS3.AUTO_CONTENT_TYPE,
       metadata: function (req, file, cb) {
         cb(null, { fieldName: file.fieldname });
       },
@@ -144,7 +145,7 @@ export const getMulterOptions = (
 /**
  * Helper function để lấy file URL (S3 hoặc local)
  * S3: Trả về full URL (https://bucket.s3.region.amazonaws.com/key)
- * Local: Trả về relative path (directory/filename)
+ * Local: Trả về full URL (http://localhost:3000/directory/filename)
  */
 export const getFileUrl = (file: Express.Multer.File, directory: string): string => {
   if (storageDriver === 's3') {
@@ -162,7 +163,8 @@ export const getFileUrl = (file: Express.Multer.File, directory: string): string
     }
     return fileKey; // Fallback
   } else {
-    // Local: Trả về relative path
-    return `${directory}/${file.filename}`;
+    // Local: Trả về full URL với base URL từ env
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    return `${baseUrl}/${directory}/${file.filename}`;
   }
 };

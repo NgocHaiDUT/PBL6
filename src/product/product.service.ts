@@ -1379,6 +1379,74 @@ export class ProductService {
     }
   }
 
+  /**
+   * Get product by ID for management (shop owner/staff view)
+   * Returns product regardless of publication or moderation status
+   * Requires permission check in controller
+   */
+  async getProductByIdForManagement(productId: number, userId: number) {
+    try {
+      // Get product without status filtering
+      const product = await this.prisma.products.findUnique({
+        where: { id: productId },
+        include: {
+          brand: true,
+          product_categories: {
+            include: {
+              category: true,
+            },
+          },
+          shop: {
+            select: {
+              id: true,
+              name: true,
+              owner_id: true,
+            },
+          },
+          product_media: true,
+          product_variants: true,
+        },
+      });
+
+      if (!product) {
+        return { success: false, message: 'Sản phẩm không tồn tại' };
+      }
+
+      // Check if user has permission to view this product
+      const isOwner = product.shop.owner_id === userId;
+      const isStaff = await this.prisma.shop_staffs.findFirst({
+        where: {
+          shop_id: product.shop_id,
+          user_id: userId,
+        },
+      });
+
+      // Check if staff has manage_product permission
+      let hasManageProductPermission = false;
+      if (isStaff && !isOwner) {
+        const userPermissions = await this.prisma.userpermission.findMany({
+          where: { user_id: userId },
+          include: { permission: true },
+        });
+        hasManageProductPermission = userPermissions.some(
+          (up) => up.permission.name === 'manage_product',
+        );
+      }
+
+      if (!isOwner && (!isStaff || !hasManageProductPermission)) {
+        return {
+          success: false,
+          message: 'Bạn không có quyền xem sản phẩm này',
+        };
+      }
+
+      return { success: true, product };
+    } catch (error) {
+      console.error('Error fetching product for management:', error);
+      return { success: false, message: 'Lỗi khi tải sản phẩm' };
+    }
+  }
+
   async getProductBySlug(slug: string) {
     try {
       // Use findFirst to allow filtering by non-unique fields
