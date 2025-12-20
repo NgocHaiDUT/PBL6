@@ -9,10 +9,14 @@ import {
   PaginatedNotificationsResponse,
   CreateNotificationData,
 } from './interfaces/notification.interface';
+import { ChatGateway } from '../chat/chat.gateway';
 
 @Injectable()
 export class NotificationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private chatGateway: ChatGateway,
+  ) { }
 
   async create(
     createNotificationData: CreateNotificationData,
@@ -28,6 +32,14 @@ export class NotificationsService {
           : null,
       },
     });
+
+    try {
+      this.chatGateway.server
+        .to(`${createNotificationData.user_id}`)
+        .emit('newNotification', notification);
+    } catch (error) {
+      console.error('Failed to emit notification socket event:', error);
+    }
 
     return notification;
   }
