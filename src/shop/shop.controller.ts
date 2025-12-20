@@ -97,7 +97,7 @@ export class ShopController {
     status: 404,
     description: 'Shop not found',
   })
-  async getShopProfile(@Param('shopId', ParseIntPipe) shopId: number) {
+  async getShopProfile(@Param('shopId') shopId: string) {
     return this.shopService.getShopDetails(shopId);
   }
 
@@ -129,6 +129,82 @@ export class ShopController {
     @Query() query: GetShopProductsDto,
   ) {
     return this.shopService.getproduct(shopId);
+  }
+
+  // ============================================
+  // Shop Owner/Staff Product Management
+  // ============================================
+
+  @Get(':shopId/products/manage')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_PRODUCT)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Get shop products for management (shop owner/staff)',
+    description:
+      'Get all products from a shop including unpublished and pending approval products. Requires MANAGE_PRODUCT permission. Only shop owner or authorized staff can access this endpoint.',
+  })
+  @ApiParam({
+    name: 'shopId',
+    description: 'Shop ID',
+    type: Number,
+    example: 1,
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: String,
+    example: 'created_at',
+  })
+  @ApiQuery({
+    name: 'order',
+    required: false,
+    enum: ['asc', 'desc'],
+    example: 'desc',
+  })
+  @ApiQuery({
+    name: 'moderation_status',
+    required: false,
+    enum: ['pending', 'approved', 'rejected'],
+    description: 'Filter by moderation status',
+  })
+  @ApiQuery({
+    name: 'is_published',
+    required: false,
+    type: Boolean,
+    description: 'Filter by publication status',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search products by name',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Shop products retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Not logged in',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - No MANAGE_PRODUCT permission or not shop owner/staff',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Shop not found',
+  })
+  async getShopProductsForManagement(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Query() query: GetShopProductsDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.shopService.getShopProductsForManagement(shopId, userId, query);
   }
 
   // ============================================
@@ -777,22 +853,22 @@ export class ShopController {
     @Req() req: any,
   ) {
     const userId = req.user.userId;
-    
+
     // Generate URLs for uploaded files (S3 or local)
     const updateData = { ...body };
-    
+
     if (files?.logo && files.logo[0]) {
       const logoFile = files.logo[0] as any;
       // For S3: use location property, for local: use getShopLogoUrl
       updateData.logo_url = logoFile.location || getShopLogoUrl(files.logo[0]);
     }
-    
+
     if (files?.cover && files.cover[0]) {
       const coverFile = files.cover[0] as any;
       // For S3: use location property, for local: use getShopCoverUrl
       updateData.cover_url = coverFile.location || getShopCoverUrl(files.cover[0]);
     }
-    
+
     return this.shopService.updateShop(userId, shopid, updateData);
   }
 
