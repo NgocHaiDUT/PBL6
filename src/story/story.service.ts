@@ -13,7 +13,7 @@ export class StoryService {
     private prisma: PrismaService,
     @Inject(forwardRef(() => ChatGateway))
     private chatGateway: ChatGateway,
-  ) {}
+  ) { }
 
   /**
    * Create a new story
@@ -161,18 +161,18 @@ export class StoryService {
           latest_story_time: new Date(story.created_at).getTime(), // Track latest story time for sorting
         };
       }
-      
+
       // Update latest story time if this story is newer
       const storyTime = new Date(story.created_at).getTime();
       if (storyTime > acc[userId].latest_story_time) {
         acc[userId].latest_story_time = storyTime;
       }
-      
+
       // Check if current user has viewed this story
-      const hasViewed = currentUserId 
+      const hasViewed = currentUserId
         ? story.story_views.some((view) => view.viewer_id === currentUserId)
         : false;
-      
+
       if (!hasViewed) {
         acc[userId].has_unseen = true;
       }
@@ -181,17 +181,17 @@ export class StoryService {
         ...story,
         has_viewed: hasViewed,
       });
-      
+
       return acc;
     }, {} as Record<number, any>);
 
     // Convert to array and sort
     const groupedStories = Object.values(storiesByUser).map((group: any) => {
       // Sort stories within each group by created_at ascending (oldest first, newest last)
-      group.stories.sort((a: any, b: any) => 
+      group.stories.sort((a: any, b: any) =>
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
-      
+
       // Remove temporary field
       const { latest_story_time, ...rest } = group;
       return rest;
@@ -413,6 +413,15 @@ export class StoryService {
         id: storyId,
         is_story: true,
       },
+      include: {
+        user: {
+          select: {
+            id: true,
+            full_name: true,
+            avatar_url: true,
+          },
+        },
+      },
     });
 
     if (!story) {
@@ -422,6 +431,26 @@ export class StoryService {
     if (story.expires_at && new Date() > story.expires_at) {
       throw new BadRequestException('Story has expired');
     }
+
+    // Don't notify if viewing own story
+    if (story.user_id === viewerId) {
+      return {
+        success: true,
+        message: 'Story marked as viewed',
+      };
+    }
+
+    // Check if this is a new view
+    const existingView = await this.prisma.story_views.findUnique({
+      where: {
+        post_id_viewer_id: {
+          post_id: storyId,
+          viewer_id: viewerId,
+        },
+      },
+    });
+
+    const isNewView = !existingView;
 
     // Create or update view
     await this.prisma.story_views.upsert({
@@ -440,15 +469,63 @@ export class StoryService {
       },
     });
 
-    // Increment view count
-    await this.prisma.posts.update({
-      where: { id: storyId },
-      data: {
-        view_count: {
-          increment: 1,
+    // Increment view count only for new views
+    if (isNewView) {
+      await this.prisma.posts.update({
+        where: { id: storyId },
+        data: {
+          view_count: {
+            increment: 1,
+          },
         },
-      },
-    });
+      });
+
+      // Get viewer info
+      const viewer = await this.prisma.users.findUnique({
+        where: { id: viewerId },
+        select: {
+          id: true,
+          full_name: true,
+          avatar_url: true,
+        },
+      });
+
+      // Send notification to story owner
+      if (viewer) {
+        try {
+          await this.prisma.notifications.create({
+            data: {
+              user_id: story.user_id,
+              type: 'story_view',
+              title: 'Lượt xem tin mới',
+              body: `${viewer.full_name} đã xem tin của bạn`,
+              meta_json: JSON.stringify({
+                story_id: storyId,
+                actor_id: viewerId,
+                actor_name: viewer.full_name,
+                actor_avatar: viewer.avatar_url,
+                action: 'view_story',
+              }),
+            },
+          });
+
+          // Emit realtime notification via socket
+          this.chatGateway.server.to(`${story.user_id}`).emit('notification', {
+            type: 'story_view',
+            title: 'Lượt xem tin mới',
+            message: `${viewer.full_name} đã xem tin của bạn`,
+            data: {
+              story_id: storyId,
+              viewer_id: viewerId,
+              viewer_name: viewer.full_name,
+              viewer_avatar: viewer.avatar_url,
+            },
+          });
+        } catch (error) {
+          console.error('Error creating story view notification:', error);
+        }
+      }
+    }
 
     return {
       success: true,
@@ -495,6 +572,7 @@ export class StoryService {
       },
     });
 
+
     // Increment like count
     await this.prisma.posts.update({
       where: { id: storyId },
@@ -504,6 +582,55 @@ export class StoryService {
         },
       },
     });
+
+    // Send notification to story owner (don't notify self)
+    if (story.user_id !== userId) {
+      try {
+        const reactor = await this.prisma.users.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            full_name: true,
+            avatar_url: true,
+          },
+        });
+
+        if (reactor) {
+          await this.prisma.notifications.create({
+            data: {
+              user_id: story.user_id,
+              type: 'story_reaction',
+              title: 'Reaction mới trên tin',
+              body: `${reactor.full_name} đã thả ${reactionDto.emoji} vào tin của bạn`,
+              meta_json: JSON.stringify({
+                story_id: storyId,
+                actor_id: userId,
+                actor_name: reactor.full_name,
+                actor_avatar: reactor.avatar_url,
+                emoji: reactionDto.emoji,
+                action: 'react_story',
+              }),
+            },
+          });
+
+          // Emit realtime notification via socket
+          this.chatGateway.server.to(`${story.user_id}`).emit('notification', {
+            type: 'story_reaction',
+            title: 'Reaction mới trên tin',
+            message: `${reactor.full_name} đã thả ${reactionDto.emoji} vào tin của bạn`,
+            data: {
+              story_id: storyId,
+              reactor_id: userId,
+              reactor_name: reactor.full_name,
+              reactor_avatar: reactor.avatar_url,
+              emoji: reactionDto.emoji,
+            },
+          });
+        }
+      } catch (error) {
+        console.error('Error creating story reaction notification:', error);
+      }
+    }
 
     return {
       success: true,
@@ -593,7 +720,7 @@ export class StoryService {
 
     // Find or create conversation between the replier and story owner
     const participants = [userId, story.user_id].sort();
-    
+
     // Find existing private conversation
     const conversations = await this.prisma.conversations.findMany({
       where: {
