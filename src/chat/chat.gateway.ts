@@ -16,7 +16,7 @@ import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: true,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -114,7 +114,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleSendMessage(
     @MessageBody() data: {
       senderId: number;
-      receiverId: number;
+      receiverId?: number;
+      shopId?: number;
       senderShopId?: number;
       content: string;
       postId?: number;
@@ -127,8 +128,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
+      const targetId = data.shopId || data.receiverId;
+      if (!targetId) {
+        throw new Error('Either receiverId or shopId must be provided');
+      }
+
       this.logger.log(
-        `Message from ${data.senderShopId ? `shop ${data.senderShopId}` : `user ${data.senderId}`} to ${data.receiverId}: ${data.content}`,
+        `Message from ${data.senderShopId ? `shop ${data.senderShopId}` : `user ${data.senderId}`} to ${data.shopId ? 'shop' : 'user'} ${targetId}: ${data.content}`,
       );
 
       // 1. Determine conversation based on sender type
@@ -137,27 +143,31 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (data.senderShopId) {
         // Shop sending to user
         conversation = await this.messagesService.findOrCreateShopConversation(
-          data.receiverId, // receiverId is the user
+          targetId, // targetId is the user
           data.senderShopId,
         );
+      } else if (data.shopId) {
+        // User sending to shop
+        conversation = await this.messagesService.findOrCreateShopConversation(
+          data.senderId, // User ID
+          data.shopId, // Shop ID
+        );
       } else {
-        // Check if receiverId is a shop ID by checking if shop exists
+        // Check if receiverId is a shop ID fallback
         const shop = await this.prisma.shops.findUnique({
-          where: { id: data.receiverId },
+          where: { id: targetId },
           select: { id: true }
         });
 
         if (shop) {
-          // User sending to shop
           conversation = await this.messagesService.findOrCreateShopConversation(
-            data.senderId, // User ID
-            data.receiverId, // Shop ID
+            data.senderId,
+            targetId,
           );
         } else {
-          // User sending to user
           conversation = await this.messagesService.findOrCreateConversation(
             data.senderId,
-            data.receiverId,
+            targetId,
           );
         }
       }
@@ -237,8 +247,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         sender_shop_id: message.sender_shop_id, // ✅ Add snake_case
         senderType: message.sender_type,
         sender_type: message.sender_type, // ✅ Add snake_case
-        receiverId: data.receiverId,
-        receiver_id: data.receiverId, // ✅ Add snake_case
+        receiverId: targetId,
+        receiver_id: targetId, // ✅ Add snake_case
         content: message.content,
         type: message.type,
         payload: message.payload,
@@ -276,23 +286,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
 
       // 4. Send message to all participants in the conversation
-      conversation.participants.forEach(participant => {
-        if (participant.user_id) {
-          this.server
-            .to(`${participant.user_id}`)
-            .emit('newMessage', formattedMessage);
-        }
-        // También podríamos enviar a shops si implementamos shop rooms
-        if (participant.shop_id) {
-          this.server
-            .to(`shop_${participant.shop_id}`)
-            .emit('newMessage', formattedMessage);
-        }
-      });
-
-      // 5. Send message to both users
-      this.server.to(`${data.senderId}`).emit('newMessage', formattedMessage);
-      this.server.to(`${data.receiverId}`).emit('newMessage', formattedMessage);
+      this.broadcastToConversation(conversation, 'newMessage', formattedMessage);
 
       // 5. Confirm to sender
       client.emit('messageSent', {
@@ -1175,9 +1169,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
       };
 
-      // 6. Send to both users
-      this.server.to(`${data.senderId}`).emit('newMessage', formattedMessage);
-      this.server.to(`${targetId}`).emit('newMessage', formattedMessage);
+      // 6. Send to all participants
+      this.broadcastToConversation(conversation, 'newMessage', formattedMessage);
 
       client.emit('messageSent', {
         success: true,
@@ -1196,6 +1189,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // Utility methods
   sendMessageToUser(userId: number, event: string, data: any) {
     this.server.to(`${userId}`).emit(event, data);
+  }
+
+  private broadcastToConversation(conversation: any, event: string, data: any) {
+    if (!conversation || !conversation.participants) return;
+
+    conversation.participants.forEach(participant => {
+      if (participant.user_id) {
+        this.server.to(`${participant.user_id}`).emit(event, data);
+      }
+      if (participant.shop_id) {
+        this.server.to(`shop_${participant.shop_id}`).emit(event, data);
+      }
+    });
   }
 
   broadcastToAll(event: string, data: any) {
