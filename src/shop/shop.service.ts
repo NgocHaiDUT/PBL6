@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
 export class ShopService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async addstaff(
     userid: number,
@@ -451,7 +451,7 @@ export class ShopService {
       where: { email: staffemail },
       select: { id: true },
     });
-    
+
     if (!staff) {
       throw new NotFoundException('Nhân viên không tồn tại');
     }
@@ -544,6 +544,43 @@ export class ShopService {
     if (!shop) {
       return { success: false, message: 'Shop not found' };
     }
+
+    // Get follower count - counting users following shop owner
+    const followerCount = await this.prisma.follows.count({
+      where: { following_id: shop.owner_id },
+    });
+
+    // Get published AND approved products for shop
+    const publishedProducts = await this.prisma.products.findMany({
+      where: {
+        shop_id: shopid,
+        is_published: true,
+        moderation_status: 'approved', // Only count approved products
+      },
+      select: {
+        id: true,
+        avg_rating: true,
+      },
+    });
+
+    // Calculate average rating across all products
+    const totalRating = publishedProducts.reduce(
+      (sum, p) => sum + (p.avg_rating ? Number(p.avg_rating) : 0),
+      0,
+    );
+    const avgShopRating =
+      publishedProducts.length > 0
+        ? totalRating / publishedProducts.length
+        : 0;
+
+    // Get total review count
+    const totalReviews = await this.prisma.reviews.count({
+      where: {
+        product: {
+          shop_id: shopid,
+        },
+      },
+    });
 
     return {
       success: true,
@@ -809,4 +846,3 @@ export class ShopService {
     };
   }
 }
-

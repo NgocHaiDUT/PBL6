@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -133,6 +134,12 @@ export class AuthService {
       return this.issueTokens(user, dto.device_id, dto.device_name);
     }
 
+    // ✅ DEV MODE: Skip OTP verification
+    if (process.env.NODE_ENV === 'development' || process.env.SKIP_DEVICE_OTP === 'true') {
+      console.log('⚠️ [DEV MODE] Skipping device OTP verification');
+      return this.issueTokens(user, dto.device_id, dto.device_name);
+    }
+
     // Nếu thiết bị mới và khác device_register -> gửi OTP
     await this.sendDeviceOtp(user, dto.device_id, dto.device_name);
     return {
@@ -204,12 +211,26 @@ export class AuthService {
   async verifyDevice(dto: VerifyDeviceOtpDto) {
     const { email, device_id, otp, device_name } = dto;
 
+    // ✅ FIXED: Include rolePermissions and userPermissions like in validateUser
     const user = await this.PrismaService.users.findUnique({
       where: { email },
       include: {
         role: {
+          include: {
+            rolePermissions: {
+              select: {
+                permission: {
+                  select: { name: true },
+                },
+              },
+            },
+          },
+        },
+        userPermissions: {
           select: {
-            name: true,
+            permission: {
+              select: { name: true },
+            },
           },
         },
       },
@@ -290,7 +311,7 @@ export class AuthService {
       });
     } catch (error) {
       console.error('[Auth] Error saving token with upsert, trying delete+create approach:', error);
-      
+
       // Fallback: Delete existing token and create new one
       await this.PrismaService.refresh_tokens.deleteMany({
         where: {
@@ -310,12 +331,12 @@ export class AuthService {
         },
       });
     }
-    
+
     // Collect permissions from role and user
     const rolePermissions = user.role?.rolePermissions?.map(rp => rp.permission.name) || [];
     const userPermissions = user.userPermissions?.map(up => up.permission.name) || [];
     const allPermissions = [...new Set([...rolePermissions, ...userPermissions])];
-    
+
     // ✅ Trả về cả thông tin user
     return {
       success: true,
@@ -329,6 +350,7 @@ export class AuthService {
         phone: user.phone,
         story: user.story,
         role: user.role?.name || 'user',
+        role_id: user.role?.id, // ✅ Add role_id for frontend
         firstlogin: user.firstlogin,
         permissions: allPermissions,
       },
@@ -408,7 +430,11 @@ export class AuthService {
   async changepassword_forgotpassword(email: string, newPassword: string) {
     await this.PrismaService.users.update({
       where: { email },
-      data: { password_hash: newPassword },
+      data: {
+        password_hash: newPassword,
+        firstlogin: true, // ✅ Bắt buộc đổi mật khẩu sau khi reset
+        updated_at: new Date(),
+      },
     });
     return true;
   }
@@ -456,12 +482,38 @@ export class AuthService {
   }
 
   async createOAuthCode(dto: CreateOAuthCodeDto) {
+    console.log('[createOAuthCode] Received DTO:', dto);
+    console.log('[createOAuthCode] user_id type:', typeof dto.user_id, 'value:', dto.user_id);
+    console.log('[createOAuthCode] device_id type:', typeof dto.device_id, 'value:', dto.device_id);
+
+    if (!dto.device_id) {
+      throw new BadRequestException('device_id is required');
+    }
+
     const code = Math.random().toString().slice(-6);
     const saveCode = await this.PrismaService.oauth_login_codes.create({
       data: {
         code,
         user_id: dto.user_id,
         device_id: dto.device_id,
+        expires_at: new Date(Date.now() + 5 * 60 * 1000),
+      },
+    });
+    return saveCode.code;
+  }
+
+  /**
+   * Create OAuth code with optional device_id (for Google OAuth callback)
+   */
+  async createOAuthCodeWithOptionalDevice(userId: number, deviceId?: string) {
+    console.log('[createOAuthCodeWithOptionalDevice] Creating code for user:', userId, 'device:', deviceId);
+
+    const code = Math.random().toString().slice(-6);
+    const saveCode = await this.PrismaService.oauth_login_codes.create({
+      data: {
+        code,
+        user_id: userId,
+        device_id: deviceId || null,
         expires_at: new Date(Date.now() + 5 * 60 * 1000),
       },
     });
@@ -659,6 +711,8 @@ export class AuthService {
    * Used by /auth/me endpoint
    */
   async getCurrentUser(userId: number) {
+    console.log('🔍 [getCurrentUser] Fetching user:', userId);
+
     const user = await this.PrismaService.users.findUnique({
       where: { id: userId },
       select: {
@@ -673,6 +727,15 @@ export class AuthService {
           select: {
             id: true,
             name: true,
+            rolePermissions: {
+              select: {
+                permission: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
           },
         },
         userPermissions: {
@@ -687,7 +750,29 @@ export class AuthService {
       },
     });
 
-    if (!user) return null;
+    if (!user) {
+      console.log('❌ [getCurrentUser] User not found');
+      return null;
+    }
+
+    console.log('📊 [getCurrentUser] Raw data:', {
+      userId: user.id,
+      role: user.role?.name,
+      rolePermissions_count: user.role?.rolePermissions?.length || 0,
+      userPermissions_count: user.userPermissions?.length || 0
+    });
+
+    // Collect permissions from role and user (same logic as issueTokens)
+    const rolePermissions = user.role?.rolePermissions?.map(rp => rp.permission.name) || [];
+    const userPermissions = user.userPermissions?.map(up => up.permission.name) || [];
+    const allPermissions = [...new Set([...rolePermissions, ...userPermissions])];
+
+    console.log('✅ [getCurrentUser] Collected permissions:', {
+      rolePermissions_count: rolePermissions.length,
+      userPermissions_count: userPermissions.length,
+      total_unique: allPermissions.length,
+      permissions: allPermissions
+    });
 
     return {
       id: user.id,
@@ -700,7 +785,7 @@ export class AuthService {
       role_id: user.role?.id,
       firstlogin: user.firstlogin,
       is_active: true,
-      permissions: user.userPermissions.map((up) => up.permission.name),
+      permissions: allPermissions,
     };
   }
 

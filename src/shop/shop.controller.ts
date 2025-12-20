@@ -34,6 +34,7 @@ import {
   UpdateStaffPermissionsDto,
   UpdateShopDto,
 } from './dto';
+import { GetShopProductsDto } from './dto/get-shop-products.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
@@ -46,7 +47,94 @@ import {
 @ApiTags('Shop Management')
 @Controller('shop')
 export class ShopController {
-  constructor(private readonly shopService: ShopService) {}
+  constructor(private readonly shopService: ShopService) { }
+
+  // ============================================
+  // PUBLIC ENDPOINTS (No authentication required)
+  // ============================================
+
+  @Get(':shopId/profile')
+  @ApiOperation({
+    summary: 'Get shop public profile',
+    description: 'Get public information about a shop. No authentication required.',
+  })
+  @ApiParam({
+    name: 'shopId',
+    description: 'Shop ID',
+    type: Number,
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Shop profile retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 1 },
+            name: { type: 'string', example: 'GlowBeauty Official' },
+            slug: { type: 'string', example: 'glowbeauty-official' },
+            description: { type: 'string', example: 'Best beauty products store' },
+            logo_url: { type: 'string', example: 'https://example.com/logo.jpg' },
+            cover_url: { type: 'string', example: 'https://example.com/cover.jpg' },
+            phone: { type: 'string', example: '0912345678' },
+            email: { type: 'string', example: 'shop@example.com' },
+            is_verified: { type: 'boolean', example: true },
+            rating: { type: 'number', example: 4.8 },
+            response_rate: { type: 'number', example: 99 },
+            followers_count: { type: 'number', example: 12500 },
+            product_count: { type: 'number', example: 125 },
+            created_at: { type: 'string', format: 'date-time' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Shop not found',
+  })
+  async getShopProfile(@Param('shopId', ParseIntPipe) shopId: number) {
+    return this.shopService.getShopPublicProfile(shopId);
+  }
+
+  @Get(':shopId/products')
+  @ApiOperation({
+    summary: 'Get shop products',
+    description: 'Get all products from a shop with pagination. No authentication required.',
+  })
+  @ApiParam({
+    name: 'shopId',
+    description: 'Shop ID',
+    type: Number,
+    example: 1,
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiQuery({ name: 'sortBy', required: false, type: String, example: 'created_at' })
+  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'], example: 'desc' })
+  @ApiResponse({
+    status: 200,
+    description: 'Shop products retrieved successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Shop not found',
+  })
+  async getShopProducts(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Query() query: GetShopProductsDto,
+  ) {
+    return this.shopService.getShopProducts(shopId, query);
+  }
+
+  // ============================================
+  // PROTECTED ENDPOINTS (Authentication required)
+  // ============================================
+
   // Thêm nhân viên
   @Post(':shopId/staff')
   @UseGuards(JwtAuthGuard, PermissionsGuard)

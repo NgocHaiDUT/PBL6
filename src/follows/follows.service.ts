@@ -19,7 +19,7 @@ export class FollowsService {
   constructor(
     private prisma: PrismaService,
     private notificationHelper: NotificationHelperService,
-  ) {}
+  ) { }
 
   async create(
     createFollowDto: CreateFollowDto,
@@ -85,7 +85,7 @@ export class FollowsService {
   }
 
   async findAll(queryDto: QueryFollowsDto): Promise<PaginatedFollowsResponse> {
-    const { user_id, type, page = 1, limit = 20 } = queryDto;
+    const { user_id, type, page = 1, limit = 20, current_user_id } = queryDto;
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -101,7 +101,8 @@ export class FollowsService {
       where.following_id = user_id;
     }
 
-    const [follows, total] = await Promise.all([
+    // Fetch user follows
+    const [userFollows, userFollowsTotal] = await Promise.all([
       this.prisma.follows.findMany({
         where,
         include: {
@@ -125,18 +126,128 @@ export class FollowsService {
         orderBy: {
           created_at: 'desc',
         },
-        skip,
-        take: limit,
       }),
       this.prisma.follows.count({ where }),
     ]);
 
+    // If type is 'following', also fetch shop follows
+    let shopFollows: any[] = [];
+    let shopFollowsTotal = 0;
+
+    if (user_id && type === 'following') {
+      const [shops, shopsTotal] = await Promise.all([
+        this.prisma.shop_follows.findMany({
+          where: {
+            user_id: user_id,
+          },
+          include: {
+            shop: {
+              select: {
+                id: true,
+                name: true,
+                logo_url: true,
+              },
+            },
+          },
+          orderBy: {
+            created_at: 'desc',
+          },
+        }),
+        this.prisma.shop_follows.count({
+          where: {
+            user_id: user_id,
+          },
+        }),
+      ]);
+
+      // Transform shop follows to match the follow interface
+      shopFollows = shops.map((sf) => ({
+        id: `shop_${sf.shop_id}`, // Unique ID
+        follower_id: sf.user_id,
+        following_id: sf.shop_id,
+        created_at: sf.created_at,
+        follower: null, // Not applicable for shop follows
+        following: {
+          id: sf.shop.id,
+          full_name: sf.shop.name,
+          email: null,
+          avatar_url: sf.shop.logo_url,
+          is_shop: true, // Flag to identify this as a shop
+        },
+        is_following: true, // Always true since we're querying shop_follows
+      }));
+
+      shopFollowsTotal = shopsTotal;
+    }
+
+    // Merge user follows and shop follows
+    let allFollows: any[] = [...userFollows, ...shopFollows];
+    const totalCount = userFollowsTotal + shopFollowsTotal;
+
+    // Apply is_following logic if current_user_id is provided
+    if (current_user_id) {
+      const [currentUserFollowingUsers, currentUserFollowingShops] =
+        await Promise.all([
+          this.prisma.follows.findMany({
+            where: { follower_id: current_user_id },
+            select: { following_id: true },
+          }),
+          this.prisma.shop_follows.findMany({
+            where: { user_id: current_user_id },
+            select: { shop_id: true },
+          }),
+        ]);
+
+      const followingUserIds = new Set(
+        currentUserFollowingUsers.map((f) => f.following_id),
+      );
+      const followingShopIds = new Set(
+        currentUserFollowingShops.map((f) => f.shop_id),
+      );
+
+      allFollows = allFollows.map((follow) => {
+        const isShop = follow.following?.is_shop;
+        const targetUser = isShop
+          ? follow.following
+          : type === 'followers'
+            ? follow.follower
+            : follow.following;
+
+        const targetId = targetUser?.id;
+
+        if (!targetId) return follow;
+
+        return {
+          ...follow,
+          is_following: isShop
+            ? followingShopIds.has(targetId)
+            : followingUserIds.has(targetId),
+        };
+      });
+    } else if (user_id && type === 'following') {
+      // Default: if viewing someone's following list, they follow those items
+      allFollows = allFollows.map((f) => ({
+        ...f,
+        is_following: true,
+      }));
+    }
+
+    // Sort by created_at desc
+    allFollows.sort((a, b) => {
+      const aTime = a.created_at?.getTime() || 0;
+      const bTime = b.created_at?.getTime() || 0;
+      return bTime - aTime;
+    });
+
+    // Apply pagination
+    const paginatedFollows = allFollows.slice(skip, skip + limit);
+
     return {
-      data: follows,
-      total,
+      data: paginatedFollows,
+      total: totalCount,
       page,
       limit,
-      total_pages: Math.ceil(total / limit),
+      total_pages: Math.ceil(totalCount / limit),
     };
   }
 
@@ -179,34 +290,41 @@ export class FollowsService {
       throw new NotFoundException('User not found');
     }
 
-    const [followersCount, followingCount, isFollowing] = await Promise.all([
-      // Count followers
+    const [followersCount, userFollowingCount, shopFollowingCount, isFollowing] = await Promise.all([
+      // Count followers (users who follow this user)
       this.prisma.follows.count({
         where: { following_id: userId },
       }),
-      // Count following
+      // Count user following (users that this user follows)
       this.prisma.follows.count({
         where: { follower_id: userId },
+      }),
+      // Count shop following (shops that this user follows)
+      this.prisma.shop_follows.count({
+        where: { user_id: userId },
       }),
       // Check if current user follows this user
       currentUserId && currentUserId !== userId
         ? this.prisma.follows
-            .findUnique({
-              where: {
-                follower_id_following_id: {
-                  follower_id: currentUserId,
-                  following_id: userId,
-                },
+          .findUnique({
+            where: {
+              follower_id_following_id: {
+                follower_id: currentUserId,
+                following_id: userId,
               },
-            })
-            .then((follow) => !!follow)
+            },
+          })
+          .then((follow) => !!follow)
         : Promise.resolve(false),
     ]);
+
+    // Total following = user following + shop following
+    const totalFollowingCount = userFollowingCount + shopFollowingCount;
 
     return {
       user_id: userId,
       followers_count: followersCount,
-      following_count: followingCount,
+      following_count: totalFollowingCount,
       ...(currentUserId &&
         currentUserId !== userId && { is_following: isFollowing }),
     };

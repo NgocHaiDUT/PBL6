@@ -130,6 +130,7 @@ model users {
   oauth_login_codes         oauth_login_codes[]
   deviceOtps                device_otps[]
   story_views               story_views[]
+  shop_follows              shop_follows[]
 }
 
 model auth_identities {
@@ -178,13 +179,13 @@ model refresh_tokens {
 model oauth_login_codes {
   code       String   @id
   user_id    Int
-  device_id  String
+  device_id  String?
   expires_at DateTime
   used       Boolean  @default(false)
   user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id])
-  @@index([code, device_id])
+  @@index([code])
   @@index([expires_at])
 }
 
@@ -266,6 +267,7 @@ model shops {
   ghn_shop_id               Int?                        @unique
   conversation_participants conversation_participants[]
   messages                  messages[]
+  shop_follows              shop_follows[]
 }
 
 model shop_addresses {
@@ -537,6 +539,16 @@ model follows {
   following    users    @relation("following", fields: [following_id], references: [id])
 
   @@id([follower_id, following_id])
+}
+
+model shop_follows {
+  user_id    Int
+  shop_id    Int
+  created_at DateTime @default(now())
+  user       users    @relation(fields: [user_id], references: [id])
+  shop       shops    @relation(fields: [shop_id], references: [id])
+
+  @@id([user_id, shop_id])
 }
 
 model posts {
@@ -818,6 +830,9 @@ model messages {
 
   @@index([sender_id])
   @@index([sender_shop_id])
+  @@index([conversation_id])
+  @@index([created_at])
+  @@index([conversation_id, created_at(sort: Desc)])
 }
 
 model message_reads {

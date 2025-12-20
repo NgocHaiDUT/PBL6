@@ -12,8 +12,10 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       clientSecret: process.env.GOOGLE_CLIENT_WEB_SECRET!,
       callbackURL: process.env.GOOGLE_CALLBACK_URL!,
       scope: ['email', 'profile'],
-      passReqToCallback: false,
+      passReqToCallback: true, // Enable to access request.query.state
     });
+
+    console.log('🔗 [GoogleStrategy] Callback URL from env:', process.env.GOOGLE_CALLBACK_URL);
   }
 
   authorizationParams(): Record<string, string> {
@@ -22,7 +24,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     };
   }
 
-  async validate(_: string, __: string, profile: any) {
+  async validate(request: any, _accessToken: string, _refreshToken: string, profile: any) {
     const provider = auth_provider.google;
     const providerUserId = profile.id as string;
     const rawEmail = profile.emails?.[0]?.value as string | undefined;
@@ -84,6 +86,29 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       include: { user: true },
     });
 
-    return identity.user;
+    // Parse state parameter to detect platform
+    const state = request.query?.state as string;
+    console.log('🔍 [GoogleStrategy] Raw state from query:', state);
+
+    let platform = 'mobile'; // default
+
+    if (state) {
+      try {
+        const decoded = Buffer.from(state, 'base64').toString();
+        console.log('🔍 [GoogleStrategy] Decoded state:', decoded);
+        const stateData = JSON.parse(decoded);
+        console.log('🔍 [GoogleStrategy] Parsed state data:', stateData);
+        platform = stateData.platform || 'mobile';
+      } catch (e) {
+        console.log('❌ [GoogleStrategy] Failed to parse state:', e.message);
+      }
+    } else {
+      console.log('⚠️ [GoogleStrategy] No state parameter in query');
+    }
+
+    console.log('✅ [GoogleStrategy] Final platform:', platform);
+
+    // Attach platform info to user object for controller to use
+    return { ...identity.user, _platform: platform };
   }
 }

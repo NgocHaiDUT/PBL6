@@ -3,7 +3,31 @@ import { PrismaService } from '../prisma/prisma.service';
 import { moderation_status, Prisma } from '@prisma/client';
 @Injectable()
 export class ProductService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
+
+  private normalizeProduct(product: any) {
+    if (!product) return null;
+
+    // Check if any variant has shade_hex (indicates AR try-on capability)
+    const hasTryOn = product.product_variants?.some(
+      (v: any) => v.shade_hex !== null && v.shade_hex !== '',
+    );
+
+    // Get first image for convenience
+    const firstImage = product.product_media?.[0]?.url || null;
+
+    // Calculate rating/reviews if missing/zero using actual data if available
+    // (Prisma already provides avg_rating and review_count in the model, but we ensure field names match frontend)
+
+    return {
+      ...product,
+      hasTryOn: hasTryOn || false,
+      first_image: firstImage,
+      rating: Number(product.avg_rating) || 0,
+      reviews: product.review_count || 0,
+      inStock: product.product_variants?.some((v: any) => v.stock > 0) || false,
+    };
+  }
 
   private generateSlug(text: string): string {
     return text
@@ -1028,11 +1052,11 @@ export class ProductService {
     },
     sort?: {
       field:
-        | 'created_at'
-        | 'updated_at'
-        | 'name'
-        | 'avg_rating'
-        | 'review_count';
+      | 'created_at'
+      | 'updated_at'
+      | 'name'
+      | 'avg_rating'
+      | 'review_count';
       order: 'asc' | 'desc';
     },
   ) {
@@ -1048,6 +1072,8 @@ export class ProductService {
       // Build where clause
       const whereClause: any = {
         shop_id: shop_id,
+        // Only show approved products for public shop view
+        moderation_status: 'approved',
       };
 
       // Apply filters
@@ -1065,6 +1091,9 @@ export class ProductService {
 
         if (filters.is_published !== undefined) {
           whereClause.is_published = filters.is_published;
+        } else {
+          // Default: only show published products for public view
+          whereClause.is_published = true;
         }
 
         if (filters.category_id) {
@@ -1074,6 +1103,9 @@ export class ProductService {
             },
           };
         }
+      } else {
+        // If no filters provided, default to showing only published products
+        whereClause.is_published = true;
       }
 
       // Build orderBy
@@ -1174,13 +1206,7 @@ export class ProductService {
       }
 
       // Transform products to include first image
-      const productsWithFirstImage = filteredProducts.map((product) => ({
-        ...product,
-        first_image:
-          product.product_media.length > 0
-            ? product.product_media[0].url
-            : null,
-      }));
+      const productsWithFirstImage = filteredProducts.map((product) => this.normalizeProduct(product));
 
       // Calculate pagination metadata
       const totalPages = Math.ceil(totalProducts / limit);
@@ -1298,7 +1324,7 @@ export class ProductService {
 
       return {
         success: true,
-        products,
+        products: products.map(p => this.normalizeProduct(p)),
         pagination: {
           page: Number(page),
           limit: Number(limit),
@@ -1316,7 +1342,8 @@ export class ProductService {
     try {
       const productId = Number(id);
 
-      const product = await this.prisma.products.findUnique({
+      // Use findFirst to allow filtering by non-unique fields
+      const product = await this.prisma.products.findFirst({
         where: {
           id: productId,
           is_published: true,
@@ -1342,12 +1369,51 @@ export class ProductService {
       });
 
       if (!product) {
-        return { success: false, message: 'Sản phẩm không tồn tại' };
+        return { success: false, message: 'Sản phẩm không tồn tại hoặc chưa được duyệt' };
       }
 
-      return { success: true, product };
+      return { success: true, product: this.normalizeProduct(product) };
     } catch (error) {
       console.error('Error fetching product:', error);
+      return { success: false, message: 'Lỗi khi tải sản phẩm' };
+    }
+  }
+
+  async getProductBySlug(slug: string) {
+    try {
+      // Use findFirst to allow filtering by non-unique fields
+      const product = await this.prisma.products.findFirst({
+        where: {
+          slug: slug,
+          is_published: true,
+          moderation_status: 'approved',
+        },
+        include: {
+          brand: true,
+          product_categories: {
+            include: {
+              category: true,
+            },
+          },
+          shop: true,
+          product_media: true,
+          product_variants: true,
+          reviews: {
+            include: {
+              user: true,
+            },
+            orderBy: { created_at: 'desc' },
+          },
+        },
+      });
+
+      if (!product) {
+        return { success: false, message: 'Sản phẩm không tồn tại hoặc chưa được duyệt' };
+      }
+
+      return { success: true, product: this.normalizeProduct(product) };
+    } catch (error) {
+      console.error('Error fetching product by slug:', error);
       return { success: false, message: 'Lỗi khi tải sản phẩm' };
     }
   }
@@ -1454,7 +1520,7 @@ export class ProductService {
 
       return {
         success: true,
-        products,
+        products: products.map(p => this.normalizeProduct(p)),
         pagination: {
           page: Number(page),
           limit: Number(limit),

@@ -15,13 +15,13 @@ import { Permission } from './Permission.enum';
 export enum Role {
   /** Người dùng thông thường */
   USER = 'user',
-  
+
   /** Người bán - Chủ shop */
   SELLER = 'seller',
-  
+
   /** Quản trị viên hệ thống */
   ADMIN = 'admin',
-  
+
   /** Nhân viên shop */
   STAFF = 'staff',
 }
@@ -46,10 +46,10 @@ export const RolePermissions: Record<Role, Permission[]> = {
     Permission.CREATE_POST,
     Permission.EDIT_POST,
     Permission.DELETE_POST,
-    
+
     // Product permissions
     Permission.MANAGE_PRODUCT,
-    
+
     // Shop permissions - Chủ shop có tất cả quyền
     Permission.MANAGE_SHOP_STAFF, // Chỉ chủ shop mới có quyền này
     Permission.EDIT_PROFILE_SHOP,
@@ -64,11 +64,20 @@ export const RolePermissions: Record<Role, Permission[]> = {
   [Role.ADMIN]: [
     // User, Role & Permission management
     Permission.MANAGE_USERS,
-    
+
     // Product management
     Permission.MANAGE_PRODUCT,
     Permission.MANAGE_BRANDS,
     Permission.MANAGE_CATEGORYS,
+
+    // Post management - Admin can manage all posts
+    Permission.CREATE_POST,
+    Permission.EDIT_POST,
+    Permission.DELETE_POST,
+
+    // Post moderation
+    Permission.MODERATE_POST,
+    Permission.VIEW_MODERATION_STATS,
 
     // Shop management - Admin quản lý toàn bộ
     Permission.MANAGE_SHOP_STAFF, // Chỉ chủ shop mới có quyền này
@@ -160,21 +169,21 @@ export const RoleMetadata = {
     color: '#3b82f6', // blue
     icon: '👤',
   },
-  
+
   [Role.SELLER]: {
     displayName: 'Người bán',
     description: 'Chủ shop, quản lý sản phẩm, nhân viên và hoạt động kinh doanh',
     color: '#10b981', // green
     icon: '🏪',
   },
-  
+
   [Role.ADMIN]: {
     displayName: 'Quản trị viên',
     description: 'Quản lý toàn bộ hệ thống, users, roles, permissions và dữ liệu',
     color: '#ef4444', // red
     icon: '👑',
   },
-  
+
   [Role.STAFF]: {
     displayName: 'Nhân viên',
     description: 'Nhân viên shop, hỗ trợ quản lý cửa hàng',
@@ -190,10 +199,10 @@ export const RoleMetadata = {
 export const RoleHierarchy = {
   /** Cấp cao nhất - Toàn quyền */
   HIGHEST: [Role.ADMIN],
-  
+
   /** Cấp trung - Quản lý shop */
   MEDIUM: [Role.SELLER],
-  
+
   /** Cấp thấp - Nhân viên và user */
   LOWEST: [Role.STAFF, Role.USER],
 } as const;
