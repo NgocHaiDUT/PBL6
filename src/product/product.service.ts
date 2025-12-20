@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { moderation_status, Prisma } from '@prisma/client';
+import { product_moderation_status, Prisma } from '@prisma/client';
 @Injectable()
 export class ProductService {
   constructor(private prisma: PrismaService) { }
@@ -156,6 +156,35 @@ export class ProductService {
     return { success: true, message: 'Cập nhật logo thương hiệu thành công' };
   }
 
+  async deleteBrand(userid: number, id: number) {
+    // Permission check is handled by @RequirePermissions decorator in controller
+
+    const brand = await this.prisma.brands.findUnique({
+      where: { id: id },
+    });
+    if (!brand) {
+      return { success: false, message: 'Thương hiệu không tồn tại' };
+    }
+
+    // Check if brand is being used by any products
+    const productsUsingBrand = await this.prisma.products.findFirst({
+      where: { brand_id: id },
+    });
+
+    if (productsUsingBrand) {
+      return {
+        success: false,
+        message: 'Không thể xóa thương hiệu đang được sử dụng bởi sản phẩm',
+      };
+    }
+
+    await this.prisma.brands.delete({
+      where: { id: id },
+    });
+
+    return { success: true, message: 'Xóa thương hiệu thành công' };
+  }
+
   async addcategory(
     userid: number,
     name: string,
@@ -228,6 +257,47 @@ export class ProductService {
       data: { slug: slug },
     });
     return { success: true, message: 'Cập nhật slug danh mục thành công' };
+  }
+
+  async deleteCategory(userid: number, id: number) {
+    // Permission check is handled by @RequirePermissions decorator in controller
+
+    const category = await this.prisma.categories.findUnique({
+      where: { id: id },
+    });
+    if (!category) {
+      return { success: false, message: 'Danh mục không tồn tại' };
+    }
+
+    // Check if category has child categories
+    const hasChildren = await this.prisma.categories.findFirst({
+      where: { parent_id: id },
+    });
+
+    if (hasChildren) {
+      return {
+        success: false,
+        message: 'Không thể xóa danh mục có danh mục con',
+      };
+    }
+
+    // Check if category is being used by any products
+    const productsUsingCategory = await this.prisma.product_categories.findFirst({
+      where: { category_id: id },
+    });
+
+    if (productsUsingCategory) {
+      return {
+        success: false,
+        message: 'Không thể xóa danh mục đang được sử dụng bởi sản phẩm',
+      };
+    }
+
+    await this.prisma.categories.delete({
+      where: { id: id },
+    });
+
+    return { success: true, message: 'Xóa danh mục thành công' };
   }
 
   async addproducts(
@@ -325,7 +395,7 @@ export class ProductService {
             description: description,
             how_to_use: how_to_use,
             is_published: is_published,
-            moderation_status: moderation_status.approved,
+            moderation_status: product_moderation_status.approved,
             created_at: new Date(),
             updated_at: new Date(),
           },
@@ -512,32 +582,23 @@ export class ProductService {
         return { success: false, message: 'Sản phẩm không tồn tại' };
       }
 
-      // Permission check is handled by @RequirePermissions decorator in controller
-      // Check if user has permission to delete this shop's product
-      const isOwner = product.shop.owner_id === user_id;
-      const isStaff = await this.prisma.shop_staffs.findFirst({
-        where: {
-          shop_id: product.shop_id,
-          user_id: user_id,
+      // Check if user is admin
+      const user = await this.prisma.users.findUnique({
+        where: { id: user_id },
+        include: {
+          role: true,
         },
       });
 
-      // Check if staff has manage_product permission
-      let hasManageProductPermission = false;
-      if (isStaff && !isOwner) {
-        const userPermissions = await this.prisma.userpermission.findMany({
-          where: { user_id: user_id },
-          include: { permission: true },
-        });
-        hasManageProductPermission = userPermissions.some(
-          (up) => up.permission.name === 'manage_product',
-        );
+      if (!user) {
+        return { success: false, message: 'Người dùng không tồn tại' };
       }
 
-      if (!isOwner && (!isStaff || !hasManageProductPermission)) {
+      // Only admin can delete products
+      if (user.role?.name !== 'admin') {
         return {
           success: false,
-          message: 'Bạn không có quyền xóa sản phẩm của shop này',
+          message: 'Chỉ admin mới có quyền xóa sản phẩm',
         };
       }
 
@@ -1243,40 +1304,95 @@ export class ProductService {
       const {
         page = 1,
         limit = 12,
+        name,
         category,
         brand,
-        min_price,
-        max_price,
+        is_published,
+        moderation_status,
+        minPrice,
+        maxPrice,
+        minRating,
         sort = 'newest',
       } = query;
       const skip = (Number(page) - 1) * Number(limit);
 
-      const where: any = {
-        is_published: true,
-        moderation_status: 'approved',
-      };
+      const where: any = {};
 
+      // Publication status filter
+      // If is_published is explicitly provided, use it; otherwise default to true for public API
+      if (is_published !== undefined) {
+        where.is_published = is_published;
+      } else {
+        where.is_published = true;
+      }
+
+      // Moderation status filter
+      // If moderation_status is explicitly provided, use it; otherwise default to 'approved' for public API
+      if (moderation_status) {
+        where.moderation_status = moderation_status;
+      } else {
+        where.moderation_status = 'approved';
+      }
+
+      // Name search (partial match, case-insensitive)
+      if (name) {
+        where.name = { contains: name, mode: 'insensitive' };
+      }
+
+      // Category filter - support both ID and slug
       if (category) {
-        where.product_categories = {
+        // Check if it's a number (ID) or string (slug)
+        const categoryId = parseInt(category);
+        if (!isNaN(categoryId)) {
+          // Filter by category ID
+          where.product_categories = {
+            some: {
+              category_id: categoryId,
+            },
+          };
+        } else {
+          // Filter by category slug
+          where.product_categories = {
+            some: {
+              category: {
+                slug: category,
+              },
+            },
+          };
+        }
+      }
+
+      // Brand filter - support both ID and slug
+      if (brand) {
+        // Check if it's a number (ID) or string (slug)
+        const brandId = parseInt(brand);
+        if (!isNaN(brandId)) {
+          // Filter by brand ID
+          where.brand_id = brandId;
+        } else {
+          // Filter by brand slug
+          where.brand = {
+            slug: brand,
+          };
+        }
+      }
+
+      // Price filter through variants
+      if (minPrice || maxPrice) {
+        where.product_variants = {
           some: {
-            category_id: Number(category),
+            price: {
+              ...(minPrice && { gte: Number(minPrice) }),
+              ...(maxPrice && { lte: Number(maxPrice) }),
+            },
           },
         };
       }
 
-      if (brand) {
-        where.brand_id = Number(brand);
-      }
-
-      // Price filter through variants
-      if (min_price || max_price) {
-        where.product_variants = {
-          some: {
-            price: {
-              ...(min_price && { gte: Number(min_price) }),
-              ...(max_price && { lte: Number(max_price) }),
-            },
-          },
+      // Rating filter
+      if (minRating) {
+        where.avg_rating = {
+          gte: Number(minRating),
         };
       }
 
