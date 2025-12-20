@@ -499,8 +499,63 @@ export class ShopService {
 
     const products = await this.prisma.products.findMany({
       where: { shop_id: shopid },
+      include: {
+        product_variants: {
+          orderBy: {
+            price: 'asc',
+          },
+        },
+        product_media: {
+          orderBy: {
+            sort_order: 'asc',
+          },
+        },
+        brand: true,
+        product_categories: {
+          include: {
+            category: true,
+          },
+        },
+      },
+      orderBy: { created_at: 'desc' },
     });
-    return { success: true, data: products };
+
+    const formattedProducts = products.map((product) => {
+      // Calculate price range
+      const prices = product.product_variants.map((v) => Number(v.price));
+      const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+      const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
+
+      // Get first image
+      const firstImage = product.product_media?.[0]?.url || null;
+
+      // Check if has try-on
+      const hasTryOn = product.product_variants.some(
+        (v) => v.shade_hex !== null && v.shade_hex !== '',
+      );
+
+      // Calculate inventory
+      const totalInventory = product.product_variants.reduce(
+        (sum, v) => sum + v.stock,
+        0,
+      );
+
+      return {
+        ...product,
+        price: minPrice, // For simple display
+        min_price: minPrice,
+        max_price: maxPrice,
+        first_image: firstImage,
+        image: firstImage, // Alias for some frontend components
+        hasTryOn,
+        variants_count: product.product_variants.length,
+        inventory: totalInventory,
+        rating: Number(product.avg_rating) || 0,
+        reviews: product.review_count || 0,
+      };
+    });
+
+    return { success: true, data: formattedProducts };
   }
 
   async getShopDetails(shopIdentifier: string | number) {
@@ -860,6 +915,327 @@ export class ShopService {
     };
   }
 
+  // Public method - no auth required, limited info
+  async getPublicShopDetails(shopid: number, currentUserId?: number) {
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopid },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            full_name: true,
+            avatar_url: true,
+          },
+        },
+        _count: {
+          select: {
+            shop_staffs: true,
+            shop_follows: true, // Count directly from shop_follows
+          },
+        },
+      },
+    });
+
+    if (!shop) {
+      return { success: false, message: 'Shop not found' };
+    }
+
+    const followerCount = shop._count.shop_follows;
+
+    // Check if current user is following this shop
+    let isFollowing = false;
+    if (currentUserId) {
+      const follow = await this.prisma.shop_follows.findUnique({
+        where: {
+          user_id_shop_id: {
+            user_id: currentUserId,
+            shop_id: shopid
+          }
+        }
+      });
+      isFollowing = !!follow;
+    }
+
+    // Get published AND approved products for shop
+    const publishedProducts = await this.prisma.products.findMany({
+      where: {
+        shop_id: shopid,
+        is_published: true,
+        moderation_status: 'approved', // Only count approved products
+      },
+      select: {
+        id: true,
+        avg_rating: true,
+      },
+    });
+
+    // Calculate average rating across all products
+    const totalRating = publishedProducts.reduce(
+      (sum, p) => sum + (p.avg_rating ? Number(p.avg_rating) : 0),
+      0,
+    );
+    const avgShopRating =
+      publishedProducts.length > 0
+        ? totalRating / publishedProducts.length
+        : 0;
+
+    // Get total review count (only for published products)
+    const totalReviews = await this.prisma.reviews.count({
+      where: {
+        product: {
+          shop_id: shopid,
+          is_published: true,
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        id: shop.id,
+        name: shop.name,
+        slug: shop.slug,
+        description: shop.description,
+        logo_url: shop.logo_url,
+        cover_url: shop.cover_url,
+        phone: shop.phone,
+        email: shop.email,
+        is_verified: shop.is_verified,
+        created_at: shop.created_at,
+        updated_at: shop.updated_at,
+        owner: shop.owner,
+        staff_count: shop._count.shop_staffs,
+        product_count: publishedProducts.length, // Only count published products
+        follower_count: followerCount,
+        is_following: isFollowing,
+        avg_rating: Number(avgShopRating.toFixed(1)),
+        total_reviews: totalReviews,
+      },
+    };
+  }
+
+  async followShop(userId: number, shopId: number) {
+    // Check if shop exists
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopId }
+    });
+    if (!shop) {
+      throw new NotFoundException('Shop not found');
+    }
+
+    // Check if already following
+    const existingFollow = await this.prisma.shop_follows.findUnique({
+      where: {
+        user_id_shop_id: {
+          user_id: userId,
+          shop_id: shopId
+        }
+      }
+    });
+
+    if (existingFollow) {
+      return { success: true, message: 'Already following' };
+    }
+
+    await this.prisma.shop_follows.create({
+      data: {
+        user_id: userId,
+        shop_id: shopId
+      }
+    });
+
+    return { success: true, message: 'Followed shop successfully' };
+  }
+
+  async unfollowShop(userId: number, shopId: number) {
+    const deleteResult = await this.prisma.shop_follows.deleteMany({
+      where: {
+        user_id: userId,
+        shop_id: shopId
+      }
+    });
+
+    if (deleteResult.count === 0) {
+      return { success: false, message: 'Not following this shop' };
+    }
+
+    return { success: true, message: 'Unfollowed shop successfully' };
+  }
+
+  async getShopFollowStatus(userId: number, shopId: number) {
+    const follow = await this.prisma.shop_follows.findUnique({
+      where: {
+        user_id_shop_id: {
+          user_id: userId,
+          shop_id: shopId
+        }
+      }
+    });
+    return { is_following: !!follow };
+  }
+
+  // ============================================
+  // PUBLIC METHODS (No authentication required)
+  // ============================================
+
+  /**
+   * Get shop public profile - No authentication required
+   */
+  async getShopPublicProfile(shopId: number) {
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        logo_url: true,
+        cover_url: true,
+        phone: true,
+        email: true,
+        is_verified: true,
+        created_at: true,
+        _count: {
+          select: {
+            products: true,
+            shop_staffs: true,
+          },
+        },
+      },
+    });
+
+    if (!shop) {
+      throw new NotFoundException('Shop not found');
+    }
+
+    // TODO: Calculate real rating and response rate from orders/reviews
+    // For now, return mock data
+    const rating = 4.8;
+    const responseRate = 99;
+    const followersCount = 12500; // TODO: Implement followers system
+
+    return {
+      success: true,
+      data: {
+        id: shop.id,
+        name: shop.name,
+        slug: shop.slug,
+        description: shop.description,
+        logo_url: shop.logo_url,
+        cover_url: shop.cover_url,
+        phone: shop.phone,
+        email: shop.email,
+        is_verified: shop.is_verified,
+        rating,
+        response_rate: responseRate,
+        followers_count: followersCount,
+        product_count: shop._count.products,
+        created_at: shop.created_at,
+      },
+    };
+  }
+
+  /**
+   * Get shop products with pagination - No authentication required
+   */
+  async getShopProducts(shopId: number, query: any) {
+    const { page = 1, limit = 20, sortBy = 'created_at', order = 'desc' } = query;
+
+    // Verify shop exists
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopId },
+      select: { id: true },
+    });
+
+    if (!shop) {
+      throw new NotFoundException('Shop not found');
+    }
+
+    const skip = (page - 1) * limit;
+
+    // Build orderBy object
+    const orderByField: any = {};
+    orderByField[sortBy] = order;
+
+    // Get products with pagination
+    const [products, total] = await Promise.all([
+      this.prisma.products.findMany({
+        where: {
+          shop_id: shopId,
+          is_published: true, // ✅ Only show published products
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          avg_rating: true,
+          review_count: true,
+          created_at: true,
+          product_media: {
+            select: {
+              url: true,
+              sort_order: true,
+            },
+            orderBy: {
+              sort_order: 'asc',
+            },
+            take: 1,
+          },
+          product_variants: {
+            select: {
+              price: true,
+              compare_at_price: true,
+              stock: true,
+            },
+            orderBy: {
+              price: 'asc',
+            },
+            take: 1,
+          },
+        },
+        orderBy: orderByField,
+        skip,
+        take: limit,
+      }),
+      this.prisma.products.count({
+        where: {
+          shop_id: shopId,
+          is_published: true,
+        },
+      }),
+    ]);
+
+    return {
+      success: true,
+      data: products.map(product => {
+        const variant = product.product_variants[0];
+        const soldCount = 0; // TODO: Calculate from orders
+
+        return {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          description: product.description,
+          price: variant ? Number(variant.price) : 0,
+          discount_price: variant?.compare_at_price ? Number(variant.compare_at_price) : null,
+          stock_quantity: variant?.stock || 0,
+          sold_count: soldCount,
+          rating: product.avg_rating ? Number(product.avg_rating) : 0,
+          review_count: product.review_count,
+          image_url: product.product_media[0]?.url || null,
+          created_at: product.created_at.toISOString(),
+        };
+      }),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   /**
    * Get shop products for management (shop owner/staff view)
    * Shows ALL products regardless of publication or moderation status
@@ -1068,5 +1444,4 @@ export class ShopService {
       },
     };
   }
-
 }
