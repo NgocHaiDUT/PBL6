@@ -53,8 +53,9 @@ export class PostsController {
   }
 
   @Get()
-  findAll(@Query() queryDto: QueryPostsDto) {
-    return this.postsService.getPosts(queryDto);
+  findAll(@Query() queryDto: QueryPostsDto, @Req() req: any) {
+    const currentUserId = req.user?.userId; // May be undefined if not authenticated
+    return this.postsService.getPosts(queryDto, currentUserId);
   }
 
   // Get posts by user ID - Must be before :id route
@@ -62,10 +63,20 @@ export class PostsController {
   getPostsByUserId(
     @Param('userId', ParseIntPipe) userId: number,
     @Query() queryDto: QueryPostsDto,
+    @Req() req: any,
   ) {
+    const currentUserId = req.user?.userId;
     // Override user_id in queryDto with the userId from params
     const query = { ...queryDto, user_id: userId };
-    return this.postsService.getPosts(query);
+    return this.postsService.getPosts(query, currentUserId);
+  }
+
+  // Following feed - Must be before :id route
+  @Get('following')
+  @UseGuards(JwtAuthGuard)
+  getFollowingPosts(@Query() query: QueryPostsDto, @Req() req: any) {
+    const userId = req.user.userId;
+    return this.postsService.getFollowingPosts(userId, query);
   }
 
   // Save/Unsave Posts Endpoints - Must be before :id route
