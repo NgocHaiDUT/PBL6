@@ -56,7 +56,7 @@ enum shipment_status {
 }
 
 enum moderation_status {
-  pending
+
   approved
   rejected
   removed
@@ -558,7 +558,7 @@ model posts {
   post_type         String            @default("post")
   title             String?
   content_md        String
-  moderation_status moderation_status @default(pending)
+  moderation_status moderation_status @default(approved)
   visibility        String            @default("public")
   view_count        Int               @default(0)
   like_count        Int               @default(0)

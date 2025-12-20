@@ -80,9 +80,9 @@ export class GetShopProductsDto {
     @ApiPropertyOptional({
         description: 'Filter by moderation status',
         example: 'approved',
-        enum: ['pending', 'approved', 'rejected'],
+        enum: ['approved', 'rejected'],
     })
     @IsOptional()
     @IsString()
-    moderation_status?: 'pending' | 'approved' | 'rejected';
+    moderation_status?: 'approved' | 'rejected';
 }
