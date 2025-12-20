@@ -258,6 +258,19 @@ export class ProductController {
   async getProductById(@Param('productId', ParseIntPipe) productId: number) {
     return this.productservice.getProductById(productId);
   }
+
+  // Protected endpoint for sellers to get product details (including unpublished/pending)
+  @Get(':productId/manage')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_PRODUCT)
+  async getProductByIdForManagement(
+    @Param('productId', ParseIntPipe) productId: number,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.productservice.getProductByIdForManagement(productId, userId);
+  }
+
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('manage_brands')
   @UseInterceptors(FileInterceptor('file', brandMulterConfig))
