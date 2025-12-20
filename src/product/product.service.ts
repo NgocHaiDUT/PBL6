@@ -325,7 +325,7 @@ export class ProductService {
             description: description,
             how_to_use: how_to_use,
             is_published: is_published,
-            moderation_status: moderation_status.pending,
+            moderation_status: moderation_status.approved,
             created_at: new Date(),
             updated_at: new Date(),
           },

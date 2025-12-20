@@ -1200,26 +1200,25 @@ export class PostsService {
    * Get moderation statistics (Admin only)
    */
   async getModerationStats() {
-    const [pending, approved, rejected, removed, total] = await Promise.all([
+    const [approved, rejected, removed, total] = await Promise.all([
       this.prisma.posts.count({
-        where: { moderation_status: 'pending' },
+        where: { moderation_status: 'approved', is_story: false },
       }),
       this.prisma.posts.count({
-        where: { moderation_status: 'approved' },
+        where: { moderation_status: 'rejected', is_story: false },
       }),
       this.prisma.posts.count({
-        where: { moderation_status: 'rejected' },
+        where: { moderation_status: 'removed', is_story: false },
       }),
       this.prisma.posts.count({
-        where: { moderation_status: 'removed' },
+        where: { is_story: false },
       }),
-      this.prisma.posts.count(),
     ]);
 
     return {
       success: true,
       data: {
-        pending,
+        pending: 0, // Deprecated
         approved,
         rejected,
         removed,
