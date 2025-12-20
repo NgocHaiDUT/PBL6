@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
 export class ShopService {
@@ -558,9 +558,18 @@ export class ShopService {
     return { success: true, data: formattedProducts };
   }
 
-  async getShopDetails(shopid: number) {
+  async getShopDetails(shopIdentifier: string | number) {
+    let where: any = {};
+    const id = Number(shopIdentifier);
+
+    if (!isNaN(id)) {
+      where = { id: id };
+    } else {
+      where = { slug: String(shopIdentifier) };
+    }
+
     const shop = await this.prisma.shops.findUnique({
-      where: { id: shopid },
+      where: where,
       include: {
         owner: {
           select: {
@@ -602,6 +611,7 @@ export class ShopService {
     }
 
     // Get follower count - counting users following shop owner
+    const shopid = shop.id;
     const followerCount = await this.prisma.follows.count({
       where: { following_id: shop.owner_id },
     });
@@ -668,7 +678,10 @@ export class ShopService {
           },
         })),
         staff_count: shop.shop_staffs.length,
-        product_count: shop._count.products,
+        product_count: publishedProducts.length, // Only count published AND approved products
+        follower_count: followerCount,
+        avg_rating: Number(avgShopRating.toFixed(1)),
+        total_reviews: totalReviews,
       },
     };
   }
@@ -1223,4 +1236,212 @@ export class ShopService {
     };
   }
 
+  /**
+   * Get shop products for management (shop owner/staff view)
+   * Shows ALL products regardless of publication or moderation status
+   * Requires authentication and MANAGE_PRODUCT permission
+   */
+  async getShopProductsForManagement(
+    shopId: number,
+    userId: number,
+    query: any,
+  ) {
+    const {
+      page = 1,
+      limit = 20,
+      sortBy = 'created_at',
+      order = 'desc',
+      moderation_status,
+      is_published,
+      search,
+      category_id,
+      brand_id,
+    } = query;
+
+    // Verify shop exists
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopId },
+      select: { id: true, owner_id: true },
+    });
+
+    if (!shop) {
+      throw new NotFoundException('Shop not found');
+    }
+
+    // Check if user is shop owner or staff with manage_product permission
+    const isOwner = shop.owner_id === userId;
+    const isStaff = await this.prisma.shop_staffs.findFirst({
+      where: {
+        shop_id: shopId,
+        user_id: userId,
+      },
+    });
+
+    // Check if staff has manage_product permission
+    let hasManageProductPermission = false;
+    if (isStaff && !isOwner) {
+      const userPermissions = await this.prisma.userpermission.findMany({
+        where: { user_id: userId },
+        include: { permission: true },
+      });
+      hasManageProductPermission = userPermissions.some(
+        (up) => up.permission.name === 'manage_product',
+      );
+    }
+
+    if (!isOwner && (!isStaff || !hasManageProductPermission)) {
+      throw new ForbiddenException(
+        'You do not have permission to manage products for this shop',
+      );
+    }
+
+    const skip = (page - 1) * limit;
+
+    // Build where clause
+    const where: any = {
+      shop_id: shopId,
+    };
+
+    // Add optional filters
+    if (moderation_status) {
+      where.moderation_status = moderation_status;
+    }
+    if (is_published !== undefined) {
+      where.is_published = is_published === 'true' || is_published === true;
+    }
+    if (search) {
+      where.name = {
+        contains: search,
+        mode: 'insensitive',
+      };
+    }
+    if (brand_id) {
+      where.brand_id = parseInt(brand_id);
+    }
+    if (category_id) {
+      // Filter by category using product_categories relation
+      where.product_categories = {
+        some: {
+          category_id: parseInt(category_id),
+        },
+      };
+    }
+
+    // Build orderBy object
+    const orderByField: any = {};
+    orderByField[sortBy] = order;
+
+    // Get products with pagination
+    const [products, total] = await Promise.all([
+      this.prisma.products.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          avg_rating: true,
+          review_count: true,
+          is_published: true,
+          moderation_status: true,
+          created_at: true,
+          updated_at: true,
+          brand_id: true,
+          brand: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          product_categories: {
+            select: {
+              category_id: true,
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          product_media: {
+            select: {
+              url: true,
+              sort_order: true,
+            },
+            orderBy: {
+              sort_order: 'asc',
+            },
+            take: 1,
+          },
+          product_variants: {
+            select: {
+              id: true,
+              sku: true,
+              name: true,
+              price: true,
+              compare_at_price: true,
+              stock: true,
+              shade_hex: true,
+              size_label: true,
+              opacity: true,
+              is_active: true,
+            },
+            orderBy: {
+              price: 'asc',
+            },
+            take: 1,
+          },
+        },
+        orderBy: orderByField,
+        skip,
+        take: limit,
+      }),
+      this.prisma.products.count({
+        where,
+      }),
+    ]);
+
+    return {
+      success: true,
+      data: {
+        products: products.map((product) => {
+          const variant = product.product_variants[0];
+          const soldCount = 0; // TODO: Calculate from orders
+
+          return {
+            id: product.id,
+            name: product.name,
+            slug: product.slug,
+            description: product.description,
+            price: variant ? Number(variant.price) : 0,
+            discount_price: variant?.compare_at_price
+              ? Number(variant.compare_at_price)
+              : null,
+            stock_quantity: variant?.stock || 0,
+            sold_count: soldCount,
+            rating: product.avg_rating ? Number(product.avg_rating) : 0,
+            review_count: product.review_count,
+            image_url: product.product_media[0]?.url || null,
+            is_published: product.is_published,
+            moderation_status: product.moderation_status,
+            created_at: product.created_at.toISOString(),
+            updated_at: product.updated_at.toISOString(),
+            // Include full relations for frontend
+            brand_id: product.brand_id,
+            brand: product.brand,
+            product_categories: product.product_categories,
+            product_variants: product.product_variants,
+            product_media: product.product_media,
+          };
+        }),
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    };
+  }
 }

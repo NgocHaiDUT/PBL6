@@ -108,7 +108,7 @@ export class PostsService {
         content_md: trimmedMd,
         ...sanitizedBase,
         user_id: userId,
-        moderation_status: 'pending',
+        moderation_status: 'approved',
       },
     });
 
@@ -213,7 +213,7 @@ export class PostsService {
         content_md: trimmedMd,
         ...sanitizedBase,
         user_id: userId,
-        moderation_status: 'pending',
+        moderation_status: 'approved',
       },
     });
 
@@ -350,6 +350,7 @@ export class PostsService {
             select: {
               id: true,
               name: true,
+              slug: true,
               logo_url: true,
             },
           },
@@ -449,6 +450,7 @@ export class PostsService {
           select: {
             id: true,
             name: true,
+            slug: true,
             logo_url: true,
           },
         },
@@ -1027,6 +1029,7 @@ export class PostsService {
                 select: {
                   id: true,
                   name: true,
+                  slug: true,
                   logo_url: true,
                 },
               },
@@ -1154,6 +1157,7 @@ export class PostsService {
           select: {
             id: true,
             name: true,
+            slug: true,
             logo_url: true,
           },
         },
