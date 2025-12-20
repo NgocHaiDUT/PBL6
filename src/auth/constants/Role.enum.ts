@@ -88,6 +88,7 @@ export const RolePermissions: Record<Role, Permission[]> = {
     Permission.CHAT_WITH_CUSTOMER,
     Permission.MANAGE_SHOP_SETTING,
     Permission.VIEW_DASHBOARD,
+    Permission.MANAGE_SHOP_ADMIN,
   ],
 
   [Role.STAFF]: [

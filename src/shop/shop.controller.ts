@@ -98,7 +98,7 @@ export class ShopController {
     description: 'Shop not found',
   })
   async getShopProfile(@Param('shopId', ParseIntPipe) shopId: number) {
-    return this.shopService.getShopPublicProfile(shopId);
+    return this.shopService.getShopDetails(shopId);
   }
 
   @Get(':shopId/products')
@@ -128,7 +128,7 @@ export class ShopController {
     @Param('shopId', ParseIntPipe) shopId: number,
     @Query() query: GetShopProductsDto,
   ) {
-    return this.shopService.getShopProducts(shopId, query);
+    return this.shopService.getproduct(shopId);
   }
 
   // ============================================

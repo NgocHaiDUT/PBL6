@@ -494,12 +494,13 @@ export class ShopService {
       select: { id: true },
     });
     if (!ishasshop) {
-      return { message: 'Shop id không tồn tại' };
+      return { success: false, message: 'Shop id không tồn tại' };
     }
 
     const products = await this.prisma.products.findMany({
       where: { shop_id: shopid },
     });
+    return { success: true, data: products };
   }
 
   async getShopDetails(shopid: number) {
