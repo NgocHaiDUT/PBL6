@@ -27,6 +27,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server: Server;
 
   private readonly logger = new Logger(ChatGateway.name);
+  private onlineUsers = new Map<string, number>(); // socketId -> userId
+  private onlineShops = new Map<string, number>(); // socketId -> shopId
 
   constructor(
     private messagesService: MessagesService,
@@ -42,26 +44,70 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
-    this.logger.log(`Client disconnected: ${client.id}`);
+    const userId = this.onlineUsers.get(client.id);
+    const shopId = this.onlineShops.get(client.id);
+
+    this.logger.log(`Client disconnected: ${client.id} (User: ${userId}, Shop: ${shopId})`);
+
+    // Cleanup and notify
+    if (userId) {
+      this.onlineUsers.delete(client.id);
+      // Check if user has other connections
+      const otherConnections = Array.from(this.onlineUsers.values()).includes(userId);
+      if (!otherConnections) {
+        this.server.emit('userStatusChanged', { userId, status: 'offline' });
+      }
+    }
+
+    if (shopId) {
+      this.onlineShops.delete(client.id);
+      const otherConnections = Array.from(this.onlineShops.values()).includes(shopId);
+      if (!otherConnections) {
+        this.server.emit('shopStatusChanged', { shopId, status: 'offline' });
+      }
+    }
   }
 
   @SubscribeMessage('join')
   handleJoin(@MessageBody() userId: number, @ConnectedSocket() client: Socket) {
     if (!userId) return;
+
+    const isAlreadyOnline = Array.from(this.onlineUsers.values()).includes(userId);
+    this.onlineUsers.set(client.id, userId);
+
     client.join(`${userId}`);
     this.logger.log(`User ${userId} joined room`);
     client.emit('joined', { userId, message: 'Successfully joined chat' });
+
+    if (!isAlreadyOnline) {
+      this.server.emit('userStatusChanged', { userId, status: 'online' });
+    }
   }
 
   @SubscribeMessage('joinShop')
   handleJoinShop(@MessageBody() data: { shopId: number; userId: number }, @ConnectedSocket() client: Socket) {
     if (!data.shopId || !data.userId) return;
+
+    const isUserAlreadyOnline = Array.from(this.onlineUsers.values()).includes(data.userId);
+    const isShopAlreadyOnline = Array.from(this.onlineShops.values()).includes(data.shopId);
+
+    this.onlineUsers.set(client.id, data.userId);
+    this.onlineShops.set(client.id, data.shopId);
+
     // Join shop room for receiving messages
     client.join(`shop_${data.shopId}`);
     // Also join user room for personal notifications
     client.join(`${data.userId}`);
+
     this.logger.log(`User ${data.userId} joined shop ${data.shopId} room`);
     client.emit('joinedShop', { shopId: data.shopId, message: 'Successfully joined shop chat' });
+
+    if (!isUserAlreadyOnline) {
+      this.server.emit('userStatusChanged', { userId: data.userId, status: 'online' });
+    }
+    if (!isShopAlreadyOnline) {
+      this.server.emit('shopStatusChanged', { shopId: data.shopId, status: 'online' });
+    }
   }
 
   @SubscribeMessage('sendMessage')
@@ -100,7 +146,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           where: { id: data.receiverId },
           select: { id: true }
         });
-        
+
         if (shop) {
           // User sending to shop
           conversation = await this.messagesService.findOrCreateShopConversation(
@@ -703,16 +749,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('getOnlineUsers')
   handleGetOnlineUsers(@ConnectedSocket() client: Socket) {
-    const rooms = this.server.sockets.adapter.rooms;
-    const onlineUserIds: number[] = [];
-
-    for (const [roomName] of rooms) {
-      if (/^\d+$/.test(roomName)) {
-        onlineUserIds.push(parseInt(roomName));
-      }
-    }
-
+    const onlineUserIds = Array.from(new Set(this.onlineUsers.values()));
     client.emit('onlineUsers', onlineUserIds);
+  }
+
+  @SubscribeMessage('getOnlineShops')
+  handleGetOnlineShops(@ConnectedSocket() client: Socket) {
+    const onlineShopIds = Array.from(new Set(this.onlineShops.values()));
+    client.emit('onlineShops', onlineShopIds);
   }
 
   // ===== NEW MESSAGE ACTIONS =====
@@ -960,8 +1004,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleSendMessageWithMedia(
     @MessageBody() data: {
       senderId: number;
-      receiverId: number;
+      receiverId?: number;
+      shopId?: number;
+      conversationId?: number;
       content?: string;
+      type?: 'TEXT' | 'IMAGE' | 'VIDEO';
       mediaFiles: Array<{
         url: string;
         type: 'image' | 'video' | 'file';
@@ -974,58 +1021,81 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      this.logger.log(`User ${data.senderId} sending message with media to ${data.receiverId}`);
+      // Determine the actual receiver ID (could be user or shop)
+      const targetId = data.shopId || data.receiverId;
+
+      if (!targetId) {
+        throw new Error('Either receiverId or shopId must be provided');
+      }
+
+      this.logger.log(`User ${data.senderId} sending message with media to ${data.shopId ? 'shop' : 'user'} ${targetId}`);
 
       // 1. Find or create conversation
-      // ✅ Check if receiverId is a shop
-      const isShop = await this.prisma.shops.findUnique({
-        where: { id: data.receiverId },
-        select: { id: true }
-      });
-
       let conversation;
-      if (isShop) {
-        // User sending media to shop
-        this.logger.log(`User ${data.senderId} sending media to shop ${data.receiverId}`);
-        conversation = await this.messagesService.findOrCreateShopConversation(
-          data.senderId, // userId
-          data.receiverId, // shopId
-        );
-      } else {
-        // User sending media to user
-        const conversations = await this.prisma.conversations.findMany({
-          where: { type: 'private' },
+
+      // If conversationId is provided, use it directly
+      if (data.conversationId) {
+        conversation = await this.prisma.conversations.findUnique({
+          where: { id: data.conversationId },
           include: { participants: true }
         });
 
-        conversation = conversations.find(conv => {
-          const userIds = conv.participants.map(p => p.user_id).sort();
-          const targetIds = [data.senderId, data.receiverId].sort();
-          return userIds.length === 2 &&
-            userIds[0] === targetIds[0] &&
-            userIds[1] === targetIds[1];
-        });
-
         if (!conversation) {
-          conversation = await this.prisma.conversations.create({
-            data: {
-              type: 'private',
-              participants: {
-                create: [
-                  { user_id: data.senderId, entity_type: 'user' },
-                  { user_id: data.receiverId, entity_type: 'user' }
-                ]
-              }
-            },
+          throw new Error(`Conversation ${data.conversationId} not found`);
+        }
+
+        this.logger.log(`Using existing conversation ${data.conversationId}`);
+      } else {
+        // ✅ Check if target is a shop
+        const isShop = data.shopId ? await this.prisma.shops.findUnique({
+          where: { id: data.shopId },
+          select: { id: true }
+        }) : null;
+
+        if (isShop) {
+          // User sending media to shop
+          this.logger.log(`Creating/finding shop conversation for user ${data.senderId} and shop ${data.shopId}`);
+          conversation = await this.messagesService.findOrCreateShopConversation(
+            data.senderId, // userId
+            data.shopId!, // shopId - non-null assertion safe because isShop check confirms it exists
+          );
+        } else {
+          // User sending media to user
+          const conversations = await this.prisma.conversations.findMany({
+            where: { type: 'private' },
             include: { participants: true }
           });
+
+          conversation = conversations.find(conv => {
+            const userIds = conv.participants.map(p => p.user_id).sort();
+            const targetIds = [data.senderId, targetId].sort();
+            return userIds.length === 2 &&
+              userIds[0] === targetIds[0] &&
+              userIds[1] === targetIds[1];
+          });
+
+          if (!conversation) {
+            conversation = await this.prisma.conversations.create({
+              data: {
+                type: 'private',
+                participants: {
+                  create: [
+                    { user_id: data.senderId, entity_type: 'user' },
+                    { user_id: targetId, entity_type: 'user' }
+                  ]
+                }
+              },
+              include: { participants: true }
+            });
+          }
         }
       }
 
       // 2. Determine message type based on enum message_type
-      let messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHARE_POST' | 'SHARE_PRODUCT' = 'TEXT';
+      let messageType: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHARE_POST' | 'SHARE_PRODUCT' = data.type || 'TEXT';
 
-      if (data.mediaFiles.length > 0) {
+      // If type not provided, infer from media files
+      if (!data.type && data.mediaFiles.length > 0) {
         const firstMediaType = data.mediaFiles[0].type;
         if (firstMediaType === 'image') {
           messageType = 'IMAGE';
@@ -1078,8 +1148,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         conversation_id: conversation?.id, // ✅ Add snake_case
         senderId: message.sender_id,
         sender_id: message.sender_id, // ✅ Add snake_case for frontend compatibility
-        receiverId: data.receiverId,
-        receiver_id: data.receiverId, // ✅ Add snake_case
+        receiverId: targetId,
+        receiver_id: targetId, // ✅ Add snake_case
         content: message.content,
         type: messageType,
         createdAt: message.created_at.toISOString(),
@@ -1107,7 +1177,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // 6. Send to both users
       this.server.to(`${data.senderId}`).emit('newMessage', formattedMessage);
-      this.server.to(`${data.receiverId}`).emit('newMessage', formattedMessage);
+      this.server.to(`${targetId}`).emit('newMessage', formattedMessage);
 
       client.emit('messageSent', {
         success: true,

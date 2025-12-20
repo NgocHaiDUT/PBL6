@@ -126,7 +126,7 @@ export class OrderService {
 
       if (!shop || !shop.addresses[0] || !shop.ghn_shop_id) {
         throw new BadRequestException(
-          `Shop ${shop?.name || shopId} is not configured for shipping.`,
+          `Cửa hàng ${shop?.name || shopId} chưa thiết lập địa chỉ lấy hàng mặc định hoặc chưa đăng ký GHN.`,
         );
       }
       const pickupAddress = shop.addresses[0];
@@ -323,12 +323,10 @@ export class OrderService {
           if (
             !shop ||
             !shop.addresses[0] ||
-            !shop.ghn_shop_id ||
-            !shop.addresses[0].ghn_district_id ||
-            !shop.addresses[0].ghn_ward_code
+            !shop.ghn_shop_id
           ) {
             throw new BadRequestException(
-              `Shop ${shop?.name || shopId} không có địa chỉ lấy hàng mặc định hoặc chưa đăng ký GHN.`,
+              `Cửa hàng ${shop?.name || shopId} chưa thiết lập địa chỉ lấy hàng mặc định hoặc chưa đăng ký GHN.`,
             );
           }
 
@@ -640,8 +638,8 @@ export class OrderService {
       }
 
       const pickupAddress = product.shop.addresses[0];
-      if (!pickupAddress || !pickupAddress.ghn_district_id || !pickupAddress.ghn_ward_code) {
-        return { success: false, message: 'Shop chưa cấu hình địa chỉ lấy hàng hoặc thông tin GHN' };
+      if (!product.shop.ghn_shop_id || !pickupAddress || !pickupAddress.ghn_district_id || !pickupAddress.ghn_ward_code) {
+        return { success: false, message: 'Cửa hàng chưa thiết lập địa chỉ lấy hàng mặc định hoặc chưa đăng ký GHN' };
       }
 
       // Get variant or use default

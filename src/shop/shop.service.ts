@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { DeliveryService } from '../delivery/delivery.service';
+
 @Injectable()
 export class ShopService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private deliveryService: DeliveryService,
+  ) { }
 
   async addstaff(
     userid: number,
@@ -1443,5 +1448,82 @@ export class ShopService {
         },
       },
     };
+  }
+
+  /**
+   * Register a shop with GHN using an existing shop address
+   */
+  async registerGHNShop(userId: number, shopId: number, addressShopId: number) {
+    // 1. Verify shop existence and ownership/management
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopId },
+      select: { id: true, owner_id: true, name: true, phone: true, email: true },
+    });
+
+    if (!shop) {
+      throw new NotFoundException('Cửa hàng không tồn tại');
+    }
+
+    // Check permissions (Owner, Manager, or Admin)
+    const isOwner = shop.owner_id === userId;
+    const staff = await this.prisma.shop_staffs.findFirst({
+      where: { shop_id: shopId, user_id: userId, is_manager: true },
+    });
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: { role: { select: { name: true } } },
+    });
+    const isAdmin = user?.role?.name === 'admin';
+
+    if (!isOwner && !staff && !isAdmin) {
+      throw new ForbiddenException('Bạn không có quyền thực hiện hành động này');
+    }
+
+    // 2. Fetch the shop address
+    const address = await this.prisma.shop_addresses.findFirst({
+      where: { id: addressShopId, shop_id: shopId },
+    });
+
+    if (!address) {
+      throw new NotFoundException('Địa chỉ cửa hàng không tồn tại hoặc không thuộc cửa hàng này');
+    }
+
+    // 3. Validate GHN location identifiers
+    if (!address.ghn_district_id || !address.ghn_ward_code) {
+      throw new BadRequestException('Địa chỉ này chưa có thông tin Quận/Huyện hoặc Phường/Xã hợp lệ từ GHN');
+    }
+
+    // 4. Call GHN API
+    const ghnShopData = {
+      district_id: address.ghn_district_id,
+      ward_code: address.ghn_ward_code,
+      name: shop.name,
+      phone: address.phone || shop.phone || '',
+      address: `${address.street}, ${address.ward}, ${address.district}, ${address.province}`,
+    };
+
+    try {
+      const ghnResponse = await this.deliveryService.registerShop(ghnShopData);
+      const ghnShopId = ghnResponse.shop_id;
+
+      if (!ghnShopId) {
+        throw new BadRequestException('GHN không trả về shop_id hợp lệ');
+      }
+
+      // 5. Update local shop with ghn_shop_id
+      await this.prisma.shops.update({
+        where: { id: shopId },
+        data: { ghn_shop_id: ghnShopId },
+      });
+
+      return {
+        success: true,
+        message: 'Đăng ký cửa hàng trên GHN thành công',
+        ghn_shop_id: ghnShopId,
+      };
+    } catch (error) {
+      console.error('GHN Registration Error:', error.response?.data || error.message);
+      throw new BadRequestException(error.message || 'Lỗi khi đăng ký cửa hàng trên GHN');
+    }
   }
 }

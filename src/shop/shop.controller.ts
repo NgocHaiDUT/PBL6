@@ -33,6 +33,7 @@ import {
   RemoveStaffDto,
   UpdateStaffPermissionsDto,
   UpdateShopDto,
+  RegisterGHNShopDto,
 } from './dto';
 import { GetShopProductsDto } from './dto/get-shop-products.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
@@ -1017,4 +1018,30 @@ export class ShopController {
     return this.shopService.getShopFollowStatus(req.user.userId, shopid);
   }
 
+  // ============================================
+  // GHN INTEGRATION
+  // ============================================
+
+  @Post(':shopId/ghn-register')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_SHOP_SETTING)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Register shop with GHN (Giao Hàng Nhanh)',
+    description: 'Registers the shop on GHN system using an existing shop address. Requires MANAGE_SHOP_SETTING permission.',
+  })
+  @ApiParam({ name: 'shopId', type: Number, example: 1 })
+  @ApiBody({ type: RegisterGHNShopDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Shop registered on GHN successfully',
+  })
+  async registerGHNShop(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Body() body: RegisterGHNShopDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.shopService.registerGHNShop(userId, shopId, body.address_shop_id);
+  }
 }

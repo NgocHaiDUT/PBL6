@@ -16,7 +16,7 @@ export class AddressService {
   constructor(
     private prisma: PrismaService,
     private deliveryService: DeliveryService,
-  ) {}
+  ) { }
 
   // ==================== HELPER METHODS ====================
 
@@ -255,6 +255,14 @@ export class AddressService {
       if (resolvedNames.ward) officialWardName = resolvedNames.ward;
     }
 
+    // If no addresses exist, make this one default
+    const addressCount = await this.prisma.shop_addresses.count({
+      where: { shop_id: dto.shop_id },
+    });
+    if (addressCount === 0) {
+      dto.is_default = true;
+    }
+
     // If this is set as default, unset other defaults
     if (dto.is_default) {
       await this.prisma.shop_addresses.updateMany({
@@ -489,10 +497,10 @@ export class AddressService {
     if (dto.is_default !== undefined) {
       if (dto.is_default) {
         await this.prisma.addresses.updateMany({
-          where: { 
-            user_id: existingAddress.user_id, 
-            is_default: true, 
-            id: { not: addressId } 
+          where: {
+            user_id: existingAddress.user_id,
+            is_default: true,
+            id: { not: addressId }
           },
           data: { is_default: false },
         });

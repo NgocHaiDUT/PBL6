@@ -32,8 +32,8 @@ export class GHNDeliveryService extends DeliveryService {
       return;
     }
 
-    this.token = token;
-    this.apiUrl = apiUrl;
+    this.token = token.trim();
+    this.apiUrl = apiUrl.trim();
   }
 
   private async makeRequest(
@@ -53,6 +53,7 @@ export class GHNDeliveryService extends DeliveryService {
     const headers = {
       'Content-Type': 'application/json',
       Token: this.token,
+      token: this.token, // GHN sometimes uses lowercase 'token'
       ...extraHeaders,
     };
 
