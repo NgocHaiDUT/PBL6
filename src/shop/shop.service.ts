@@ -499,8 +499,63 @@ export class ShopService {
 
     const products = await this.prisma.products.findMany({
       where: { shop_id: shopid },
+      include: {
+        product_variants: {
+          orderBy: {
+            price: 'asc',
+          },
+        },
+        product_media: {
+          orderBy: {
+            sort_order: 'asc',
+          },
+        },
+        brand: true,
+        product_categories: {
+          include: {
+            category: true,
+          },
+        },
+      },
+      orderBy: { created_at: 'desc' },
     });
-    return { success: true, data: products };
+
+    const formattedProducts = products.map((product) => {
+      // Calculate price range
+      const prices = product.product_variants.map((v) => Number(v.price));
+      const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+      const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
+
+      // Get first image
+      const firstImage = product.product_media?.[0]?.url || null;
+
+      // Check if has try-on
+      const hasTryOn = product.product_variants.some(
+        (v) => v.shade_hex !== null && v.shade_hex !== '',
+      );
+
+      // Calculate inventory
+      const totalInventory = product.product_variants.reduce(
+        (sum, v) => sum + v.stock,
+        0,
+      );
+
+      return {
+        ...product,
+        price: minPrice, // For simple display
+        min_price: minPrice,
+        max_price: maxPrice,
+        first_image: firstImage,
+        image: firstImage, // Alias for some frontend components
+        hasTryOn,
+        variants_count: product.product_variants.length,
+        inventory: totalInventory,
+        rating: Number(product.avg_rating) || 0,
+        reviews: product.review_count || 0,
+      };
+    });
+
+    return { success: true, data: formattedProducts };
   }
 
   async getShopDetails(shopid: number) {
