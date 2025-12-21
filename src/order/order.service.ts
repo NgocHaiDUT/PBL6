@@ -1165,11 +1165,12 @@ export class OrderService {
   // Admin
   async adminListOrders(query?: any) {
     try {
-      const { page = 1, limit = 10, status, shopId, search } = query || {};
+      const { page = 1, limit = 10, status, shopId, userId, search } = query || {};
       const skip = (page - 1) * limit;
       const where: any = {};
       if (status) where.status = status;
       if (shopId) where.shop_id = Number(shopId);
+      if (userId) where.user_id = Number(userId);
 
       // Add search functionality
       if (search) {

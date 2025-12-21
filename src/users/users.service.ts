@@ -8,7 +8,7 @@ import { UserEntity } from './entities/user.entity';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   private sanitizeUser(user: users): UserEntity {
     const { password_hash, ...safeUser } = user;
@@ -132,11 +132,11 @@ export class UsersService {
   }
 
   private async getUserOrThrow(id: number): Promise<users> {
-    const user = await this.prisma.users.findFirst({ 
-      where: { 
+    const user = await this.prisma.users.findFirst({
+      where: {
         id,
-        is_deleted: false 
-      } 
+        is_deleted: false
+      }
     });
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
@@ -146,9 +146,9 @@ export class UsersService {
 
   async findOne(id: number): Promise<any> {
     const user = await this.prisma.users.findFirst({
-      where: { 
+      where: {
         id,
-        is_deleted: false 
+        is_deleted: false
       },
       include: {
         role: {
@@ -172,7 +172,7 @@ export class UsersService {
         },
       },
     });
-    
+
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
     }
@@ -196,7 +196,7 @@ export class UsersService {
     ]);
 
     const sanitizedUser = this.sanitizeUser(user);
-    
+
     return {
       ...sanitizedUser,
       totalOrders,
@@ -242,7 +242,7 @@ export class UsersService {
 
   async remove(id: number): Promise<UserEntity> {
     await this.getUserOrThrow(id);
-    const user = await this.prisma.users.update({ 
+    const user = await this.prisma.users.update({
       where: { id },
       data: {
         is_deleted: true,
@@ -299,7 +299,7 @@ export class UsersService {
     // Update user's role
     const user = await this.prisma.users.update({
       where: { id: userId },
-      data: { 
+      data: {
         role_id: roleId,
         updated_at: new Date(),
       },
@@ -468,40 +468,45 @@ export class UsersService {
       USER: {
         groupName: 'User Management',
         groupDescription: 'Quản lý người dùng',
-        keywords: ['user', 'view_users', 'create_user', 'update_user', 'delete_user']
-      },
-      ROLE_MANAGEMENT: {
-        groupName: 'Role & Permission Management',
-        groupDescription: 'Quản lý vai trò và quyền hạn',
-        keywords: ['role', 'permission', 'manage_roles', 'manage_permissions']
+        keywords: ['manage_users']
       },
       SHOP: {
         groupName: 'Shop Management',
         groupDescription: 'Quản lý cửa hàng',
-        keywords: ['shop', 'manage_shop_staff', 'edit_profile_shop']
+        keywords: ['shop', 'manage_order', 'try_on_tester', 'chat_with_customer', 'view_dashboard']
       },
       PRODUCT: {
         groupName: 'Product Management',
         groupDescription: 'Quản lý sản phẩm',
-        keywords: ['product', 'brand', 'category', 'create_product', 'edit_product', 'delete_product', 'manage_brands', 'manage_categorys']
+        keywords: ['product', 'brand', 'category']
       },
       POST: {
         groupName: 'Post Management',
         groupDescription: 'Quản lý bài viết',
-        keywords: ['post', 'create_post', 'edit_post', 'delete_post']
+        keywords: ['post', 'moderate']
       },
-      OTHER: {
-        groupName: 'Other Permissions',
-        groupDescription: 'Các quyền khác',
-        keywords: []
-      }
+      ADDRESS: {
+        groupName: 'Address Management',
+        groupDescription: 'Quản lý địa chỉ',
+        keywords: ['address']
+      },
     };
+
+    // Track which permissions have been assigned to a group
+    const assignedPermissions = new Set<number>();
 
     // Phân loại permissions vào các nhóm
     const groupedPermissions = Object.entries(permissionGroups).map(([groupKey, groupInfo]) => {
       const groupPerms = permissions.filter(perm => {
+        // Skip if already assigned
+        if (assignedPermissions.has(perm.id)) return false;
+
         // Kiểm tra nếu permission name khớp với keywords
-        return groupInfo.keywords.some(keyword => perm.name.includes(keyword));
+        const matches = groupInfo.keywords.some(keyword => perm.name.includes(keyword));
+        if (matches) {
+          assignedPermissions.add(perm.id);
+        }
+        return matches;
       });
 
       return {
@@ -514,6 +519,20 @@ export class UsersService {
         }))
       };
     }).filter(group => group.permissions.length > 0); // Chỉ trả về nhóm có permissions
+
+    // Add unassigned permissions to "Other" group
+    const unassignedPerms = permissions.filter(perm => !assignedPermissions.has(perm.id));
+    if (unassignedPerms.length > 0) {
+      groupedPermissions.push({
+        group: 'OTHER',
+        groupName: 'Other Permissions',
+        groupDescription: 'Các quyền khác',
+        permissions: unassignedPerms.map(p => ({
+          id: p.id,
+          name: p.name
+        }))
+      });
+    }
 
     return {
       success: true,
@@ -556,6 +575,78 @@ export class UsersService {
   }
 
   /**
+   * Create a new role with optional permissions
+   */
+  async createRole(name: string, permissionIds?: number[]): Promise<any> {
+    // Check if role already exists
+    const existingRole = await this.prisma.role.findUnique({
+      where: { name },
+    });
+
+    if (existingRole) {
+      throw new BadRequestException(`Role '${name}' already exists`);
+    }
+
+    // Create the role
+    const role = await this.prisma.role.create({
+      data: { name },
+    });
+
+    // If permission IDs are provided, assign them to the role
+    if (permissionIds && permissionIds.length > 0) {
+      // Check if all permissions exist
+      const permissions = await this.prisma.permission.findMany({
+        where: { id: { in: permissionIds } },
+      });
+
+      if (permissions.length !== permissionIds.length) {
+        // Rollback: delete the created role
+        await this.prisma.role.delete({ where: { id: role.id } });
+        throw new BadRequestException('One or more permissions not found');
+      }
+
+      // Create role permissions
+      await this.prisma.rolepermission.createMany({
+        data: permissionIds.map((permissionId) => ({
+          role_id: role.id,
+          permission_id: permissionId,
+        })),
+      });
+    }
+
+    // Fetch the created role with permissions
+    const createdRole = await this.prisma.role.findUnique({
+      where: { id: role.id },
+      include: {
+        rolePermissions: {
+          include: {
+            permission: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!createdRole) {
+      throw new NotFoundException('Failed to fetch created role');
+    }
+
+    return {
+      success: true,
+      message: 'Role created successfully',
+      data: {
+        id: createdRole.id,
+        name: createdRole.name,
+        permissions: createdRole.rolePermissions.map((rp) => rp.permission),
+      },
+    };
+  }
+
+  /**
    * Get user's permissions (from role + user-specific permissions)
    */
   async getUserPermissions(userId: number): Promise<any> {
@@ -582,10 +673,10 @@ export class UsersService {
     });
 
     const rolePermissions = user?.role?.rolePermissions.map((rp) => rp.permission) || [];
-    const userPermissions = user?.userPermissions.map((up) => up.permission) || [];
+    const userSpecificPermissions = user?.userPermissions.map((up) => up.permission) || [];
 
-    // Merge and deduplicate permissions
-    const allPermissions = [...rolePermissions, ...userPermissions];
+    // Merge and deduplicate permissions for total permissions
+    const allPermissions = [...rolePermissions, ...userSpecificPermissions];
     const uniquePermissions = Array.from(
       new Map(allPermissions.map((p) => [p.id, p])).values()
     );
@@ -595,7 +686,9 @@ export class UsersService {
       data: {
         user_id: userId,
         role: user?.role ? { id: user.role.id, name: user.role.name } : null,
-        permissions: uniquePermissions,
+        rolePermissions: rolePermissions,
+        userSpecificPermissions: userSpecificPermissions,
+        permissions: uniquePermissions, // Total permissions (for backward compatibility)
       },
     };
   }
