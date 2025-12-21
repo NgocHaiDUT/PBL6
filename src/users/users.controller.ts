@@ -36,6 +36,7 @@ import { SetUserRoleDto } from './dto/set-user-role.dto';
 import { SetUserPermissionDto } from './dto/set-user-permission.dto';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { SetRolePermissionDto } from './dto/set-role-permission.dto';
+import { CreateRoleDto } from './dto/create-role.dto';
 import { GetAllPermissionsResponseDto } from './dto/get-all-permissions-response.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { avatarConfig, generateAvatarUrl } from './config/avatar.config';
@@ -44,7 +45,7 @@ import { avatarConfig, generateAvatarUrl } from './config/avatar.config';
 @ApiBearerAuth('JWT-auth')
 @Controller('admin/users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   /**
    * Get all permissions grouped by category
@@ -122,6 +123,35 @@ export class UsersController {
     return this.usersService.getAllRoles();
   }
 
+  /**
+   * Create a new role
+   * POST /users/roles
+   */
+  @Post('roles')
+  @ApiOperation({ summary: 'Create a new role with optional permissions' })
+  @ApiResponse({
+    status: 201,
+    description: 'Role created successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - Invalid data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Requires manage_users permission',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - Role already exists',
+  })
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_USERS)
+  createRole(@Body() createRoleDto: CreateRoleDto) {
+    return this.usersService.createRole(
+      createRoleDto.name,
+      createRoleDto.permission_ids,
+    );
+  }
+
   @Get('page-info')
   @ApiOperation({ summary: 'Get page information for users management' })
   @ApiResponse({
@@ -140,7 +170,7 @@ export class UsersController {
   }
 
   @Post()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Create a new user',
     description: 'Create a new user with optional avatar upload. Avatar file should be sent as multipart/form-data with field name "avatar"'
   })
@@ -171,12 +201,12 @@ export class UsersController {
       firstlogin: createUserDto.firstlogin,
       role_id: createUserDto.role_id,
     };
-    
+
     if (file) {
       const avatarUrl = generateAvatarUrl(file);
       createData.avatar_url = avatarUrl;
     }
-    
+
     return this.usersService.create(createData);
   }
 
@@ -211,7 +241,7 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Update user by ID',
     description: 'Update user information including optional avatar upload to S3. Send avatar as multipart/form-data with field name "avatar"'
   })
@@ -262,7 +292,7 @@ export class UsersController {
   }
 
   @Patch(':id/avatar')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Update user avatar',
     description: 'Update user avatar by uploading a new image file. Supports both S3 and local storage based on configuration.'
   })

@@ -60,6 +60,11 @@ export class QueryOrdersDto {
   shopId?: number;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  userId?: number;
+
+  @IsOptional()
   @IsString()
   search?: string;
 }

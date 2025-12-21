@@ -1025,6 +1025,53 @@ export class ShopController {
     return this.shopService.banShop(userId, shopid);
   }
 
+  @Put(':shopid/unban')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_SHOP_ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Unban a shop',
+    description:
+      'Unban a shop by setting is_verified to true. Only admin can perform this action. This will make the shop active again.',
+  })
+  @ApiParam({
+    name: 'shopid',
+    description: 'Shop ID to unban',
+    type: Number,
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Shop unbanned successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Shop "Beauty Store" đã được unban (is_verified = true)' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Not logged in',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Only admin can unban shops',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Shop not found',
+  })
+  async unbanShop(
+    @Param('shopid', ParseIntPipe) shopid: number,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.shopService.unbanShop(userId, shopid);
+  }
+
+
   // Public endpoint - Anyone can view shop details
   @Get('public/:shopid')
   @ApiOperation({ summary: 'Get public shop details (no auth required)' })
