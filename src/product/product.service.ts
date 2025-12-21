@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { product_moderation_status, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 @Injectable()
 export class ProductService {
   constructor(private prisma: PrismaService) { }
@@ -662,6 +662,114 @@ export class ProductService {
       return {
         success: false,
         message: 'Lỗi khi xóa sản phẩm',
+        error: error.message,
+      };
+    }
+  }
+
+  async getPendingProductDetails(product_id: number, user_id: number) {
+    try {
+      // Fetch the product with pending status
+      const product = await this.prisma.products.findFirst({
+        where: {
+          id: product_id,
+          moderation_status: 'pending' as any,
+        },
+        include: {
+          brand: true,
+          shop: {
+            include: {
+              owner: {
+                select: {
+                  id: true,
+                  full_name: true,
+                  email: true,
+                  avatar_url: true,
+                },
+              },
+            },
+          },
+          product_variants: {
+            orderBy: { created_at: 'asc' },
+          },
+          product_media: {
+            orderBy: { sort_order: 'asc' },
+          },
+          product_categories: {
+            include: {
+              category: true,
+            },
+          },
+        },
+      });
+
+      if (!product) {
+        return {
+          success: false,
+          message: 'Sản phẩm không tồn tại hoặc không ở trạng thái pending',
+        };
+      }
+
+      // Normalize the product data
+      const normalizedProduct = this.normalizeProduct(product);
+
+      return {
+        success: true,
+        product: normalizedProduct,
+      };
+    } catch (error) {
+      console.error('Error fetching pending product details:', error);
+      return {
+        success: false,
+        message: 'Lỗi khi lấy thông tin sản phẩm pending',
+        error: error.message,
+      };
+    }
+  }
+
+  async approveProduct(product_id: number, user_id: number) {
+    try {
+      // Check if product exists and is in pending status
+      const product = await this.prisma.products.findUnique({
+        where: { id: product_id },
+      });
+
+      if (!product) {
+        return { success: false, message: 'Sản phẩm không tồn tại' };
+      }
+
+      if (product.moderation_status !== ('pending' as any)) {
+        return {
+          success: false,
+          message: `Sản phẩm không ở trạng thái pending (trạng thái hiện tại: ${product.moderation_status})`,
+        };
+      }
+
+      // Update the product to approved status
+      const updatedProduct = await this.prisma.products.update({
+        where: { id: product_id },
+        data: {
+          moderation_status: 'approved' as any,
+          updated_at: new Date(),
+        },
+        include: {
+          brand: true,
+          shop: true,
+          product_variants: true,
+          product_media: true,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Duyệt sản phẩm thành công',
+        product: updatedProduct,
+      };
+    } catch (error) {
+      console.error('Error approving product:', error);
+      return {
+        success: false,
+        message: 'Lỗi khi duyệt sản phẩm',
         error: error.message,
       };
     }
@@ -1469,6 +1577,108 @@ export class ProductService {
       return { success: false, message: 'Lỗi khi tải sản phẩm' };
     }
   }
+
+  async getAllProductsManager(query: any) {
+    try {
+      const {
+        page = 1,
+        limit = 12,
+        name,
+        category,
+        brand,
+        shop_id,
+        is_published,
+        moderation_status,
+        sort = 'newest',
+      } = query;
+      const skip = (Number(page) - 1) * Number(limit);
+
+      const where: any = {};
+
+      if (is_published !== undefined) {
+        where.is_published = is_published === 'true' || is_published === true;
+      }
+
+      if (moderation_status) {
+        where.moderation_status = moderation_status;
+      }
+
+      if (name) {
+        where.name = { contains: name, mode: 'insensitive' };
+      }
+
+      if (category) {
+        const categoryId = parseInt(category);
+        if (!isNaN(categoryId)) {
+          where.product_categories = {
+            some: { category_id: categoryId },
+          };
+        }
+      }
+
+      if (brand) {
+        const brandId = parseInt(brand);
+        if (!isNaN(brandId)) {
+          where.brand_id = brandId;
+        }
+      }
+
+      if (shop_id) {
+        const shopId = parseInt(shop_id);
+        if (!isNaN(shopId)) {
+          where.shop_id = shopId;
+        }
+      }
+
+      const orderBy: any = {};
+      switch (sort) {
+        case 'newest':
+          orderBy.created_at = 'desc';
+          break;
+        case 'oldest':
+          orderBy.created_at = 'asc';
+          break;
+        default:
+          orderBy.created_at = 'desc';
+      }
+
+      const [products, total] = await Promise.all([
+        this.prisma.products.findMany({
+          where,
+          skip,
+          take: Number(limit),
+          orderBy,
+          include: {
+            brand: true,
+            product_categories: {
+              include: {
+                category: true,
+              },
+            },
+            shop: true,
+            product_media: true,
+            product_variants: true,
+          },
+        }),
+        this.prisma.products.count({ where }),
+      ]);
+
+      return {
+        success: true,
+        products: products.map(p => this.normalizeProduct(p)),
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          totalPages: Math.ceil(total / Number(limit)),
+        },
+      };
+    } catch (error) {
+      console.error('Error fetching products for manager:', error);
+      return { success: false, message: 'Lỗi khi tải sản phẩm dành cho quản lý' };
+    }
+  }
+
 
   async getProductById(id: number) {
     try {

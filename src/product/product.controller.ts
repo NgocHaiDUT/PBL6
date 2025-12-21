@@ -67,6 +67,18 @@ import { AddProductMediaDto } from './dto/add-product-media.dto';
 export class ProductController {
   constructor(private readonly productservice: ProductService) { }
 
+  @Get('all')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Get all products for management',
+    description: 'Retrieve all products in the system regardless of status. Requires manage_product permission.'
+  })
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_PRODUCT)
+  async getAllProductsManager(@Query() query: any) {
+    return this.productservice.getAllProductsManager(query);
+  }
+
   // ================== BRANDS ==================
 
   @Get('brands')
@@ -535,6 +547,51 @@ export class ProductController {
       body.quantity,
       userId,
     );
+  }
+
+  // ================== PRODUCT MODERATION ==================
+
+  @Get('pending/:productId')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Get pending product details',
+    description: 'Retrieve detailed information about a product with pending moderation status. Requires manage_product permission.'
+  })
+  @ApiParam({ name: 'productId', description: 'Product ID', type: Number })
+  @ApiResponse({ status: 200, description: 'Returns pending product details with variants, images, and categories' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Requires manage_product permission' })
+  @ApiResponse({ status: 404, description: 'Product not found or not in pending status' })
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_PRODUCT)
+  async getPendingProductDetails(
+    @Param('productId', ParseIntPipe) productId: number,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.productservice.getPendingProductDetails(productId, userId);
+  }
+
+  @Patch(':productId/approve')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Approve a pending product',
+    description: 'Change the moderation status of a product from pending to approved. Requires manage_product permission.'
+  })
+  @ApiParam({ name: 'productId', description: 'Product ID', type: Number })
+  @ApiResponse({ status: 200, description: 'Product approved successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request - Product is not in pending status' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Requires manage_product permission' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_PRODUCT)
+  async approveProduct(
+    @Param('productId', ParseIntPipe) productId: number,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.productservice.approveProduct(productId, userId);
   }
 
   // ================== PRODUCT DETAILS ==================

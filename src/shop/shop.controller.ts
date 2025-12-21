@@ -33,6 +33,7 @@ import {
   RemoveStaffDto,
   UpdateStaffPermissionsDto,
   UpdateShopDto,
+  RegisterGHNShopDto,
 } from './dto';
 import { GetShopProductsDto } from './dto/get-shop-products.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
@@ -47,7 +48,7 @@ import {
 @ApiTags('Shop Management')
 @Controller('shop')
 export class ShopController {
-  constructor(private readonly shopService: ShopService) { }
+  constructor(private readonly shopService: ShopService) {}
 
   // ============================================
   // PUBLIC ENDPOINTS (No authentication required)
@@ -56,7 +57,8 @@ export class ShopController {
   @Get(':shopId/profile')
   @ApiOperation({
     summary: 'Get shop public profile',
-    description: 'Get public information about a shop. No authentication required.',
+    description:
+      'Get public information about a shop. No authentication required.',
   })
   @ApiParam({
     name: 'shopId',
@@ -77,9 +79,18 @@ export class ShopController {
             id: { type: 'number', example: 1 },
             name: { type: 'string', example: 'GlowBeauty Official' },
             slug: { type: 'string', example: 'glowbeauty-official' },
-            description: { type: 'string', example: 'Best beauty products store' },
-            logo_url: { type: 'string', example: 'https://example.com/logo.jpg' },
-            cover_url: { type: 'string', example: 'https://example.com/cover.jpg' },
+            description: {
+              type: 'string',
+              example: 'Best beauty products store',
+            },
+            logo_url: {
+              type: 'string',
+              example: 'https://example.com/logo.jpg',
+            },
+            cover_url: {
+              type: 'string',
+              example: 'https://example.com/cover.jpg',
+            },
             phone: { type: 'string', example: '0912345678' },
             email: { type: 'string', example: 'shop@example.com' },
             is_verified: { type: 'boolean', example: true },
@@ -104,7 +115,8 @@ export class ShopController {
   @Get(':shopId/products')
   @ApiOperation({
     summary: 'Get shop products',
-    description: 'Get all products from a shop with pagination. No authentication required.',
+    description:
+      'Get all products from a shop with pagination. No authentication required.',
   })
   @ApiParam({
     name: 'shopId',
@@ -114,8 +126,18 @@ export class ShopController {
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
-  @ApiQuery({ name: 'sortBy', required: false, type: String, example: 'created_at' })
-  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'], example: 'desc' })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: String,
+    example: 'created_at',
+  })
+  @ApiQuery({
+    name: 'order',
+    required: false,
+    enum: ['asc', 'desc'],
+    example: 'desc',
+  })
   @ApiResponse({
     status: 200,
     description: 'Shop products retrieved successfully',
@@ -192,7 +214,8 @@ export class ShopController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - No MANAGE_PRODUCT permission or not shop owner/staff',
+    description:
+      'Forbidden - No MANAGE_PRODUCT permission or not shop owner/staff',
   })
   @ApiResponse({
     status: 404,
@@ -349,7 +372,10 @@ export class ShopController {
               id: { type: 'number', example: 5 },
               email: { type: 'string', example: 'staff@example.com' },
               full_name: { type: 'string', example: 'Nguyen Van A' },
-              avatar_url: { type: 'string', example: 'https://example.com/avatar.jpg' },
+              avatar_url: {
+                type: 'string',
+                example: 'https://example.com/avatar.jpg',
+              },
               phone: { type: 'string', example: '0912345678' },
             },
           },
@@ -391,7 +417,10 @@ export class ShopController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Staff permissions updated successfully' },
+        message: {
+          type: 'string',
+          example: 'Staff permissions updated successfully',
+        },
       },
     },
   })
@@ -605,7 +634,8 @@ export class ShopController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Shop details retrieved successfully with full staff list and product count',
+    description:
+      'Shop details retrieved successfully with full staff list and product count',
     schema: {
       type: 'object',
       properties: {
@@ -616,9 +646,18 @@ export class ShopController {
             id: { type: 'number', example: 1 },
             name: { type: 'string', example: 'My Beauty Shop' },
             slug: { type: 'string', example: 'my-beauty-shop' },
-            description: { type: 'string', example: 'Best beauty products store' },
-            logo_url: { type: 'string', example: 'https://example.com/logo.jpg' },
-            cover_url: { type: 'string', example: 'https://example.com/cover.jpg' },
+            description: {
+              type: 'string',
+              example: 'Best beauty products store',
+            },
+            logo_url: {
+              type: 'string',
+              example: 'https://example.com/logo.jpg',
+            },
+            cover_url: {
+              type: 'string',
+              example: 'https://example.com/cover.jpg',
+            },
             phone: { type: 'string', example: '0912345678' },
             email: { type: 'string', example: 'shop@example.com' },
             is_verified: { type: 'boolean', example: true },
@@ -630,7 +669,10 @@ export class ShopController {
                 id: { type: 'number', example: 1 },
                 email: { type: 'string', example: 'owner@example.com' },
                 full_name: { type: 'string', example: 'Shop Owner' },
-                avatar_url: { type: 'string', example: 'https://example.com/avatar.jpg' },
+                avatar_url: {
+                  type: 'string',
+                  example: 'https://example.com/avatar.jpg',
+                },
                 phone: { type: 'string', example: '0912345678' },
               },
             },
@@ -649,7 +691,10 @@ export class ShopController {
                       id: { type: 'number', example: 5 },
                       email: { type: 'string', example: 'staff@example.com' },
                       full_name: { type: 'string', example: 'Staff Name' },
-                      avatar_url: { type: 'string', example: 'https://example.com/avatar.jpg' },
+                      avatar_url: {
+                        type: 'string',
+                        example: 'https://example.com/avatar.jpg',
+                      },
                       phone: { type: 'string', example: '0987654321' },
                       role: { type: 'string', example: 'staff' },
                     },
@@ -704,8 +749,14 @@ export class ShopController {
               name: { type: 'string', example: 'Beauty Store' },
               slug: { type: 'string', example: 'beauty-store' },
               description: { type: 'string', example: 'Best beauty products' },
-              logo_url: { type: 'string', example: 'https://example.com/logo.jpg' },
-              cover_url: { type: 'string', example: 'https://example.com/cover.jpg' },
+              logo_url: {
+                type: 'string',
+                example: 'https://example.com/logo.jpg',
+              },
+              cover_url: {
+                type: 'string',
+                example: 'https://example.com/cover.jpg',
+              },
               phone: { type: 'string', example: '0912345678' },
               email: { type: 'string', example: 'shop@example.com' },
               is_verified: { type: 'boolean', example: true },
@@ -717,7 +768,10 @@ export class ShopController {
                   id: { type: 'number', example: 1 },
                   email: { type: 'string', example: 'owner@example.com' },
                   full_name: { type: 'string', example: 'Shop Owner' },
-                  avatar_url: { type: 'string', example: 'https://example.com/avatar.jpg' },
+                  avatar_url: {
+                    type: 'string',
+                    example: 'https://example.com/avatar.jpg',
+                  },
                 },
               },
               staff_count: { type: 'number', example: 5 },
@@ -743,8 +797,19 @@ export class ShopController {
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
-  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search by shop name or description' })
-  @ApiQuery({ name: 'isVerified', required: false, type: String, example: 'true', description: 'Filter by verification status' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search by shop name or description',
+  })
+  @ApiQuery({
+    name: 'isVerified',
+    required: false,
+    type: String,
+    example: 'true',
+    description: 'Filter by verification status',
+  })
   async getShops(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -753,7 +818,8 @@ export class ShopController {
   ) {
     const pageNum = page ? parseInt(page) : 1;
     const limitNum = limit ? parseInt(limit) : 10;
-    const isVerifiedBool = isVerified === 'true' ? true : isVerified === 'false' ? false : undefined;
+    const isVerifiedBool =
+      isVerified === 'true' ? true : isVerified === 'false' ? false : undefined;
     return this.shopService.getShops(pageNum, limitNum, search, isVerifiedBool);
   }
 
@@ -785,12 +851,36 @@ export class ShopController {
     schema: {
       type: 'object',
       properties: {
-        name: { type: 'string', example: 'Updated Shop Name', description: 'Shop name' },
-        description: { type: 'string', example: 'Updated description', description: 'Shop description' },
-        phone: { type: 'string', example: '0987654321', description: 'Contact phone' },
-        email: { type: 'string', example: 'contact@shop.com', description: 'Contact email' },
-        logo: { type: 'string', format: 'binary', description: 'Shop logo image file (JPG, PNG, GIF, WebP - max 10MB)' },
-        cover: { type: 'string', format: 'binary', description: 'Shop cover image file (JPG, PNG, GIF, WebP - max 10MB)' },
+        name: {
+          type: 'string',
+          example: 'Updated Shop Name',
+          description: 'Shop name',
+        },
+        description: {
+          type: 'string',
+          example: 'Updated description',
+          description: 'Shop description',
+        },
+        phone: {
+          type: 'string',
+          example: '0987654321',
+          description: 'Contact phone',
+        },
+        email: {
+          type: 'string',
+          example: 'contact@shop.com',
+          description: 'Contact email',
+        },
+        logo: {
+          type: 'string',
+          format: 'binary',
+          description: 'Shop logo image file (JPG, PNG, GIF, WebP - max 10MB)',
+        },
+        cover: {
+          type: 'string',
+          format: 'binary',
+          description: 'Shop cover image file (JPG, PNG, GIF, WebP - max 10MB)',
+        },
       },
     },
   })
@@ -801,7 +891,10 @@ export class ShopController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Cập nhật thông tin cửa hàng thành công' },
+        message: {
+          type: 'string',
+          example: 'Cập nhật thông tin cửa hàng thành công',
+        },
         data: {
           type: 'object',
           properties: {
@@ -809,8 +902,14 @@ export class ShopController {
             name: { type: 'string', example: 'Updated Shop Name' },
             slug: { type: 'string', example: 'updated-shop-name' },
             description: { type: 'string', example: 'Updated description' },
-            logo_url: { type: 'string', example: 'https://example.com/new-logo.jpg' },
-            cover_url: { type: 'string', example: 'https://example.com/new-cover.jpg' },
+            logo_url: {
+              type: 'string',
+              example: 'https://example.com/new-logo.jpg',
+            },
+            cover_url: {
+              type: 'string',
+              example: 'https://example.com/new-cover.jpg',
+            },
             phone: { type: 'string', example: '0987654321' },
             email: { type: 'string', example: 'newcontact@shop.com' },
             is_verified: { type: 'boolean', example: true },
@@ -822,7 +921,10 @@ export class ShopController {
                 id: { type: 'number', example: 1 },
                 email: { type: 'string', example: 'owner@example.com' },
                 full_name: { type: 'string', example: 'Shop Owner' },
-                avatar_url: { type: 'string', example: 'https://example.com/avatar.jpg' },
+                avatar_url: {
+                  type: 'string',
+                  example: 'https://example.com/avatar.jpg',
+                },
               },
             },
           },
@@ -849,7 +951,8 @@ export class ShopController {
   async updateShop(
     @Param('shopid', ParseIntPipe) shopid: number,
     @Body() body: UpdateShopDto,
-    @UploadedFiles() files: { logo?: Express.Multer.File[]; cover?: Express.Multer.File[] },
+    @UploadedFiles()
+    files: { logo?: Express.Multer.File[]; cover?: Express.Multer.File[] },
     @Req() req: any,
   ) {
     const userId = req.user.userId;
@@ -866,7 +969,8 @@ export class ShopController {
     if (files?.cover && files.cover[0]) {
       const coverFile = files.cover[0] as any;
       // For S3: use location property, for local: use getShopCoverUrl
-      updateData.cover_url = coverFile.location || getShopCoverUrl(files.cover[0]);
+      updateData.cover_url =
+        coverFile.location || getShopCoverUrl(files.cover[0]);
     }
 
     return this.shopService.updateShop(userId, shopid, updateData);
@@ -894,7 +998,10 @@ export class ShopController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Shop "Beauty Store" đã bị ban (is_verified = false)' },
+        message: {
+          type: 'string',
+          example: 'Shop "Beauty Store" đã bị ban (is_verified = false)',
+        },
       },
     },
   })
@@ -917,7 +1024,6 @@ export class ShopController {
     const userId = req.user.userId;
     return this.shopService.banShop(userId, shopid);
   }
-
 
   // Public endpoint - Anyone can view shop details
   @Get('public/:shopid')
@@ -987,7 +1093,7 @@ export class ShopController {
   @ApiResponse({ status: 201, description: 'Followed successfully' })
   async followShop(
     @Param('shopid', ParseIntPipe) shopid: number,
-    @Req() req: any
+    @Req() req: any,
   ) {
     return this.shopService.followShop(req.user.userId, shopid);
   }
@@ -1000,7 +1106,7 @@ export class ShopController {
   @ApiResponse({ status: 200, description: 'Unfollowed successfully' })
   async unfollowShop(
     @Param('shopid', ParseIntPipe) shopid: number,
-    @Req() req: any
+    @Req() req: any,
   ) {
     return this.shopService.unfollowShop(req.user.userId, shopid);
   }
@@ -1012,9 +1118,40 @@ export class ShopController {
   @ApiOperation({ summary: 'Check if user follows shop' })
   async getFollowStatus(
     @Param('shopid', ParseIntPipe) shopid: number,
-    @Req() req: any
+    @Req() req: any,
   ) {
     return this.shopService.getShopFollowStatus(req.user.userId, shopid);
   }
 
+  // ============================================
+  // GHN INTEGRATION
+  // ============================================
+
+  @Post(':shopId/ghn-register')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.MANAGE_SHOP_SETTING)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Register shop with GHN (Giao Hàng Nhanh)',
+    description:
+      'Registers the shop on GHN system using an existing shop address. Requires MANAGE_SHOP_SETTING permission.',
+  })
+  @ApiParam({ name: 'shopId', type: Number, example: 1 })
+  @ApiBody({ type: RegisterGHNShopDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Shop registered on GHN successfully',
+  })
+  async registerGHNShop(
+    @Param('shopId', ParseIntPipe) shopId: number,
+    @Body() body: RegisterGHNShopDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.shopService.registerGHNShop(
+      userId,
+      shopId,
+      body.address_shop_id,
+    );
+  }
 }
