@@ -838,26 +838,31 @@ export class PostsService {
       throw new NotFoundException('Post not found');
     }
 
+    // Check if user has admin DELETE_POST permission
+    const userPermissions = await this.prisma.userpermission.findMany({
+      where: { user_id: userId },
+      include: { permission: true },
+    });
+
+    const hasAdminDeletePermission = userPermissions.some(
+      (up) => up.permission.name === 'delete_post',
+    );
+
     // Kiểm tra quyền: cho phép xóa nếu:
-    // 1. Là người tạo post
-    // 2. Post thuộc shop VÀ (user là owner hoặc staff có quyền delete_post)
+    // 1. Có quyền DELETE_POST (Admin)
+    // 2. Là người tạo post
+    // 3. Post thuộc shop VÀ (user là owner hoặc staff có quyền delete_post)
+    if (hasAdminDeletePermission) {
+      // Admin can delete any post
+      await this.deletePostData(id);
+      return { message: 'Post deleted successfully' };
+    }
+
     const isPostOwner = post.user_id === userId;
     const isShopOwner = post.shop_id && post.shop?.owner_id === userId;
     const isShopStaff = post.shop_id && post.shop?.shop_staffs && post.shop.shop_staffs.length > 0;
 
-    // Check if staff has delete_post permission
-    let hasDeletePostPermission = false;
-    if (isShopStaff && !isShopOwner && post.shop_id) {
-      const userPermissions = await this.prisma.userpermission.findMany({
-        where: { user_id: userId },
-        include: { permission: true },
-      });
-      hasDeletePostPermission = userPermissions.some(
-        (up) => up.permission.name === 'delete_post',
-      );
-    }
-
-    if (!isPostOwner && !isShopOwner && (!isShopStaff || !hasDeletePostPermission)) {
+    if (!isPostOwner && !isShopOwner && !isShopStaff) {
       throw new ForbiddenException('You can only delete your own posts or posts in your shop');
     }
 

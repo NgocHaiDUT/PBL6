@@ -799,9 +799,53 @@ export class ShopService {
 
     return {
       success: true,
-      message: `Shop "${shop.name}" đã bị ban (is_verified = false)`,
+      message: `Shop "${shop.name}" đã bị ban`,
     };
   }
+
+  async unbanShop(userid: number, shopid: number) {
+    // Check if user is admin
+    const user = await this.prisma.users.findUnique({
+      where: { id: userid },
+      select: {
+        role: {
+          select: { name: true },
+        },
+      },
+    });
+
+    if (user?.role?.name !== 'admin') {
+      return {
+        success: false,
+        message: 'Chỉ admin mới có quyền unban shop',
+      };
+    }
+
+    // Check if shop exists
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopid },
+      select: { id: true, is_verified: true, name: true },
+    });
+
+    if (!shop) {
+      return { success: false, message: 'Cửa hàng không tồn tại' };
+    }
+
+    // Update shop verification status
+    await this.prisma.shops.update({
+      where: { id: shopid },
+      data: {
+        is_verified: true,
+        updated_at: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      message: `Shop "${shop.name}" đã được unban`,
+    };
+  }
+
 
   async updateShop(
     userid: number,
