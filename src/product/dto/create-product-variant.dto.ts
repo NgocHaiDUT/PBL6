@@ -80,4 +80,40 @@ export class CreateProductVariantDto {
     @Type(() => Number)
     @IsNumber()
     opacity?: number;
+
+    @ApiPropertyOptional({
+        description: 'Product weight in grams',
+        example: 50
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    weight?: number;
+
+    @ApiPropertyOptional({
+        description: 'Product length in centimeters',
+        example: 10
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    length?: number;
+
+    @ApiPropertyOptional({
+        description: 'Product width in centimeters',
+        example: 5
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    width?: number;
+
+    @ApiPropertyOptional({
+        description: 'Product height in centimeters',
+        example: 15
+    })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    height?: number;
 }

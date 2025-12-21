@@ -1,28 +1,25 @@
 [
   {
     "email": "customer1@pbl6.com",
-    "password": "Customer@123",
+    "password": "123456",
     "full_name": "Nguyễn Văn A",
     "phone": "0901234567",
-    "role_id": 3,
     "created_at": "2024-01-01T00:00:00Z",
     "updated_at": "2024-01-01T00:00:00Z"
   },
   {
     "email": "customer2@pbl6.com",
-    "password": "Customer@123",
+    "password": "123456",
     "full_name": "Trần Thị B",
     "phone": "0901234568",
-    "role_id": 3,
     "created_at": "2024-01-02T00:00:00Z",
     "updated_at": "2024-01-02T00:00:00Z"
   },
   {
     "email": "customer3@pbl6.com",
-    "password": "Customer@123",
+    "password": "123456",
     "full_name": "Lê Văn C",
     "phone": "0901234569",
-    "role_id": 3,
     "created_at": "2024-01-03T00:00:00Z",
     "updated_at": "2024-01-03T00:00:00Z"
   }

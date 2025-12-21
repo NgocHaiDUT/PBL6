@@ -792,6 +792,10 @@ export class ProductController {
       size_label?: string;
       compare_at_price?: string;
       opacity?: string;
+      weight?: string;
+      length?: string;
+      width?: string;
+      height?: string;
     },
     @Req() req: any,
   ) {
@@ -809,6 +813,10 @@ export class ProductController {
       body.size_label,
       body.compare_at_price ? Number(body.compare_at_price) : undefined,
       body.opacity ? Number(body.opacity) : undefined,
+      body.weight ? Number(body.weight) : undefined,
+      body.length ? Number(body.length) : undefined,
+      body.width ? Number(body.width) : undefined,
+      body.height ? Number(body.height) : undefined,
     );
   }
 
@@ -840,6 +848,10 @@ export class ProductController {
       compare_at_price?: string;
       is_active?: boolean;
       opacity?: string;
+      weight?: string;
+      length?: string;
+      width?: string;
+      height?: string;
     },
     @Req() req: any,
   ) {
@@ -856,6 +868,10 @@ export class ProductController {
       body.compare_at_price ? Number(body.compare_at_price) : undefined,
       body.is_active,
       body.opacity ? Number(body.opacity) : undefined,
+      body.weight ? Number(body.weight) : undefined,
+      body.length ? Number(body.length) : undefined,
+      body.width ? Number(body.width) : undefined,
+      body.height ? Number(body.height) : undefined,
     );
   }
 

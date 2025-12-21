@@ -1,9 +1,75 @@
 [
   {
-    "user_id": 4,
+    "user_id": 2,
     "label": "Nhà riêng",
     "recipient": "Nguyễn Văn A",
     "phone": "0901234567",
+    "province": "Thành phố Hà Nội",
+    "district": "Quận Đống Đa",
+    "ward": "Phường Láng Thượng",
+    "street": "45 Láng Hạ",
+    "is_default": true
+  },
+  {
+    "user_id": 2,
+    "label": "Văn phòng",
+    "recipient": "Nguyễn Văn A",
+    "phone": "0901234567",
+    "province": "Thành phố Hà Nội",
+    "district": "Quận Hoàn Kiếm",
+    "ward": "Phường Hàng Bài",
+    "street": "78 Tràng Tiền",
+    "is_default": false
+  },
+  {
+    "user_id": 2,
+    "label": "Nhà bố mẹ",
+    "recipient": "Nguyễn Văn A",
+    "phone": "0901234567",
+    "province": "Thành phố Hà Nội",
+    "district": "Quận Cầu Giấy",
+    "ward": "Phường Dịch Vọng",
+    "street": "123 Xuân Thủy",
+    "is_default": false
+  },
+  {
+    "user_id": 3,
+    "label": "Nhà riêng",
+    "recipient": "Trần Thị B",
+    "phone": "0901234568",
+    "province": "Thành phố Hồ Chí Minh",
+    "district": "Quận 1",
+    "ward": "Phường Bến Nghé",
+    "street": "234 Nguyễn Huệ",
+    "is_default": true
+  },
+  {
+    "user_id": 3,
+    "label": "Văn phòng",
+    "recipient": "Trần Thị B",
+    "phone": "0901234568",
+    "province": "Thành phố Hồ Chí Minh",
+    "district": "Quận 3",
+    "ward": "Phường Võ Thị Sáu",
+    "street": "567 Võ Văn Tần",
+    "is_default": false
+  },
+  {
+    "user_id": 3,
+    "label": "Nhà bạn",
+    "recipient": "Trần Thị B",
+    "phone": "0901234568",
+    "province": "Thành phố Hồ Chí Minh",
+    "district": "Thành phố Thủ Đức",
+    "ward": "Phường Linh Trung",
+    "street": "890 Võ Văn Ngân",
+    "is_default": false
+  },
+  {
+    "user_id": 4,
+    "label": "Nhà riêng",
+    "recipient": "Lê Văn C",
+    "phone": "0901234569",
     "province": "Thành phố Hồ Chí Minh",
     "district": "Quận 7",
     "ward": "Phường Tân Phú",
@@ -13,8 +79,8 @@
   {
     "user_id": 4,
     "label": "Văn phòng",
-    "recipient": "Nguyễn Văn A",
-    "phone": "0901234567",
+    "recipient": "Lê Văn C",
+    "phone": "0901234569",
     "province": "Thành phố Hồ Chí Minh",
     "district": "Quận 9",
     "ward": "Phường Phước Long B",
@@ -24,8 +90,8 @@
   {
     "user_id": 4,
     "label": "Nhà bố mẹ",
-    "recipient": "Nguyễn Văn A",
-    "phone": "0901234567",
+    "recipient": "Lê Văn C",
+    "phone": "0901234569",
     "province": "Thành phố Hồ Chí Minh",
     "district": "Thành phố Thủ Đức",
     "ward": "Phường Linh Trung",
@@ -35,34 +101,12 @@
   {
     "user_id": 4,
     "label": "Nhà trọ",
-    "recipient": "Nguyễn Văn A",
-    "phone": "0901234567",
+    "recipient": "Lê Văn C",
+    "phone": "0901234569",
     "province": "Thành phố Hồ Chí Minh",
     "district": "Quận Gò Vấp",
     "ward": "Phường 3",
     "street": "321 Phan Văn Trị",
-    "is_default": false
-  },
-  {
-    "user_id": 4,
-    "label": "Nhà bạn",
-    "recipient": "Nguyễn Văn A",
-    "phone": "0901234567",
-    "province": "Thành phố Hồ Chí Minh",
-    "district": "Quận 10",
-    "ward": "Phường 7",
-    "street": "654 Lý Thái Tổ",
-    "is_default": false
-  },
-  {
-    "user_id": 4,
-    "label": "Công ty",
-    "recipient": "Nguyễn Văn A",
-    "phone": "0901234567",
-    "province": "Thành phố Hồ Chí Minh",
-    "district": "Quận Gò Vấp",
-    "ward": "Phường 11",
-    "street": "987 Quang Trung",
     "is_default": false
   }
 ]
