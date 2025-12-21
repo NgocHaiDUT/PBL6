@@ -331,21 +331,21 @@ model categories {
 }
 
 model products {
-  id                 Int                        @id @default(autoincrement())
+  id                 Int                       @id @default(autoincrement())
   shop_id            Int
   brand_id           Int?
   name               String
-  slug               String                     @unique
+  slug               String                    @unique
   description        String?
   how_to_use         String?
-  moderation_status  product_moderation_status  @default(pending)
-  is_published       Boolean                    @default(false)
-  avg_rating         Decimal?                   @default(0.0)
-  review_count       Int                        @default(0)
-  created_at         DateTime                   @default(now())
-  updated_at         DateTime                   @default(now())
-  shop               shops                      @relation(fields: [shop_id], references: [id])
-  brand              brands?                    @relation(fields: [brand_id], references: [id])
+  moderation_status  product_moderation_status @default(pending)
+  is_published       Boolean                   @default(false)
+  avg_rating         Decimal?                  @default(0.0)
+  review_count       Int                       @default(0)
+  created_at         DateTime                  @default(now())
+  updated_at         DateTime                  @default(now())
+  shop               shops                     @relation(fields: [shop_id], references: [id])
+  brand              brands?                   @relation(fields: [brand_id], references: [id])
   product_categories product_categories[]
   product_media      product_media[]
   product_variants   product_variants[]
