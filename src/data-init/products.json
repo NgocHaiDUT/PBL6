@@ -1,39 +1,39 @@
 [
   {
-    "name": "Kem Chống Nắng SPF 50+",
-    "slug": "kem-chong-nang-spf-50",
-    "description": "Kem chống nắng cao cấp với chỉ số SPF 50+, bảo vệ da khỏi tác hại của tia UV. Công thức chống nước, không gây nhờn rít, phù hợp cho mọi loại da.",
+    "name": "KEM NỀN LÂU TRÔI SUPER STAY ACTIVE WEAR",
+    "slug": "super-stay-full-coverage-foundation",
+    "description": "Kem Nền Maybelline Super Stay® Full Coverage Foundation đem lại khả năng che phủ đậm đặc tới 24 giờ với lớp nền hoàn hảo không lem, không trôi suốt ngày dài.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.5,
     "review_count": 128,
-    "brand_id": 1,
-    "category_id": 1,
-    "shop_id": 2,
+    "brand_id": 4,
+    "category_id": 2,
+    "shop_id": 1,
     "skin_type_compat": "normal",
     "variants": [
       {
-        "name": "50ml",
-        "price": 250000,
-        "compare_price": 300000,
-        "sku": "KCN001-50ML",
+        "name": "120-Classic-Ivory",
+        "price": 298000,
+        "compare_price": 298000,
+        "sku": "120-Classic-Ivory",
         "stock_quantity": 100,
         "is_active": true,
         "weight": 100,
-        "shade_hex": "#FFFFFF",
+        "shade_hex": "#e8c4a6",
         "length": 10,
         "width": 5,
         "height": 5
       },
       {
-        "name": "100ml",
-        "price": 450000,
-        "compare_price": 550000,
-        "sku": "KCN001-100ML",
+        "name": "115-Ivory",
+        "price": 298000,
+        "compare_price": 298000,
+        "sku": "115-Ivory",
         "stock_quantity": 50,
         "is_active": true,
         "weight": 150,
-        "shade_hex": "#FFFFFF",
+        "shade_hex": "#f3d7c7",
         "length": 12,
         "width": 6,
         "height": 6
@@ -41,39 +41,39 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/kem-chong-nang-1.jpg",
+        "url": "/uploads/products/super-stay-full-coverage-foundation.jpg",
         "type": "image",
         "is_primary": true
       },
       {
-        "url": "/uploads/products/kem-chong-nang-2.jpg",
+        "url": "/uploads/products/super-stay-full-coverage-foundation_1.jpg",
         "type": "image",
         "is_primary": false
       }
     ]
   },
   {
-    "name": "Serum Vitamin C",
-    "slug": "serum-vitamin-c",
-    "description": "Serum Vitamin C tinh khiết giúp làm sáng da, giảm thâm nám và chống lão hóa. Công thức không gây kích ứng, phù hợp cho da nhạy cảm.",
+    "name": "SON LÌ SLIM LIPSTICK",
+    "slug": "color-sensational-ultimatte-slim-lipstick-makeup",
+    "description": "Son Lì Color Sensational Ultimatte đem đến màu sắc đậm hơn với lớp son cực lì cùng cảm giác nhẹ, thoải mái khi sử dụng.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.8,
     "review_count": 95,
-    "brand_id": 2,
-    "category_id": 2,
-    "shop_id": 2,
+    "brand_id": 4,
+    "category_id": 14,
+    "shop_id": 1,
     "skin_type_compat": "sensitive",
     "variants": [
       {
-        "name": "30ml",
+        "name": "299-MoreScarlet",
         "price": 180000,
         "compare_price": 220000,
-        "sku": "SVC001-30ML",
+        "sku": "299-MoreScarlet",
         "stock_quantity": 80,
         "is_active": true,
         "weight": 80,
-        "shade_hex": "#F0E5D8",
+        "shade_hex": "#cb220b",
         "length": 8,
         "width": 4,
         "height": 4
@@ -81,47 +81,47 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/serum-vitamin-c-1.jpg",
+        "url": "/uploads/products/color-sensational-ultimatte-slim-lipstick-makeup.jpg",
         "type": "image",
         "is_primary": true
       }
     ]
   },
   {
-    "name": "Toner Cân Bằng Da",
-    "slug": "toner-can-bang-da",
-    "description": "Toner dịu nhẹ giúp cân bằng độ pH da, làm sạch sâu và thu nhỏ lỗ chân lông. Thành phần tự nhiên, không chứa cồn.",
+    "name": "Chì Kẻ Mày 36H Lâu Trôi Maybelline Tattoo Brow Pigmented Pencil",
+    "slug": "tattoo-brow-pigmented-pencil",
+    "description": "Chì Kẻ Mày Maybelline Tattoo Brow Pigmented Pencil mới ra mắt từ thương hiệu Maybelline New York với đầu chì tam giác đa năng và thiết kế dạng bút vặn tiện lợi, giúp bạn dễ dàng định hình lông mày nhanh chóng, tạo sợi vô cùng dễ dàng và chân mày nhìn luôn mềm mượt và đều màu. Bên cạnh đó, Chì Kẻ Chân Mày Tatoo Brow còn có khả năng chống lem, chống trôi tốt và kháng nước lên đến 36 giờ liền.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.3,
     "review_count": 67,
-    "brand_id": 1,
-    "category_id": 3,
-    "shop_id": 2,
+    "brand_id": 4,
+    "category_id": 11,
+    "shop_id": 1,
     "skin_type_compat": "normal",
     "variants": [
       {
-        "name": "200ml",
+        "name": "Mau01-Nau-dam",
         "price": 120000,
         "compare_price": 150000,
-        "sku": "TCD001-200ML",
+        "sku": "Mau01-Nau-dam",
         "stock_quantity": 120,
         "is_active": true,
         "weight": 250,
-        "shade_hex": "#E8DCC8",
+        "shade_hex": "#48342b",
         "length": 15,
         "width": 7,
         "height": 7
       },
       {
-        "name": "400ml",
+        "name": "Mau02-Nau-Tu-Nhien",
         "price": 200000,
         "compare_price": 250000,
-        "sku": "TCD001-400ML",
+        "sku": "Mau02-Nau-Tu-Nhien",
         "stock_quantity": 60,
         "is_active": true,
         "weight": 450,
-        "shade_hex": "#E8DCC8",
+        "shade_hex": "#6f584a",
         "length": 20,
         "width": 8,
         "height": 8
@@ -129,23 +129,23 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/toner-can-bang-da-1.jpg",
+        "url": "/uploads/products/tattoo-brow-pigmented-pencil.jpg",
         "type": "image",
         "is_primary": true
       }
     ]
   },
   {
-    "name": "Kem Dưỡng Ẩm Ban Đêm",
-    "slug": "kem-duong-am-ban-dem",
-    "description": "Kem dưỡng ẩm ban đêm với công thức đặc biệt giúp phục hồi và nuôi dưỡng da trong khi ngủ. Kết cấu mịn màng, thấm nhanh.",
+    "name": "Mascara Làm Tơi và Dài Mi Lash Sensational Sky High",
+    "slug": "lash-sensational-sky-high-waterproof-mascara",
+    "description": "Mascara làm dày và dài mi Sky High mang đến hàng mi cong vút ở mọi góc độ. Mascara lâu trôi mang lại hàng mi cong dày cùng độ dài ấn tượng.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.6,
     "review_count": 89,
-    "brand_id": 3,
-    "category_id": 4,
-    "shop_id": 2,
+    "brand_id": 4,
+    "category_id": 10,
+    "shop_id": 1,
     "skin_type_compat": "normal",
     "variants": [
       {
@@ -156,7 +156,7 @@
         "stock_quantity": 70,
         "is_active": true,
         "weight": 120,
-        "shade_hex": "#F5F5DC",
+        "shade_hex": "#000000",
         "length": 7,
         "width": 7,
         "height": 6
@@ -164,52 +164,52 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/kem-duong-am-ban-dem-1.jpg",
+        "url": "/uploads/products/lash-sensational-sky-high-waterproof-mascara.jpg",
         "type": "image",
         "is_primary": true
       },
       {
-        "url": "/uploads/products/kem-duong-am-ban-dem-2.jpg",
+        "url": "/uploads/products/lash-sensational-sky-high-waterproof-mascara_1.jpg",
         "type": "image",
         "is_primary": false
       }
     ]
   },
   {
-    "name": "Mặt Nạ Đất Sét",
-    "slug": "mat-na-dat-set",
-    "description": "Mặt nạ đất sét tự nhiên giúp làm sạch sâu, thu nhỏ lỗ chân lông và kiểm soát dầu. Công thức từ đất sét bentonite cao cấp.",
+    "name": "Son mịn mượt cao cấp Color Riche Satin",
+    "slug": "son-min-muot-color-riche-satin",
+    "description": "Son mịn mượt cao cấp Color Riche Satin với công thức 50% thành phần dưỡng chiết xuất từ tinh dầu cao cấp. Thiết kế vỏ ánh kim sang trọng, tinh tế.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.2,
     "review_count": 156,
-    "brand_id": 2,
-    "category_id": 5,
-    "shop_id": 2,
+    "brand_id": 1,
+    "category_id": 14,
+    "shop_id": 1,
     "skin_type_compat": "normal",
     "variants": [
       {
-        "name": "100g",
+        "name": "Đỏ Cam",
         "price": 95000,
         "compare_price": 120000,
-        "sku": "MNDS001-100G",
+        "sku": "son-min-muot-color-riche-satin-635",
         "stock_quantity": 200,
         "is_active": true,
         "weight": 120,
-        "shade_hex": "#8B7355",
+        "shade_hex": "#ab221b",
         "length": 8,
         "width": 8,
         "height": 5
       },
       {
-        "name": "200g",
+        "name": "Cam Đất",
         "price": 160000,
         "compare_price": 200000,
-        "sku": "MNDS001-200G",
+        "sku": "son-min-muot-color-riche-satin-160",
         "stock_quantity": 100,
         "is_active": true,
         "weight": 220,
-        "shade_hex": "#8B7355",
+        "shade_hex": "#bf6059",
         "length": 10,
         "width": 10,
         "height": 6
@@ -217,47 +217,47 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/mat-na-dat-set-1.jpg",
+        "url": "/uploads/products/son-min-muot-color-riche-satin.jpg",
         "type": "image",
         "is_primary": true
       }
     ]
   },
   {
-    "name": "Sữa Rửa Mặt Dịu Nhẹ",
-    "slug": "sua-rua-mat-diu-nhe",
-    "description": "Sữa rửa mặt dịu nhẹ với thành phần tự nhiên, phù hợp cho mọi loại da. Không chứa sulfate, không gây khô da.",
+    "name": "L'Oreal Paris Infallible 24H Matte Cover Foundation",
+    "slug": "kem-nen-kiem-dau-lau-troi-24h-infallible-matte-cover",
+    "description": "L'Oreal Paris Infallible 24H Matte Cover Foundation là một loại kem nền dạng lỏng có kết cấu siêu nhẹ cho lớp nền tự nhiên, thông thoáng.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.4,
     "review_count": 203,
     "brand_id": 1,
-    "category_id": 6,
+    "category_id": 2,
     "shop_id": 2,
     "skin_type_compat": "normal",
     "variants": [
       {
-        "name": "150ml",
+        "name": "Classic Ivory",
         "price": 85000,
         "compare_price": 100000,
-        "sku": "SRMDN001-150ML",
+        "sku": "kem-nen-kiem-dau-lau-troi-24h-infallible-matte-cover-101",
         "stock_quantity": 150,
         "is_active": true,
         "weight": 180,
-        "shade_hex": "#F5F5DC",
+        "shade_hex": "#f7c2a3",
         "length": 15,
         "width": 6,
         "height": 6
       },
       {
-        "name": "300ml",
+        "name": "Fair Linen",
         "price": 150000,
         "compare_price": 180000,
-        "sku": "SRMDN001-300ML",
+        "sku": "kem-nen-kiem-dau-lau-troi-24h-infallible-matte-cover-105",
         "stock_quantity": 80,
         "is_active": true,
         "weight": 350,
-        "shade_hex": "#F5F5DC",
+        "shade_hex": "#ecb77f",
         "length": 18,
         "width": 7,
         "height": 7
@@ -265,34 +265,34 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/sua-rua-mat-diu-nhe-1.jpg",
+        "url": "/uploads/products/kem-nen-kiem-dau-lau-troi-24h-infallible-matte-cover.jpg",
         "type": "image",
         "is_primary": true
       }
     ]
   },
   {
-    "name": "Essence Tinh Chất",
-    "slug": "essence-tinh-chat",
-    "description": "Essence tinh chất với công thức độc quyền giúp cải thiện kết cấu da và tăng cường độ ẩm. Thành phần từ thiên nhiên.",
+    "name": "Bút Kẻ Mắt Lâu Trôi L'Oreal Paris Flash Cat Eye By Superliner",
+    "slug": "but-ke-mat-lau-troi-l-oreal-paris-flash-cat-eye-by-superliner",
+    "description": "Bút Kẻ Mắt Lâu Trôi L'Oreal Paris Flash Cat Eye By Superliner là bút kẻ mắt nước đầu tiên trên thị trường với thước canh siêu dễ và đầu cọ siêu chuẩn nét vẽ mắt Cat Eye trong nháy mắt!",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.7,
     "review_count": 74,
-    "brand_id": 3,
-    "category_id": 2,
+    "brand_id": 1,
+    "category_id": 9,
     "shop_id": 2,
     "skin_type_compat": "normal",
     "variants": [
       {
-        "name": "150ml",
+        "name": "superliner",
         "price": 280000,
         "compare_price": 330000,
-        "sku": "ETC001-150ML",
+        "sku": "superliner",
         "stock_quantity": 90,
         "is_active": true,
         "weight": 200,
-        "shade_hex": "#F0E5D8",
+        "shade_hex": "#272025",
         "length": 14,
         "width": 6,
         "height": 6
@@ -300,39 +300,39 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/essence-tinh-chat-1.jpg",
+        "url": "/uploads/products/but-ke-mat-lau-troi-l-oreal-paris-flash-cat-eye-by-superliner.jpg",
         "type": "image",
         "is_primary": true
       },
       {
-        "url": "/uploads/products/essence-tinh-chat-2.jpg",
+        "url": "/uploads/products/but-ke-mat-lau-troi-l-oreal-paris-flash-cat-eye-by-superliner_1.jpg",
         "type": "image",
         "is_primary": false
       }
     ]
   },
   {
-    "name": "Kem Mắt Chống Lão Hóa",
-    "slug": "kem-mat-chong-lao-hoa",
-    "description": "Kem mắt chuyên dụng giúp giảm nếp nhăn, quầng thâm và làm trẻ hóa vùng mắt. Công thức peptide và retinol.",
+    "name": "L'Oréal Paris Rouge Signature Liquid Lip Ink",
+    "slug": "velvet-soft-matte-chiffon-signature",
+    "description": "Với sắc thái màu theo xu hướng từ nâu đất đến đỏ mận và đỏ cam - mọi phụ nữ đều có thể tạo nên dấu ấn phong cách với màu son của riêng mình.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.9,
     "review_count": 45,
-    "brand_id": 2,
-    "category_id": 7,
+    "brand_id": 1,
+    "category_id": 15,
     "shop_id": 2,
     "skin_type_compat": "normal",
     "variants": [
       {
-        "name": "15ml",
+        "name": "I Am Worth It",
         "price": 450000,
         "compare_price": 520000,
-        "sku": "KMCLH001-15ML",
+        "sku": "son-tint-min-li-cao-cap-rouge-signature-115-i-am-worth-it",
         "stock_quantity": 60,
         "is_active": true,
         "weight": 50,
-        "shade_hex": "#F5F5DC",
+        "shade_hex": "#99110b",
         "length": 10,
         "width": 4,
         "height": 4
@@ -340,34 +340,34 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/kem-mat-chong-lao-hoa-1.jpg",
+        "url": "/uploads/products/velvet-soft-matte-chiffon-signature.jpg",
         "type": "image",
         "is_primary": true
       }
     ]
   },
   {
-    "name": "Son Môi Matte Cao Cấp",
-    "slug": "son-moi-matte-cao-cap",
-    "description": "Son môi matte với độ bền màu cao, không khô môi. Công thức chứa vitamin E và dầu argan giúp môi mềm mại.",
+    "name": "Chuốt mi L'Oreal Paris Curl Impact Collagene Mascara",
+    "slug": "mascara-l-oreal-lam-cong-va-day-mi-curl-impact-collagene",
+    "description": "Mascara làm dài và dày mi L'Oréal Paris Voluminous Lash Paradise Mascara 7.6ml là sản phẩm chống thấm nước của hãng L'Oréal Paris có khả năng làm dày và cho độ dài gợi cảm.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.6,
     "review_count": 234,
     "brand_id": 1,
-    "category_id": 8,
+    "category_id": 10,
     "shop_id": 2,
     "skin_type_compat": "normal",
     "variants": [
       {
-        "name": "3.5g",
+        "name": "11ml",
         "price": 180000,
         "compare_price": 220000,
-        "sku": "SMMCC001-3.5G",
+        "sku": "mascara-l-oreal-lam-cong-va-day-mi-curl-impact-collagene-11ml",
         "stock_quantity": 150,
         "is_active": true,
         "weight": 30,
-        "shade_hex": "#8B4545",
+        "shade_hex": "#0f0f0f",
         "length": 8,
         "width": 2,
         "height": 2
@@ -375,34 +375,34 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/son-moi-matte-cao-cap-1.jpg",
+        "url": "/uploads/products/mascara-l-oreal-lam-cong-va-day-mi-curl-impact-collagene.jpg",
         "type": "image",
         "is_primary": true
       }
     ]
   },
   {
-    "name": "Mascara Tạo Độ Cong",
-    "slug": "mascara-tao-do-cong",
-    "description": "Mascara với công thức đặc biệt giúp tạo độ cong tự nhiên cho lông mi, không bị vón cục và chống nước.",
+    "name": "LES TAROTS DE CHANEL",
+    "slug": "les-tarots-de-chanel-phan-ma-hong-hieu-ung-min-li",
+    "description": "Kết cấu phấn mềm mượt, chinh phục mọi giác quan của sản phẩm đem đến một hiệu ứng mịn lì, tôn lên gò má và tô điểm cho khuôn mặt, tạo nên phong cách vô cùng quyến rũ và bí ẩn.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.4,
     "review_count": 189,
-    "brand_id": 2,
-    "category_id": 9,
+    "brand_id": 8,
+    "category_id": 5,
     "shop_id": 2,
     "skin_type_compat": "normal",
     "variants": [
       {
-        "name": "8ml",
+        "name": "BLOOD ORANGE",
         "price": 165000,
         "compare_price": 195000,
-        "sku": "MTDC001-8ML",
+        "sku": "BLOOD-ORANGE",
         "stock_quantity": 120,
         "is_active": true,
         "weight": 40,
-        "shade_hex": "#000000",
+        "shade_hex": "#ed8a6f",
         "length": 12,
         "width": 3,
         "height": 3
@@ -410,47 +410,47 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/mascara-tao-do-cong-1.jpg",
+        "url": "/uploads/products/les-tarots-de-chanel-phan-ma-hong-hieu-ung-min-li.jpg",
         "type": "image",
         "is_primary": true
       }
     ]
   },
   {
-    "name": "Kem Nền Liquid Foundation",
-    "slug": "kem-nen-liquid-foundation",
-    "description": "Kem nền liquid với độ che phủ cao, không gây bí da. Công thức chứa SPF 15 và thành phần dưỡng ẩm.",
+    "name": "JOUES CONTRASTE INTENSE",
+    "slug": "joues-contraste-intense-ma-hong-dang-kem-phan",
+    "description": "Má hồng JOUES CONTRASTE INTENSE vừa có dạng kem mượt mà vừa đa năng, nổi bật với kết cấu mới, siêu mịn như nhung. Khi dùng ngón tay tán trực tiếp trên gò má, công thức siêu mượt chinh phục mọi giác quan hòa quyện hoàn hảo trên nền da, với độ lên màu tùy chỉnh và phong cách trang điểm riêng, từ nhẹ nhàng thanh lịch đến cá tính mạnh mẽ.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.7,
     "review_count": 312,
-    "brand_id": 3,
-    "category_id": 10,
-    "shop_id": 2,
+    "brand_id": 8,
+    "category_id": 5,
+    "shop_id": 3,
     "skin_type_compat": "normal",
     "variants": [
       {
-        "name": "30ml",
+        "name": "BEIGE ÉCLATANT",
         "price": 280000,
         "compare_price": 320000,
-        "sku": "KNLF001-30ML",
+        "sku": "BEIGE-ÉCLATANT",
         "stock_quantity": 80,
         "is_active": true,
         "weight": 100,
-        "shade_hex": "#F5DEB3",
+        "shade_hex": "#d28166",
         "length": 10,
         "width": 5,
         "height": 5
       },
       {
-        "name": "50ml",
+        "name": "GRENAT PROFOND",
         "price": 420000,
         "compare_price": 480000,
-        "sku": "KNLF001-50ML",
+        "sku": "GRENAT-PROFOND",
         "stock_quantity": 60,
         "is_active": true,
         "weight": 150,
-        "shade_hex": "#F5DEB3",
+        "shade_hex": "#912d36",
         "length": 12,
         "width": 6,
         "height": 6
@@ -458,52 +458,52 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/kem-nen-liquid-foundation-1.jpg",
+        "url": "/uploads/products/joues-contraste-intense-ma-hong-dang-kem-phan.jpg",
         "type": "image",
         "is_primary": true
       },
       {
-        "url": "/uploads/products/kem-nen-liquid-foundation-2.jpg",
+        "url": "/uploads/products/joues-contraste-intense-ma-hong-dang-kem-phan_1.jpg",
         "type": "image",
         "is_primary": false
       }
     ]
   },
   {
-    "name": "Bộ Cọ Trang Điểm Chuyên Nghiệp",
-    "slug": "bo-co-trang-diem-chuyen-nghiep",
-    "description": "Bộ cọ trang điểm cao cấp với lông tự nhiên mềm mại, thiết kế ergonomic dễ cầm. Bao gồm đầy đủ các loại cọ cần thiết.",
+    "name": "SUBLIMAGE L'ESSENCE DE TEINT CUSHION FOUNDATION - LÕI THAY THẾ",
+    "slug": "sublimage-lessence-de-teint-cushion-foundation-loi-thay-the-kem-nen-cushion-giau-duong-chat-giup-tai-tao-lan-da",
+    "description": "Kết cấu tươi mát và mỏng nhẹ, chứa hỗn hợp các hạt bắt sáng và hạt sắc tố bao bọc, mang lại làn da đều màu, rạng rỡ trong suốt ngày dài. Công thức dưỡng da chứa dầu enfleurage được tách chiết từ hoa vanilla và nước chiết Vanilla Planifolia đậm đặc. Làn da được bảo vệ và trở nên rạng rỡ hơn qua từng ngày.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.8,
     "review_count": 156,
-    "brand_id": 1,
-    "category_id": 11,
-    "shop_id": 2,
+    "brand_id": 8,
+    "category_id": 2,
+    "shop_id": 3,
     "skin_type_compat": "normal",
     "variants": [
       {
-        "name": "Bộ 12 cọ",
+        "name": "BD01 Lõi thay thế",
         "price": 350000,
         "compare_price": 420000,
-        "sku": "BCTDCN001-12CO",
+        "sku": "BD01-Loi-thay-the",
         "stock_quantity": 45,
         "is_active": true,
         "weight": 300,
-        "shade_hex": "#D2B48C",
+        "shade_hex": "#ffdabe",
         "length": 20,
         "width": 15,
         "height": 5
       },
       {
-        "name": "Bộ 18 cọ",
+        "name": "B10 Lõi thay thế",
         "price": 480000,
         "compare_price": 580000,
-        "sku": "BCTDCN001-18CO",
+        "sku": "B10-Loi-thay-the",
         "stock_quantity": 30,
         "is_active": true,
         "weight": 450,
-        "shade_hex": "#D2B48C",
+        "shade_hex": "#fdcfae",
         "length": 22,
         "width": 18,
         "height": 6
@@ -511,47 +511,47 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/bo-co-trang-diem-chuyen-nghiep-1.jpg",
+        "url": "/uploads/products/sublimage-lessence-de-teint-cushion-foundation.jpg",
         "type": "image",
         "is_primary": true
       }
     ]
   },
   {
-    "name": "Nước Hoa Nữ Sang Trọng",
-    "slug": "nuoc-hoa-nu-sang-trong",
-    "description": "Nước hoa nữ với hương thơm sang trọng, pha trộn giữa hoa hồng, hoa nhài và gỗ đàn hương. Độ bền mùi hương lên đến 8 giờ.",
+    "name": "ROUGE ALLURE VELVET",
+    "slug": "rouge-allure-velvet-son-moi",
+    "description": "Thỏi son ROUGE ALLURE VELVET khoác lên mình thiết kế đặc biệt cho dịp lễ hội: một phiên bản giới hạn của thỏi son nhấn màu đen phối vàng kim biểu tượng, nổi bật với logo CC màu vàng kim tỏa ra những tia sánh rạng rỡ.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.9,
     "review_count": 98,
-    "brand_id": 2,
-    "category_id": 12,
-    "shop_id": 2,
+    "brand_id": 8,
+    "category_id": 14,
+    "shop_id": 3,
     "skin_type_compat": "normal",
     "variants": [
       {
-        "name": "50ml",
+        "name": "548 - ABSTRAIT",
         "price": 650000,
         "compare_price": 750000,
-        "sku": "NHNST001-50ML",
+        "sku": "548-ABSTRAIT",
         "stock_quantity": 25,
         "is_active": true,
         "weight": 250,
-        "shade_hex": "#FFE4B5",
+        "shade_hex": "#c26264",
         "length": 10,
         "width": 8,
         "height": 15
       },
       {
-        "name": "100ml",
+        "name": "549 - ROUGE VIE",
         "price": 980000,
         "compare_price": 1150000,
-        "sku": "NHNST001-100ML",
+        "sku": "549-ROUGE-VIE",
         "stock_quantity": 15,
         "is_active": true,
         "weight": 450,
-        "shade_hex": "#FFE4B5",
+        "shade_hex": "#b54245",
         "length": 12,
         "width": 10,
         "height": 18
@@ -559,47 +559,46 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/nuoc-hoa-nu-sang-trong-1.jpg",
+        "url": "/uploads/products/rouge-allure-velvet-son-moi.jpg",
         "type": "image",
         "is_primary": true
       }
     ]
   },
   {
-    "name": "Sữa Rửa Mặt Dịu Nhẹ L'Oreal",
-    "slug": "sua-rua-mat-diu-nhe-loreal",
-    "description": "Sữa rửa mặt dịu nhẹ với công thức làm sạch sâu, loại bỏ bụi bẩn và tạp chất mà không làm khô da. Phù hợp cho da nhạy cảm.",
+    "name": "ROUGE COCO FLASH",
+    "slug": "rouge-coco-flash-sac-son-cang-bong",
+    "description": "Chỉ trong nháy mắt, ROUGE COCO FLASH tiết lộ sắc màu chân thực qua phần đầu nắp trong suốt. Chỉ với một lần thoa, chất son mượt mà và dưỡng ẩm sâu được dàn đều trên môi thật êm ái, chuyển hóa thành lớp dầu sáng bóng và cho cảm giác dễ chịu tuyệt đối. Trong tích tắc, bạn đã sở hữu đôi môi rực rỡ và sáng bóng ấn tượng, nhờ hỗn hợp các loại dầu được tinh chọn dựa trên khả năng phản chiếu ánh sáng vượt trội.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.3,
     "review_count": 203,
-    "brand_id": 1,
-    "shop_id": 2,
-    "how_to_use": "Làm ướt mặt, massage nhẹ nhàng với sữa rửa mặt, rửa sạch với nước.",
+    "brand_id": 8,
+    "shop_id": 3,
     "skin_type_compat": "sensitive",
     "variants": [
       {
-        "name": "150ml",
+        "name": "91 - BOHÈME",
         "price": 85000,
         "compare_price": 120000,
-        "sku": "SRMDN002-150ML",
+        "sku": "91-BOHEME",
         "stock_quantity": 50,
         "is_active": true,
         "weight": 180,
-        "shade_hex": "#F5F5DC",
+        "shade_hex": "#f12e53",
         "length": 15,
         "width": 6,
         "height": 6
       },
       {
-        "name": "300ml",
+        "name": "92 - AMOUR",
         "price": 150000,
         "compare_price": 180000,
-        "sku": "SRMDN002-300ML",
+        "sku": "92-AMOUR",
         "stock_quantity": 30,
         "is_active": true,
         "weight": 350,
-        "shade_hex": "#F5F5DC",
+        "shade_hex": "#ca2332",
         "length": 18,
         "width": 7,
         "height": 7
@@ -607,34 +606,33 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/sua-rua-mat-diu-nhe-loreal-1.jpg",
+        "url": "/uploads/products/rouge-coco-flash-sac-son-cang-bong.jpg",
         "type": "image",
         "is_primary": true
       }
     ]
   },
   {
-    "name": "Kem Dưỡng Ẩm 24h",
-    "slug": "kem-duong-am-24h-loreal",
-    "description": "Kem dưỡng ẩm 24h với công thức cấp ẩm sâu, giúp da mềm mịn và căng mướt suốt cả ngày. Không gây nhờn rít.",
+    "name": "ROUGE ALLURE L'EXTRAIT",
+    "slug": "rouge-allure-lextrait-mau-sac-ca-tinh",
+    "description": "Thỏi son kết hợp sắc màu sống động, hiệu ứng rạng rỡ ấn tượng và công dụng chăm sóc.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.6,
     "review_count": 156,
-    "brand_id": 1,
-    "shop_id": 2,
-    "how_to_use": "Thoa đều lên mặt và cổ sau khi rửa mặt, massage nhẹ nhàng cho đến khi thấm hết.",
+    "brand_id": 8,
+    "shop_id": 3,
     "skin_type_compat": "normal",
     "variants": [
       {
-        "name": "50ml",
+        "name": "854 - ROUGE PUISSANT",
         "price": 120000,
         "compare_price": 150000,
-        "sku": "KDA24H001-50ML",
+        "sku": "854-ROUGE-PUISSANT",
         "stock_quantity": 40,
         "is_active": true,
         "weight": 120,
-        "shade_hex": "#F5F5DC",
+        "shade_hex": "#c50414",
         "length": 7,
         "width": 7,
         "height": 6
@@ -642,34 +640,34 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/kem-duong-am-24h-loreal-1.jpg",
+        "url": "/uploads/products/rouge-allure-lextrait-mau-sac-ca-tinh.jpg",
         "type": "image",
         "is_primary": true
       }
     ]
   },
   {
-    "name": "Phấn Mắt Palette Nude",
-    "slug": "phan-mat-palette-nude",
-    "description": "Bảng phấn mắt 12 ô màu nude tự nhiên, dễ tán, lên màu chuẩn. Kết cấu mịn mượt, bám lâu suốt ngày.",
+    "name": "ROUGE ALLURE VELVET LES PERLES",
+    "slug": "rouge-allure-velvet-les-perles-phien-ban-gioi-han",
+    "description": "Phiên bản màu sắc rạng rỡ, nhẹ nhàng của ROUGE ALLURE VELVET mang đến sắc son tươi sáng rạng ngời và dễ dàng tùy chỉnh. Công thức dưỡng ẩm với thành phần bơ hạt mỡ và chiết xuất dầu jojoba mềm mượt như làn da thứ hai, mang lại cảm giác dễ chịu và cho đôi môi căng mọng với sắc son bền màu.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.7,
     "review_count": 145,
-    "brand_id": 1,
-    "category_id": 8,
-    "shop_id": 2,
+    "brand_id": 8,
+    "category_id": 14,
+    "shop_id": 4,
     "skin_type_compat": "normal",
     "variants": [
       {
-        "name": "Palette 12 Màu",
+        "name": "447 - NATURELLE",
         "price": 320000,
         "compare_price": 380000,
-        "sku": "PMPN001-12M",
+        "sku": "447-NATURELLE",
         "stock_quantity": 80,
         "is_active": true,
         "weight": 150,
-        "shade_hex": "#D4A5A5",
+        "shade_hex": "#c17669",
         "length": 15,
         "width": 10,
         "height": 2
@@ -677,34 +675,34 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/phan-mat-palette-nude-1.jpg",
+        "url": "/uploads/products/rouge-allure-velvet-les-perles-phien-ban-gioi-han.jpg",
         "type": "image",
         "is_primary": true
       }
     ]
   },
   {
-    "name": "Phấn Mắt Shimmer Bronze",
-    "slug": "phan-mat-shimmer-bronze",
-    "description": "Phấn mắt ánh kim màu đồng, tạo hiệu ứng lấp lánh tự nhiên. Công thức không bị rơi phấn.",
+    "name": "ROUGE ALLURE VELVET NUIT BLANCHE",
+    "slug": "rouge-allure-velvet-nuit-blanche-phien-ban-gioi-han",
+    "description": "Son môi hiệu ứng lì với sắc màu rạng rỡ: mang đến sự dễ chịu như làn da thứ hai với hàm lượng cao các hạt sắc tố tinh khiết, cho hiệu ứng bền màu và rực rỡ.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.6,
     "review_count": 98,
-    "brand_id": 2,
-    "category_id": 8,
-    "shop_id": 2,
+    "brand_id": 8,
+    "category_id": 14,
+    "shop_id": 4,
     "skin_type_compat": "normal",
     "variants": [
       {
-        "name": "Bronze Gold",
+        "name": "00:00",
         "price": 180000,
         "compare_price": 220000,
-        "sku": "PMSB001-BG",
+        "sku": "00:00",
         "stock_quantity": 100,
         "is_active": true,
         "weight": 50,
-        "shade_hex": "#A0522D",
+        "shade_hex": "#b74449",
         "length": 8,
         "width": 8,
         "height": 2
@@ -712,34 +710,34 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/phan-mat-shimmer-bronze-1.jpg",
+        "url": "/uploads/products/rouge-allure-velvet-nuit-blanche-phien-ban-gioi-han.jpg",
         "type": "image",
         "is_primary": true
       }
     ]
   },
   {
-    "name": "Phấn Má Hồng Coral",
-    "slug": "phan-ma-hong-coral",
-    "description": "Phấn má hồng san hô tươi tắn, tạo vẻ rạng rỡ tự nhiên cho khuôn mặt. Bám tốt, không bị lem.",
+    "name": "ROUGE COCO BLOOM",
+    "slug": "rouge-coco-bloom-son-moi-duong-am",
+    "description": "ROUGE COCO BLOOM, dòng son mới với sắc màu rực rỡ, tỏa sáng vẻ đẹp năng động tràn đầy năng lượng. ",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.8,
     "review_count": 167,
-    "brand_id": 1,
-    "category_id": 5,
-    "shop_id": 2,
+    "brand_id": 8,
+    "category_id": 14,
+    "shop_id": 4,
     "skin_type_compat": "normal",
     "variants": [
       {
-        "name": "Coral Pink",
+        "name": "110 - CHANCE",
         "price": 150000,
         "compare_price": 190000,
-        "sku": "PMHC001-CP",
+        "sku": "110-CHANCE",
         "stock_quantity": 120,
         "is_active": true,
         "weight": 60,
-        "shade_hex": "#E8A4A4",
+        "shade_hex": "#d76760",
         "length": 8,
         "width": 8,
         "height": 2
@@ -747,34 +745,34 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/phan-ma-hong-coral-1.jpg",
+        "url": "/uploads/products/rouge-coco-bloom-son-moi-duong-am.jpg",
         "type": "image",
         "is_primary": true
       }
     ]
   },
   {
-    "name": "Phấn Má Hồng Peach",
-    "slug": "phan-ma-hong-peach",
-    "description": "Phấn má hồng đào ngọt ngào, kết cấu mịn màng, lên màu tự nhiên. Phù hợp mọi tông da.",
+    "name": "INIMITABLE EXTRÊME",
+    "slug": "inimitable-extreme-mascara-dinh-hinh-mi-va-chong-lem",
+    "description": "Một loại mascara mang lại hiệu quả trang điểm 3D, tự nhiên và lâu trôi. Sản phẩm giúp người sử dụng có một hàng mi dài, dày và cong, và tơi từng sợi mi một cách tự nhiên.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.7,
     "review_count": 134,
-    "brand_id": 2,
-    "category_id": 5,
-    "shop_id": 2,
+    "brand_id": 8,
+    "category_id": 10,
+    "shop_id": 4,
     "skin_type_compat": "normal",
     "variants": [
       {
-        "name": "Soft Peach",
+        "name": "10 - NOIR PUR",
         "price": 165000,
         "compare_price": 200000,
-        "sku": "PMHP001-SP",
+        "sku": "10-NOIR-PUR",
         "stock_quantity": 95,
         "is_active": true,
         "weight": 60,
-        "shade_hex": "#FFB6C1",
+        "shade_hex": "#111111",
         "length": 8,
         "width": 8,
         "height": 2
@@ -782,339 +780,42 @@
     ],
     "media": [
       {
-        "url": "/uploads/products/phan-ma-hong-peach-1.jpg",
+        "url": "/uploads/products/inimitable-extreme-mascara-dinh-hinh-mi-va-chong-lem.jpg",
         "type": "image",
         "is_primary": true
       }
     ]
   },
   {
-    "name": "Kẻ Mắt Nước Đen Tuyền",
-    "slug": "ke-mat-nuoc-den-tuyen",
-    "description": "Kẻ mắt nước đen tuyền, không lem trôi suốt ngày. Đầu cọ mảnh giúp kẻ line mắt chính xác.",
-    "is_published": true,
-    "moderation_status": "approved",
-    "avg_rating": 4.9,
-    "review_count": 289,
-    "brand_id": 3,
-    "category_id": 9,
-    "shop_id": 2,
-    "skin_type_compat": "normal",
-    "variants": [
-      {
-        "name": "Jet Black",
-        "price": 145000,
-        "compare_price": 180000,
-        "sku": "KMNDT001-JB",
-        "stock_quantity": 150,
-        "is_active": true,
-        "weight": 30,
-        "shade_hex": "#000000",
-        "length": 14,
-        "width": 2,
-        "height": 2
-      }
-    ],
-    "media": [
-      {
-        "url": "/uploads/products/ke-mat-nuoc-den-tuyen-1.jpg",
-        "type": "image",
-        "is_primary": true
-      }
-    ]
-  },
-  {
-    "name": "Kẻ Mắt Chì Nâu",
-    "slug": "ke-mat-chi-nau",
-    "description": "Kẻ mắt dạng chì màu nâu tự nhiên, mềm mịn dễ tán. Tạo đường line mắt nhẹ nhàng cho makeup hàng ngày.",
-    "is_published": true,
-    "moderation_status": "approved",
-    "avg_rating": 4.5,
-    "review_count": 178,
-    "brand_id": 1,
-    "category_id": 9,
-    "shop_id": 2,
-    "skin_type_compat": "normal",
-    "variants": [
-      {
-        "name": "Soft Brown",
-        "price": 95000,
-        "compare_price": 120000,
-        "sku": "KMCN001-SB",
-        "stock_quantity": 140,
-        "is_active": true,
-        "weight": 25,
-        "shade_hex": "#4A3728",
-        "length": 15,
-        "width": 1,
-        "height": 1
-      }
-    ],
-    "media": [
-      {
-        "url": "/uploads/products/ke-mat-chi-nau-1.jpg",
-        "type": "image",
-        "is_primary": true
-      }
-    ]
-  },
-  {
-    "name": "Chì Kẻ Mày Nâu Tự Nhiên",
-    "slug": "chi-ke-may-nau-tu-nhien",
-    "description": "Chì kẻ mày công thức mềm mịn, giúp vẽ từng sợi lông mày tự nhiên. Kèm chổi chuốt mày tiện dụng.",
-    "is_published": true,
-    "moderation_status": "approved",
-    "avg_rating": 4.6,
-    "review_count": 234,
-    "brand_id": 2,
-    "category_id": 11,
-    "shop_id": 2,
-    "skin_type_compat": "normal",
-    "variants": [
-      {
-        "name": "Natural Brown",
-        "price": 85000,
-        "compare_price": 110000,
-        "sku": "CKMNTN001-NB",
-        "stock_quantity": 180,
-        "is_active": true,
-        "weight": 20,
-        "shade_hex": "#6B4423",
-        "length": 14,
-        "width": 1,
-        "height": 1
-      }
-    ],
-    "media": [
-      {
-        "url": "/uploads/products/chi-ke-may-nau-tu-nhien-1.jpg",
-        "type": "image",
-        "is_primary": true
-      }
-    ]
-  },
-  {
-    "name": "Chì Kẻ Mày Đen Nâu",
-    "slug": "chi-ke-may-den-nau",
-    "description": "Chì kẻ mày màu đen nâu đậm, bám màu tốt suốt ngày. Lõi mềm, dễ vẽ và tán.",
+    "name": "LE VOLUME STRETCH EXTRÊME",
+    "slug": "le-volume-stretch-extreme-mascara-lam-cong-va-dai-mi-chong-lem",
+    "description": "Công thức chống nước dễ dàng tẩy sạch bằng nước ấm, kết hợp với đầu cọ in 3D rỗng tạo độ linh hoạt tối đa, giúp phủ dày và kéo dài mi bất tận. Hiệu ứng mắt to tròn rạng rỡ.",
     "is_published": true,
     "moderation_status": "approved",
     "avg_rating": 4.7,
-    "review_count": 189,
-    "brand_id": 3,
-    "category_id": 11,
-    "shop_id": 2,
-    "skin_type_compat": "normal",
-    "variants": [
-      {
-        "name": "Dark Brown",
-        "price": 95000,
-        "compare_price": 125000,
-        "sku": "CKMDN001-DB",
-        "stock_quantity": 160,
-        "is_active": true,
-        "weight": 20,
-        "shade_hex": "#2D1F14",
-        "length": 14,
-        "width": 1,
-        "height": 1
-      }
-    ],
-    "media": [
-      {
-        "url": "/uploads/products/chi-ke-may-den-nau-1.jpg",
-        "type": "image",
-        "is_primary": true
-      }
-    ]
-  },
-  {
-    "name": "Kem Nền Lâu Trôi HD",
-    "slug": "kem-nen-lau-troi-hd",
-    "description": "Kem nền HD che phủ hoàn hảo, kiềm dầu tốt, không gây bí da. Công thức lâu trôi 24h với SPF 30.",
-    "is_published": true,
-    "moderation_status": "approved",
-    "avg_rating": 4.8,
-    "review_count": 345,
-    "brand_id": 1,
-    "category_id": 2,
-    "shop_id": 2,
-    "skin_type_compat": "normal",
-    "variants": [
-      {
-        "name": "Fair Ivory",
-        "price": 380000,
-        "compare_price": 450000,
-        "sku": "KNLTHD001-FI",
-        "stock_quantity": 70,
-        "is_active": true,
-        "weight": 120,
-        "shade_hex": "#FFE4C4",
-        "length": 12,
-        "width": 6,
-        "height": 6
-      },
-      {
-        "name": "Natural Beige",
-        "price": 380000,
-        "compare_price": 450000,
-        "sku": "KNLTHD001-NB",
-        "stock_quantity": 85,
-        "is_active": true,
-        "weight": 120,
-        "shade_hex": "#F5DEB3",
-        "length": 12,
-        "width": 6,
-        "height": 6
-      },
-      {
-        "name": "Medium Tan",
-        "price": 380000,
-        "compare_price": 450000,
-        "sku": "KNLTHD001-MT",
-        "stock_quantity": 65,
-        "is_active": true,
-        "weight": 120,
-        "shade_hex": "#DEB887",
-        "length": 12,
-        "width": 6,
-        "height": 6
-      }
-    ],
-    "media": [
-      {
-        "url": "/uploads/products/kem-nen-lau-troi-hd-1.jpg",
-        "type": "image",
-        "is_primary": true
-      }
-    ]
-  },
-  {
-    "name": "Kem Nền Matte Velvet",
-    "slug": "kem-nen-matte-velvet",
-    "description": "Kem nền matte finish với kết cấu nhung mượt mà, che phủ đều màu da. Kiểm soát dầu hiệu quả.",
-    "is_published": true,
-    "moderation_status": "approved",
-    "avg_rating": 4.7,
-    "review_count": 267,
-    "brand_id": 2,
-    "category_id": 2,
-    "shop_id": 2,
-    "skin_type_compat": "normal",
-    "variants": [
-      {
-        "name": "Light Beige",
-        "price": 420000,
-        "compare_price": 500000,
-        "sku": "KNMV001-LB",
-        "stock_quantity": 60,
-        "is_active": true,
-        "weight": 130,
-        "shade_hex": "#F5DEB3",
-        "length": 12,
-        "width": 6,
-        "height": 6
-      },
-      {
-        "name": "Golden Tan",
-        "price": 420000,
-        "compare_price": 500000,
-        "sku": "KNMV001-GT",
-        "stock_quantity": 55,
-        "is_active": true,
-        "weight": 130,
-        "shade_hex": "#D2A679",
-        "length": 12,
-        "width": 6,
-        "height": 6
-      }
-    ],
-    "media": [
-      {
-        "url": "/uploads/products/kem-nen-matte-velvet-1.jpg",
-        "type": "image",
-        "is_primary": true
-      }
-    ]
-  },
-  {
-    "name": "Mascara Dài Mi Cong Vút",
-    "slug": "mascara-dai-mi-cong-vut",
-    "description": "Mascara với công thức độc quyền giúp mi dài, cong vút tự nhiên. Chống nước, không vón cục suốt ngày.",
-    "is_published": true,
-    "moderation_status": "approved",
-    "avg_rating": 4.8,
-    "review_count": 298,
-    "brand_id": 3,
+    "review_count": 134,
+    "brand_id": 8,
     "category_id": 10,
-    "shop_id": 2,
+    "shop_id": 4,
     "skin_type_compat": "normal",
     "variants": [
       {
-        "name": "Black",
-        "price": 185000,
-        "compare_price": 230000,
-        "sku": "MDMCV001-BK",
-        "stock_quantity": 140,
-        "is_active": true,
-        "weight": 35,
-        "shade_hex": "#000000",
-        "length": 13,
-        "width": 2,
-        "height": 2
-      }
-    ],
-    "media": [
-      {
-        "url": "/uploads/products/mascara-dai-mi-cong-vut-1.jpg",
-        "type": "image",
-        "is_primary": true
-      }
-    ]
-  },
-  {
-    "name": "Mascara Làm Dày Mi",
-    "slug": "mascara-lam-day-mi",
-    "description": "Mascara công thức làm dày mi tức thì, tạo độ phồng cho lông mi. Không gây kích ứng mắt.",
-    "is_published": true,
-    "moderation_status": "approved",
-    "avg_rating": 4.6,
-    "review_count": 223,
-    "brand_id": 1,
-    "category_id": 10,
-    "shop_id": 2,
-    "skin_type_compat": "normal",
-    "variants": [
-      {
-        "name": "Deep Black",
-        "price": 175000,
-        "compare_price": 210000,
-        "sku": "MLDM001-DB",
-        "stock_quantity": 125,
-        "is_active": true,
-        "weight": 35,
-        "shade_hex": "#0D0D0D",
-        "length": 13,
-        "width": 2,
-        "height": 2
-      },
-      {
-        "name": "Brown Black",
-        "price": 175000,
-        "compare_price": 210000,
-        "sku": "MLDM001-BB",
+        "name": "10 - NOIR",
+        "price": 165000,
+        "compare_price": 200000,
+        "sku": "10-NOIR",
         "stock_quantity": 95,
         "is_active": true,
-        "weight": 35,
-        "shade_hex": "#2C1B10",
-        "length": 13,
-        "width": 2,
+        "weight": 60,
+        "shade_hex": "#171717",
+        "length": 8,
+        "width": 8,
         "height": 2
       }
     ],
     "media": [
       {
-        "url": "/uploads/products/mascara-lam-day-mi-1.jpg",
+        "url": "/uploads/products/le-volume-stretch-extreme-mascara-lam-cong-va-dai-mi-chong-lem.jpg",
         "type": "image",
         "is_primary": true
       }

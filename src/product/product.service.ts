@@ -395,7 +395,7 @@ export class ProductService {
             description: description,
             how_to_use: how_to_use,
             is_published: is_published,
-            moderation_status: product_moderation_status.approved,
+            moderation_status: product_moderation_status.pending,
             created_at: new Date(),
             updated_at: new Date(),
           },
@@ -677,6 +677,10 @@ export class ProductService {
     size_label?: string,
     compare_at_price?: number,
     opacity?: number,
+    weight?: number,
+    length?: number,
+    width?: number,
+    height?: number,
   ) {
     try {
       const product = await this.prisma.products.findUnique({
@@ -704,6 +708,10 @@ export class ProductService {
           compare_at_price: compare_at_price,
           stock: stock,
           opacity: opacity,
+          weight: weight,
+          length: length,
+          width: width,
+          height: height,
           created_at: new Date(),
           updated_at: new Date(),
         },
@@ -736,6 +744,10 @@ export class ProductService {
     compare_at_price?: number,
     is_active?: boolean,
     opacity?: number,
+    weight?: number,
+    length?: number,
+    width?: number,
+    height?: number,
   ) {
     try {
       // Check if variant exists
@@ -806,6 +818,10 @@ export class ProductService {
         updateData.compare_at_price = compare_at_price;
       if (is_active !== undefined) updateData.is_active = is_active;
       if (opacity !== undefined) updateData.opacity = opacity;
+      if (weight !== undefined) updateData.weight = weight;
+      if (length !== undefined) updateData.length = length;
+      if (width !== undefined) updateData.width = width;
+      if (height !== undefined) updateData.height = height;
 
       // Update variant
       const updatedVariant = await this.prisma.product_variants.update({

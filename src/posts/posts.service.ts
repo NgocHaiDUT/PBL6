@@ -391,7 +391,7 @@ export class PostsService {
                     select: { url: true },
                   },
                   product_variants: {
-                    select: { shade_hex: true },
+                    select: { shade_hex: true, price: true },
                   },
                 },
               },
@@ -539,7 +539,7 @@ export class PostsService {
                     select: { url: true },
                   },
                   product_variants: {
-                    select: { shade_hex: true },
+                    select: { shade_hex: true, price: true },
                   },
                 },
               },
@@ -639,7 +639,7 @@ export class PostsService {
                   select: { url: true },
                 },
                 product_variants: {
-                  select: { shade_hex: true },
+                  select: { shade_hex: true, price: true },
                 },
               },
             },
