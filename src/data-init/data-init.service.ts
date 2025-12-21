@@ -973,6 +973,7 @@ export class DataInitService implements OnModuleInit {
           // Helper function to normalize address names for better matching
           const normalize = (name: string): string => {
             return name
+              .normalize('NFC')
               .toLowerCase()
               .replace(/^(thành phố|tỉnh|tp\.?)\s*/i, '')
               .replace(/^(quận|huyện|thị xã|thành phố)\s*/i, '')
