@@ -8,7 +8,7 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, Injectable } from '@nestjs/common';
+import { Logger, Injectable, Inject, forwardRef } from '@nestjs/common';
 import { MessagesService } from '../messages/messages.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -29,6 +29,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(ChatGateway.name);
 
   constructor(
+    @Inject(forwardRef(() => MessagesService))
     private messagesService: MessagesService,
     private prisma: PrismaService,
   ) { }
@@ -100,7 +101,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           where: { id: data.receiverId },
           select: { id: true }
         });
-        
+
         if (shop) {
           // User sending to shop
           conversation = await this.messagesService.findOrCreateShopConversation(
@@ -172,6 +173,80 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           this.logger.error(`Failed to load shared profile ${data.sharedProfileId}:`, error);
         }
       }
+
+      // ✅ Load shared post data if exists
+      let sharedPost: any = null;
+      const postIdToLoad = (message as any).post_id || data.postId;
+
+      this.logger.log(`🔍 [sendMessage] Checking for shared post:`, {
+        messagePostId: (message as any).post_id,
+        dataPostId: data.postId,
+        postIdToLoad: postIdToLoad,
+        messageType: message.type
+      });
+
+      if (postIdToLoad) {
+        try {
+          this.logger.log(`📖 [sendMessage] Loading post ${postIdToLoad}...`);
+
+          const post = await this.prisma.posts.findUnique({
+            where: { id: postIdToLoad },
+            select: {
+              id: true,
+              title: true,
+              content_md: true,
+              post_type: true,
+              media_url: true,
+              thumbnail_url: true,
+              user: {
+                select: {
+                  id: true,
+                  full_name: true,
+                  avatar_url: true,
+                },
+              },
+              post_media: {
+                select: {
+                  id: true,
+                  media_url: true,
+                  sort_order: true,
+                  media_type: true,
+                },
+                orderBy: { sort_order: 'asc' },
+                take: 1,
+              },
+            },
+          });
+
+          if (post) {
+            // Construct sharedPost with computed fields
+            const coverUrl = post.media_url || (post.post_media && post.post_media[0]?.media_url) || null;
+            const videoUrl = post.post_type === 'video' ? (post.media_url || (post.post_media && post.post_media[0]?.media_url)) : null;
+
+            sharedPost = {
+              id: post.id,
+              title: post.title,
+              content_md: post.content_md,
+              user: post.user,
+              post_media: post.post_media,
+              post_type: post.post_type,
+              cover_url: coverUrl,
+              video_url: videoUrl,
+            };
+
+            this.logger.log(`✅ [sendMessage] Loaded shared post:`, {
+              postId: sharedPost.id,
+              title: sharedPost.title,
+              author: sharedPost.user?.full_name,
+              coverUrl: coverUrl
+            });
+          } else {
+            this.logger.warn(`⚠️ [sendMessage] Post ${postIdToLoad} not found in database`);
+          }
+        } catch (error) {
+          this.logger.error(`Failed to load shared post ${postIdToLoad}:`, error);
+        }
+      }
       // Debug log
       this.logger.log(`Created message with data:`, {
         id: message.id,
@@ -199,10 +274,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         productPayload: messageType === 'SHARE_PRODUCT' ? message.payload : null, // ✅ Include product payload
         createdAt: message.created_at.toISOString(),
         created_at: message.created_at.toISOString(), // ✅ Add snake_case
-        sharedPostId: (message as any).post_id || null, // ✅ Include shared post ID
-        post_id: (message as any).post_id || null, // ✅ Add snake_case
-        sharedProfileId: (message as any).shared_profile_id || null, // ✅ Include shared profile ID
-        shared_profile_id: (message as any).shared_profile_id || null, // ✅ Add snake_case
+        sharedPostId: (message as any).post_id || data.postId || null, // ✅ Include shared post ID
+        post_id: (message as any).post_id || data.postId || null, // ✅ Add snake_case
+        sharedPost: sharedPost, // ✅ Include shared post data
+        sharedProfileId: (message as any).shared_profile_id || data.sharedProfileId || null, // ✅ Include shared profile ID
+        shared_profile_id: (message as any).shared_profile_id || data.sharedProfileId || null, // ✅ Add snake_case
         sharedProfile: sharedProfile, // ✅ Include shared profile data
         messageType: message.type, // ✅ Use the enum type
         sender: message.sender ? {
@@ -316,14 +392,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('openChat')
   async handleOpenChat(
-    @MessageBody() data: { openerId: number; targetId: number },
+    @MessageBody() data: { openerId: number; targetId: number; cursor?: number; limit?: number },
     @ConnectedSocket() client: Socket,
   ) {
     try {
       if (!data || !data.openerId || !data.targetId) return;
 
       this.logger.log(
-        `User ${data.openerId} opening chat with ${data.targetId}`,
+        `User ${data.openerId} opening chat with ${data.targetId}${data.cursor ? ` (cursor: ${data.cursor})` : ''}`,
       );
 
       // ✅ Check if targetId is a shop
@@ -352,11 +428,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         throw new Error('Failed to create or find conversation');
       }
 
-      // 2. Get conversation messages
+      // 2. Get conversation messages with pagination
+      const limit = data.limit || 20; // ✅ Default to 20 messages instead of 50
       const messageHistory = await this.messagesService.getMessages(
         conversation.id,
         data.openerId,
-        { page: 1, limit: 50 }, // Load last 50 messages
+        data.cursor
+          ? { before: data.cursor, limit } // ✅ Load messages before cursor (older messages)
+          : { page: 1, limit }, // ✅ Load latest messages
       );
 
       // 3. Get target info (user or shop)
@@ -543,12 +622,40 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           }
         }
 
+        // ✅ Enrich profile payload for SHARE_PROFILE
+        let sharedProfile: { id: number; full_name: string | null; avatar_url: string | null; bio: string | null } | null = null;
+        if (msg.type === 'SHARE_PROFILE' && (msg as any).shared_profile_id) {
+          try {
+            const profileUser = await this.prisma.users.findUnique({
+              where: { id: (msg as any).shared_profile_id },
+              select: {
+                id: true,
+                full_name: true,
+                avatar_url: true,
+                story: true, // bio field
+              }
+            });
+            if (profileUser) {
+              sharedProfile = {
+                id: profileUser.id,
+                full_name: profileUser.full_name,
+                avatar_url: profileUser.avatar_url,
+                bio: profileUser.story,
+              };
+              this.logger.log(`✅ Loaded shared profile for message ${msg.id}:`, sharedProfile);
+            }
+          } catch (error) {
+            this.logger.error(`❌ Failed to load shared profile for message ${msg.id}:`, error);
+          }
+        }
+
         // ✅ Log before returning to debug
         this.logger.log(`🔍 Message ${msg.id} before return:`, {
           type: msg.type,
           hasPayload: !!msg.payload,
           enrichedPayload: enrichedPayload,
           willSetProductPayload: msg.type === 'SHARE_PRODUCT',
+          hasSharedProfile: !!sharedProfile,
         });
 
         return {
@@ -574,6 +681,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           post_id: (msg as any).post_id, // ✅ Add snake_case
           sharedProfileId: (msg as any).shared_profile_id, // ✅ Include shared profile ID
           shared_profile_id: (msg as any).shared_profile_id, // ✅ Add snake_case
+          sharedProfile: sharedProfile, // ✅ Include shared profile data
           messageType: msg.type, // ✅ Use 'type' field (enum message_type)
           reactions: formattedReactions, // ✅ Include reactions
           mediaFiles: mediaFiles, // ✅ Include media files
@@ -624,6 +732,44 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       // 5. Send conversation to opener
+      // ✅ Debug log messageHistory cursor
+      this.logger.log(`📊 MessageHistory cursor:`, {
+        hasCursor: !!messageHistory.cursor,
+        hasPagination: !!messageHistory.pagination,
+        cursor: messageHistory.cursor,
+        pagination: messageHistory.pagination,
+        messagesCount: formattedMessages.length,
+      });
+
+      // ✅ Handle both cursor-based and offset-based pagination
+      let paginationData: { total: number; hasMore: boolean; cursor: number | null };
+
+      if (messageHistory.cursor) {
+        // Cursor-based pagination
+        paginationData = {
+          total: formattedMessages.length,
+          hasMore: messageHistory.cursor.hasMore || false,
+          cursor: messageHistory.cursor.previous || null,
+        };
+      } else if (messageHistory.pagination) {
+        // Offset-based pagination - calculate hasMore and cursor
+        const total = messageHistory.pagination.total;
+        const currentPage = messageHistory.pagination.page;
+        const totalPages = messageHistory.pagination.pages;
+        paginationData = {
+          total: formattedMessages.length,
+          hasMore: currentPage < totalPages, // More pages available
+          cursor: formattedMessages.length > 0 ? formattedMessages[0].id : null, // First message ID as cursor
+        };
+      } else {
+        // Fallback
+        paginationData = {
+          total: formattedMessages.length,
+          hasMore: formattedMessages.length >= 20,
+          cursor: formattedMessages.length > 0 ? formattedMessages[0].id : null,
+        };
+      }
+
       const conversationData = {
         with: {
           Id: targetInfo.id, // ✅ Use uppercase 'Id' to match frontend
@@ -631,10 +777,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           Avatar: targetInfo.avatar_url,
         },
         messages: formattedMessages,
-        pagination: {
-          total: formattedMessages.length,
-          hasMore: false,
-        },
+        pagination: paginationData,
       };
 
       // ✅ Log what we're about to emit
@@ -660,6 +803,226 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
     }
   }
+
+  @SubscribeMessage('loadMoreMessages')
+  async handleLoadMoreMessages(
+    @MessageBody() data: { conversationId: number; userId: number; cursor: number; limit?: number },
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      if (!data || !data.conversationId || !data.userId || !data.cursor) {
+        client.emit('moreMessagesLoaded', {
+          success: false,
+          error: 'Missing required parameters',
+        });
+        return;
+      }
+
+      this.logger.log(
+        `User ${data.userId} loading more messages for conversation ${data.conversationId} (cursor: ${data.cursor})`,
+      );
+
+      // Get older messages using cursor
+      const limit = data.limit || 20;
+      const messageHistory = await this.messagesService.getMessages(
+        data.conversationId,
+        data.userId,
+        { before: data.cursor, limit },
+      );
+
+      // Format messages (same as openChat)
+      const formattedMessages = await Promise.all(messageHistory.data.map(async (msg) => {
+        // Group reactions by emoji
+        const reactionsGrouped = ((msg as any).message_reactions || []).reduce((acc: any, r: any) => {
+          if (!acc[r.emoji]) {
+            acc[r.emoji] = { emoji: r.emoji, count: 0, users: [] };
+          }
+          acc[r.emoji].count++;
+          acc[r.emoji].users.push(r.user_id);
+          return acc;
+        }, {} as Record<string, { emoji: string; count: number; users: number[] }>);
+
+        const formattedReactions = Object.values(reactionsGrouped);
+
+        // Format media files
+        const mediaFiles = ((msg as any).message_media || []).map((media: any) => ({
+          id: media.id,
+          url: media.media_url,
+          type: media.media_type,
+          fileName: media.file_name,
+          fileSize: media.file_size,
+          duration: media.duration,
+          thumbnailUrl: media.thumbnail_url,
+        }));
+
+        // Enrich payload if needed (same logic as openChat)
+        let enrichedPayload = msg.payload;
+
+        // Enrich product payload for SHARE_PRODUCT
+        if (msg.type === 'SHARE_PRODUCT') {
+          const payloadData = (msg.payload as any) || {};
+          let productId = payloadData.product_id;
+
+          if (productId) {
+            try {
+              const product = await this.prisma.products.findUnique({
+                where: { id: payloadData.product_id },
+                include: {
+                  brand: { select: { name: true } },
+                  product_variants: { orderBy: { price: 'asc' }, take: 1 },
+                  product_media: { orderBy: { sort_order: 'asc' }, take: 1 },
+                },
+              });
+
+              if (product) {
+                const price = product.product_variants[0]?.price || 0;
+                const image = product.product_media[0]?.url || '';
+
+                enrichedPayload = {
+                  product_id: product.id,
+                  product_name: product.name,
+                  product_price: Number(price),
+                  product_image: image,
+                  product_brand: product.brand?.name || 'Unknown Brand',
+                  product_description: product.description,
+                };
+              }
+            } catch (error) {
+              this.logger.error(`❌ Failed to load product for message ${msg.id}:`, error);
+            }
+          }
+        }
+
+        // Enrich story payload for STORY_REPLY
+        if (msg.type === 'STORY_REPLY' && msg.payload) {
+          const payloadData = msg.payload as any;
+          if (payloadData.story_id) {
+            try {
+              const story = await this.prisma.posts.findFirst({
+                where: { id: payloadData.story_id, is_story: true },
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      full_name: true,
+                      avatar_url: true,
+                    },
+                  },
+                },
+              });
+
+              if (story) {
+                enrichedPayload = {
+                  story_id: story.id,
+                  story_type: story.story_type,
+                  story_media_url: story.media_url,
+                  story_thumbnail_url: story.thumbnail_url,
+                  story_caption: story.caption,
+                  story_owner: {
+                    id: story.user.id,
+                    full_name: story.user.full_name,
+                    avatar_url: story.user.avatar_url,
+                  },
+                  story_created_at: story.created_at.toISOString(),
+                  story_expires_at: story.expires_at?.toISOString(),
+                };
+              }
+            } catch (error) {
+              this.logger.error(`❌ Failed to load story for message ${msg.id}:`, error);
+            }
+          }
+        }
+
+        // ✅ Enrich profile payload for SHARE_PROFILE
+        let sharedProfile: { id: number; full_name: string | null; avatar_url: string | null; bio: string | null } | null = null;
+        if (msg.type === 'SHARE_PROFILE' && (msg as any).shared_profile_id) {
+          try {
+            const profileUser = await this.prisma.users.findUnique({
+              where: { id: (msg as any).shared_profile_id },
+              select: {
+                id: true,
+                full_name: true,
+                avatar_url: true,
+                story: true, // bio field
+              }
+            });
+            if (profileUser) {
+              sharedProfile = {
+                id: profileUser.id,
+                full_name: profileUser.full_name,
+                avatar_url: profileUser.avatar_url,
+                bio: profileUser.story,
+              };
+            }
+          } catch (error) {
+            this.logger.error(`❌ Failed to load shared profile for message ${msg.id}:`, error);
+          }
+        }
+
+        return {
+          id: msg.id,
+          conversationId: msg.conversation_id,
+          conversation_id: msg.conversation_id,
+          senderId: msg.sender_id,
+          sender_id: msg.sender_id,
+          senderShopId: msg.sender_shop_id,
+          sender_shop_id: msg.sender_shop_id,
+          senderType: msg.sender_type,
+          sender_type: msg.sender_type,
+          content: msg.content,
+          type: msg.type,
+          payload: enrichedPayload,
+          productPayload: msg.type === 'SHARE_PRODUCT' ? enrichedPayload : null,
+          storyPayload: msg.type === 'STORY_REPLY' ? enrichedPayload : null,
+          createdAt: msg.created_at.toISOString(),
+          created_at: msg.created_at.toISOString(),
+          sharedPostId: (msg as any).post_id,
+          post_id: (msg as any).post_id,
+          sharedProfileId: (msg as any).shared_profile_id,
+          shared_profile_id: (msg as any).shared_profile_id,
+          sharedProfile: sharedProfile, // ✅ Include shared profile data
+          messageType: msg.type,
+          reactions: formattedReactions,
+          mediaFiles: mediaFiles,
+          sender: msg.sender
+            ? {
+              id: msg.sender.id,
+              fullName: msg.sender.full_name || 'Unknown User',
+              avatarUrl: msg.sender.avatar_url,
+            }
+            : msg.sender_shop
+              ? {
+                id: msg.sender_shop.id,
+                fullName: msg.sender_shop.name,
+                avatarUrl: msg.sender_shop.logo_url,
+              }
+              : {
+                Id: msg.sender_id,
+                Fullname: 'Unknown User',
+                Avatar: null,
+              }
+        };
+      }));
+
+      this.logger.log(`📤 Loaded ${formattedMessages.length} more messages`);
+
+      client.emit('moreMessagesLoaded', {
+        success: true,
+        messages: formattedMessages,
+        pagination: {
+          hasMore: messageHistory.cursor?.hasMore || false,
+          cursor: messageHistory.cursor?.previous || null,
+        },
+      });
+    } catch (error) {
+      this.logger.error('Error loading more messages:', error);
+      client.emit('moreMessagesLoaded', {
+        success: false,
+        error: 'Failed to load more messages',
+      });
+    }
+  }
+
 
   @SubscribeMessage('markConversationRead')
   async handleMarkConversationRead(
