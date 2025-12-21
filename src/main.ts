@@ -9,16 +9,16 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bodyParser: false, // Tắt body parser mặc định để config thủ công
   });
-  
+
   // ✅ Raw body parser for webhooks (BEFORE other parsers)
   app.use('/webhooks', require('express').raw({ type: 'application/json', limit: '10mb' }));
-  
+
   // ✅ Increase body size limit for file uploads (200MB) 
   app.use(require('express').json({ limit: '200mb' }));
   app.use(require('express').urlencoded({ limit: '200mb', extended: true }));
-  
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false, transform: true,skipMissingProperties: true }));
-  
+
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false, transform: true, skipMissingProperties: true }));
+
   // ✅ Enable CORS FIRST (before static assets)
   app.enableCors({
     origin: true, // ✅ Allow all origins for mobile development
@@ -27,7 +27,7 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type,Authorization,Range', // ✅ Add Range header
     exposedHeaders: 'Content-Range,Accept-Ranges,Content-Length', // ✅ Expose video headers
   });
-  
+
   // Serve static files from uploads directory
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads/',
@@ -75,9 +75,13 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   const port = process.env.PORT ?? 3000;
-  const server = await app.listen(port);
-  
+  const host = process.env.HOST ?? '0.0.0.0'; // ✅ Bind to all network interfaces for EC2
+  const server = await app.listen(port, host);
+
   // ✅ Increase timeout for file uploads (10 minutes)
   server.setTimeout(600000); // 10 minutes for large file uploads
+
+  Logger.log(`🚀 Application is running on: http://${host}:${port}`, 'Bootstrap');
+  Logger.log(`📚 Swagger documentation: http://${host}:${port}/api`, 'Bootstrap');
 }
 bootstrap();
