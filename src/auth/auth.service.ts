@@ -95,20 +95,14 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.validateUser(dto.email, dto.password);
 
-    // ✅ Kiểm tra device đã tồn tại refresh token ACTIVE chưa
-    // QUAN TRỌNG: Phải check is_revoked = false để phân biệt device mới vs device đã logout
     const existingToken = await this.PrismaService.refresh_tokens.findFirst({
       where: {
         user_id: user.id,
         device_id: dto.device_id,
-        is_revoked: false, // ✅ Chỉ tìm token chưa bị revoke
-        expires_at: { gt: new Date() }, // ✅ Và chưa hết hạn
       },
     });
 
     if (existingToken) {
-      // ✅ Device đã tồn tại và có token active → LOGIN LẠI CÙNG THIẾT BỊ
-      // → UPDATE record cũ (rotate token)
       return this.issueTokens(user, dto.device_id, dto.device_name);
     }
 
@@ -211,7 +205,6 @@ export class AuthService {
   async verifyDevice(dto: VerifyDeviceOtpDto) {
     const { email, device_id, otp, device_name } = dto;
 
-    // ✅ FIXED: Include rolePermissions and userPermissions like in validateUser
     const user = await this.PrismaService.users.findUnique({
       where: { email },
       include: {
@@ -219,53 +212,50 @@ export class AuthService {
           include: {
             rolePermissions: {
               select: {
-                permission: {
-                  select: { name: true },
-                },
+                permission: { select: { name: true } },
               },
             },
           },
         },
         userPermissions: {
           select: {
-            permission: {
-              select: { name: true },
-            },
+            permission: { select: { name: true } },
           },
         },
       },
     });
 
     if (!user) {
-      console.error(`[Auth] Verify failed - User not found: ${email}`);
       throw new UnauthorizedException('INVALID_CREDENTIALS');
     }
 
-    const deviceOtp = await this.PrismaService.device_otps.findFirst({
+    const latestOtp = await this.PrismaService.device_otps.findFirst({
       where: {
         user_id: user.id,
         device_id,
         expires_at: { gt: new Date() },
       },
+      orderBy: {
+        created_at: 'desc',
+      },
     });
 
-    if (!deviceOtp) {
-      console.error(`[Auth] Verify failed - OTP expired or not found for user ${user.id}, device: ${device_id}`);
+    if (!latestOtp) {
       throw new UnauthorizedException('OTP_EXPIRED');
     }
 
-    const isValidOtp = await bcrypt.compare(otp, deviceOtp.otp_hash);
+    const isValidOtp = await bcrypt.compare(otp, latestOtp.otp_hash);
     if (!isValidOtp) {
-      console.error(`[Auth] Verify failed - Invalid OTP for user ${user.id}`);
       throw new UnauthorizedException('INVALID_OTP');
     }
 
-    // Xóa OTP
-    await this.PrismaService.device_otps.delete({
-      where: { id: deviceOtp.id },
+    await this.PrismaService.device_otps.deleteMany({
+      where: {
+        user_id: user.id,
+        device_id,
+      },
     });
 
-    // Cấp token và lưu refresh token cho device
     return this.issueTokens(user, device_id, device_name);
   }
 
