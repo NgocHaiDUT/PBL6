@@ -1071,6 +1071,28 @@ export class OrderService {
                 unit_price: true,
                 quantity: true,
                 line_total: true,
+                variant: {
+                  select: {
+                    id: true,
+                    name: true,
+                    price: true,
+                    product: {
+                      select: {
+                        id: true,
+                        name: true,
+                        slug: true,
+                        product_media: {
+                          take: 1,
+                          orderBy: { id: 'asc' },
+                          select: {
+                            url: true,
+                            type: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
               },
             },
             payments: {
