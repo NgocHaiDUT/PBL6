@@ -44,7 +44,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly mailerService: MailerService,
     private jwtService: JwtService,
-  ) { }
+  ) {}
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user account' })
@@ -97,7 +97,8 @@ export class AuthController {
   @ApiBody({ type: LoginDto })
   @ApiResponse({
     status: 200,
-    description: 'Login successful for admin. Returns access and refresh tokens.',
+    description:
+      'Login successful for admin. Returns access and refresh tokens.',
     schema: {
       example: {
         success: true,
@@ -106,7 +107,10 @@ export class AuthController {
       },
     },
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized - invalid credentials or not admin' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - invalid credentials or not admin',
+  })
   async adminLogin(@Body() loginDto: LoginDto) {
     if (!loginDto || !loginDto.email || !loginDto.password) {
       throw new BadRequestException('email and password are required');
@@ -142,7 +146,7 @@ export class AuthController {
     try {
       await this.mailerService.sendMail({
         to: `${forgotPasswordDto.email}`,
-        subject: 'Đặt lại mật khẩu - Beauty Shop',
+        subject: 'Đặt lại mật khẩu',
         html: `
         <h2>Xin chào!</h2>
         <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản Beauty Shop của mình.</p>
@@ -201,8 +205,7 @@ export class AuthController {
 
   @Post('change-password-first-time')
   @ApiOperation({
-    summary:
-      'Change password on first login with temporary password',
+    summary: 'Change password on first login with temporary password',
   })
   @ApiResponse({
     status: 200,
@@ -211,7 +214,8 @@ export class AuthController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad request - email, temporaryPassword, and newPassword are required',
+    description:
+      'Bad request - email, temporaryPassword, and newPassword are required',
   })
   @ApiResponse({
     status: 401,
@@ -255,7 +259,7 @@ export class AuthController {
   })
   @ApiExcludeEndpoint()
   @UseGuards(GoogleAuthGuard)
-  async googleLogin() { }
+  async googleLogin() {}
 
   @Get('google/callback')
   @ApiOperation({
@@ -301,15 +305,19 @@ export class AuthController {
     }
 
     // Tạo OAuth code với user_id và device_id (nếu có)
-    const code = await this.authService.createOAuthCodeWithOptionalDevice(user.id, deviceId);
+    const code = await this.authService.createOAuthCodeWithOptionalDevice(
+      user.id,
+      deviceId,
+    );
 
     console.log('[GoogleCallback] Created OAuth code:', code);
 
-    const redirectBase = deviceType === 'web'
-      ? (process.env.FRONTEND_URL)
-      : process.env.MOBILE_URL;
+    const redirectBase =
+      deviceType === 'web' ? process.env.FRONTEND_URL : process.env.MOBILE_URL;
 
-    console.log(`[GoogleCallback] Redirecting to ${deviceType}: ${redirectBase}/auth/callback?code=${code}`);
+    console.log(
+      `[GoogleCallback] Redirecting to ${deviceType}: ${redirectBase}/auth/callback?code=${code}`,
+    );
 
     return res.redirect(`${redirectBase}/auth/callback?code=${code}`);
   }
@@ -337,7 +345,7 @@ export class AuthController {
   })
   @ApiExcludeEndpoint() // Exclude from Swagger UI as it's a redirect endpoint
   @UseGuards(AuthGuard('facebook'))
-  async facebookLogin() { }
+  async facebookLogin() {}
 
   @Get('facebook/callback')
   @ApiOperation({
@@ -414,7 +422,6 @@ export class AuthController {
     const userId = req.user.userId;
 
     const user = await this.authService.getCurrentUser(userId);
-
 
     return { success: true, user };
   }

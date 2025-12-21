@@ -38,11 +38,12 @@ const getStorage = (directory: string, dynamicPath: boolean = false) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         const extension = extname(file.originalname);
         // ✅ Phân chia video/image cho S3
-        const actualDirectory = dynamicPath && file.mimetype.startsWith('video/') 
-          ? 'videos' 
-          : directory;
+        const actualDirectory =
+          dynamicPath && file.mimetype.startsWith('video/')
+            ? 'videos'
+            : directory;
         cb(null, `${actualDirectory}/${uniqueSuffix}${extension}`);
-      }
+      },
     });
   } else {
     // local storage
@@ -129,10 +130,10 @@ export const getMulterOptions = (
   if (!validator) {
     throw new Error(`Invalid type specified for getMulterOptions: ${type}`);
   }
-  
+
   // ✅ Sử dụng dynamicPath=true cho type='media' để phân chia video/image
   const useDynamicPath = type === 'media';
-  
+
   return {
     storage: getStorage(directory, useDynamicPath),
     fileFilter: validator.filter,
@@ -147,12 +148,15 @@ export const getMulterOptions = (
  * S3: Trả về full URL (https://bucket.s3.region.amazonaws.com/key)
  * Local: Trả về full URL (http://localhost:3000/directory/filename)
  */
-export const getFileUrl = (file: Express.Multer.File, directory: string): string => {
+export const getFileUrl = (
+  file: Express.Multer.File,
+  directory: string,
+): string => {
   if (storageDriver === 's3') {
     // S3: Trả về full URL
     const fileKey = (file as any).key;
     const fileLocation = (file as any).location;
-    
+
     // Ưu tiên dùng location, nếu không có thì build từ key
     if (fileLocation) {
       return fileLocation;
@@ -163,8 +167,9 @@ export const getFileUrl = (file: Express.Multer.File, directory: string): string
     }
     return fileKey; // Fallback
   } else {
-    // Local: Trả về full URL với base URL từ env
+    // Local: Trả về full URL dưới /uploads so frontend helpers like resolveMediaUrl
+    // will produce consistent URLs (e.g. http://localhost:3000/uploads/avatars/filename)
     const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-    return `${baseUrl}/${directory}/${file.filename}`;
+    return `${baseUrl}/uploads/${directory}/${file.filename}`;
   }
 };
