@@ -3,16 +3,23 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { QueryMessagesDto } from './dto/query-messages.dto';
 import { QueryConversationsDto } from './dto/query-conversations.dto';
+import { ChatGateway } from '../chat/chat.gateway';
 
 @Injectable()
 export class MessagesService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => ChatGateway))
+    private chatGateway: ChatGateway,
+  ) { }
 
   // Tạo cuộc hội thoại mới
   async createConversation(
@@ -579,6 +586,194 @@ export class MessagesService {
       });
     }
 
+    // ✅ Emit WebSocket event to notify all participants (for REST API messages)
+    if (this.chatGateway?.server) {
+      try {
+        // Get conversation to find all participants
+        const conversation = await this.prisma.conversations.findUnique({
+          where: { id: finalConversationId },
+          include: {
+            participants: true,
+          },
+        });
+
+        if (conversation) {
+          // ✅ Load shared post data if SHARE_POST
+          let sharedPost: any = null;
+          if (message.type === 'SHARE_POST' && postId) {
+            try {
+              console.log(`📖 [MessagesService] Loading shared post ${postId}...`);
+
+              const post = await this.prisma.posts.findUnique({
+                where: { id: postId },
+                select: {
+                  id: true,
+                  title: true,
+                  content_md: true,
+                  post_type: true,
+                  media_url: true,
+                  thumbnail_url: true,
+                  user: {
+                    select: {
+                      id: true,
+                      full_name: true,
+                      avatar_url: true,
+                    },
+                  },
+                  post_media: {
+                    select: {
+                      id: true,
+                      media_url: true,
+                      sort_order: true,
+                      media_type: true,
+                    },
+                    orderBy: { sort_order: 'asc' },
+                    take: 1,
+                  },
+                },
+              });
+
+              if (post) {
+                // Construct sharedPost with computed fields
+                const coverUrl = post.media_url || (post.post_media && post.post_media[0]?.media_url) || null;
+                const videoUrl = post.post_type === 'video' ? (post.media_url || (post.post_media && post.post_media[0]?.media_url)) : null;
+
+                sharedPost = {
+                  id: post.id,
+                  title: post.title,
+                  content_md: post.content_md,
+                  user: post.user,
+                  post_media: post.post_media,
+                  post_type: post.post_type,
+                  cover_url: coverUrl,
+                  video_url: videoUrl,
+                };
+
+                console.log(`✅ [MessagesService] Loaded shared post:`, {
+                  postId: sharedPost.id,
+                  title: sharedPost.title,
+                  author: sharedPost.user?.full_name
+                });
+              } else {
+                console.warn(`⚠️ [MessagesService] Post ${postId} not found`);
+              }
+            } catch (error) {
+              console.error(`❌ Failed to load shared post ${postId}:`, error);
+            }
+          }
+
+          // ✅ Load shared profile data if SHARE_PROFILE
+          let sharedProfile: { id: number; full_name: string | null; avatar_url: string | null; bio: string | null } | null = null;
+          if (message.type === 'SHARE_PROFILE' && sharedProfileId) {
+            try {
+              const profileUser = await this.prisma.users.findUnique({
+                where: { id: sharedProfileId },
+                select: {
+                  id: true,
+                  full_name: true,
+                  avatar_url: true,
+                  story: true, // bio field
+                },
+              });
+              if (profileUser) {
+                sharedProfile = {
+                  id: profileUser.id,
+                  full_name: profileUser.full_name,
+                  avatar_url: profileUser.avatar_url,
+                  bio: profileUser.story,
+                };
+              }
+            } catch (error) {
+              console.error(`❌ Failed to load shared profile ${sharedProfileId}:`, error);
+            }
+          }
+
+          // Format message for WebSocket (same format as ChatGateway)
+          const formattedMessage = {
+            id: message.id,
+            conversationId: message.conversation_id,
+            conversation_id: message.conversation_id,
+            senderId: message.sender_id,
+            sender_id: message.sender_id,
+            senderShopId: message.sender_shop_id,
+            sender_shop_id: message.sender_shop_id,
+            senderType: message.sender_type,
+            sender_type: message.sender_type,
+            // Determine receiverId based on sender type
+            receiverId: shopId
+              ? conversation.participants.find(p => p.user_id && p.user_id !== userId)?.user_id
+              : (receiver_id || conversation.participants.find(p => p.user_id && p.user_id !== (sender_id || userId))?.user_id),
+            receiver_id: shopId
+              ? conversation.participants.find(p => p.user_id && p.user_id !== userId)?.user_id
+              : (receiver_id || conversation.participants.find(p => p.user_id && p.user_id !== (sender_id || userId))?.user_id),
+            content: message.content,
+            type: message.type,
+            payload: message.payload,
+            createdAt: message.created_at.toISOString(),
+            created_at: message.created_at.toISOString(),
+            messageType: message.type,
+            // ✅ Add shared post ID and data
+            sharedPostId: postId || null,
+            post_id: postId || null,
+            sharedPost: sharedPost,
+            // ✅ Add shared profile ID and data
+            sharedProfileId: sharedProfileId || null,
+            shared_profile_id: sharedProfileId || null,
+            sharedProfile: sharedProfile,
+            // ✅ Add media files to WebSocket payload
+            mediaFiles: payload?.mediaFiles || (payload?.mediaUrl ? [{
+              url: payload.mediaUrl,
+              type: payload.mediaType || 'image',
+              fileName: payload.fileName
+            }] : undefined),
+            sender: message.sender ? {
+              id: message.sender.id,
+              fullName: message.sender.full_name || 'Unknown User',
+              avatarUrl: message.sender.avatar_url,
+            } : message.sender_shop ? {
+              id: message.sender_shop.id,
+              fullName: message.sender_shop.name,
+              avatarUrl: message.sender_shop.logo_url,
+            } : null,
+          };
+
+          // ✅ Debug log formatted message
+          console.log(`📤 [MessagesService] Formatted message to emit:`, {
+            id: formattedMessage.id,
+            type: formattedMessage.type,
+            hasSharedPost: !!formattedMessage.sharedPost,
+            sharedPostId: formattedMessage.sharedPostId,
+            sharedPostData: formattedMessage.sharedPost ? {
+              id: formattedMessage.sharedPost.id,
+              title: formattedMessage.sharedPost.title,
+              author: formattedMessage.sharedPost.user?.full_name
+            } : null
+          });
+
+          // Emit to all participants
+          conversation.participants.forEach(participant => {
+            if (participant.user_id) {
+              this.chatGateway.server
+                .to(`${participant.user_id}`)
+                .emit('newMessage', formattedMessage);
+              console.log(`✅ [MessagesService] Emitted newMessage to user ${participant.user_id}`);
+            }
+            if (participant.shop_id) {
+              this.chatGateway.server
+                .to(`shop_${participant.shop_id}`)
+                .emit('newMessage', formattedMessage);
+              console.log(`✅ [MessagesService] Emitted newMessage to shop ${participant.shop_id}`);
+            }
+          });
+        }
+      } catch (error) {
+        console.error('❌ [MessagesService] Failed to emit WebSocket event:', error);
+        // Don't throw error, just log it - message is already saved
+      }
+    } else {
+      console.warn('⚠️ [MessagesService] ChatGateway server not available, skipping real-time notification');
+    }
+
     return message;
   }
 
@@ -1114,9 +1309,12 @@ export class MessagesService {
     return this.prisma.messages.count({
       where: {
         conversation_id: conversationId,
-        sender_id: {
-          not: userId // Không đếm tin nhắn của chính mình
-        },
+        // ✅ Fix: Handle shop messages where sender_id is null
+        // SQL '!=' comparison filters out NULL values, so we must explicitly include them
+        OR: [
+          { sender_id: { not: userId } },
+          { sender_id: null }
+        ],
         NOT: {
           message_reads: {
             some: {
