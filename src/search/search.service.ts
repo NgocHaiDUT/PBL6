@@ -30,7 +30,7 @@ export class SearchService {
           },
           {
             moderation_status: {
-              in: ['pending', 'approved'], // Include both pending and approved posts
+              in: ['approved'], // Include only approved posts
             },
           },
         ],
@@ -352,7 +352,7 @@ export class SearchService {
           },
           {
             moderation_status: {
-              in: ['pending', 'approved'],
+              in: ['approved'],
             },
           },
         ],

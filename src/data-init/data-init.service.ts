@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3UploadService } from './s3-upload.service';
+import { DeliveryService } from '../delivery/delivery.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as bcrypt from 'bcrypt';
@@ -14,7 +15,7 @@ import {
 @Injectable()
 export class DataInitService implements OnModuleInit {
   private readonly logger = new Logger(DataInitService.name);
-  
+
   // Cache URL maps để tránh upload lại nhiều lần
   private brandLogoUrlMap: Map<string, string> = new Map();
   private productImageUrlMap: Map<string, string> = new Map();
@@ -22,24 +23,25 @@ export class DataInitService implements OnModuleInit {
   private shopLogoUrlMap: Map<string, string> = new Map();
   private shopBannerUrlMap: Map<string, string> = new Map();
   private postImageUrlMap: Map<string, string> = new Map();
-  
+
   constructor(
     private prisma: PrismaService,
     private s3UploadService: S3UploadService,
-  ) {}
+    private deliveryService: DeliveryService,
+  ) { }
 
   async onModuleInit() {
     this.logger.log('DataInitService module initialized');
     await this.seedData();
   }
-  
+
   async seedData() {
     try {
       // ✅ LUÔN seed roles & permissions trước (cần thiết cho register/add staff)
       await this.seedRoles();
       await this.seedPermissions();
       await this.seedRolePermissions();
-      
+
       // Check xem đã có dữ liệu chưa - nếu có rồi thì không cần upload và seed phần còn lại
       const existingBrands = await this.prisma.brands.count();
       if (existingBrands > 0) {
@@ -55,7 +57,7 @@ export class DataInitService implements OnModuleInit {
         this.logger.warn('⚠️  Không thể upload ảnh lên S3, sẽ dùng đường dẫn local:', uploadError.message);
         this.logger.warn('💡 Kiểm tra AWS credentials trong file .env hoặc folder uploads có file không');
       }
-      
+
       await this.seedBrands();
       await this.seedCategorys();
       await this.seedAdminUser();
@@ -63,7 +65,7 @@ export class DataInitService implements OnModuleInit {
       await this.seedShops();
       await this.seedProducts();
       await this.seedCoupons();
-      
+
       // Seed social/community features
       await this.seedReviews();
       await this.seedWishlists();
@@ -72,7 +74,7 @@ export class DataInitService implements OnModuleInit {
       await this.seedLikes();
       await this.seedComments();
       await this.seedSavedPosts();
-      
+
       // Seed addresses and orders (previously moved to API) so DB has order/address data
       await this.seedAddresses();
       // Optional: shop addresses file can also be seeded if present
@@ -98,53 +100,53 @@ export class DataInitService implements OnModuleInit {
    */
   async uploadAllImagesToS3() {
     this.logger.log('=== BẮT ĐẦU UPLOAD TẤT CẢ ẢNH LÊN S3 ===');
-    
+
     // Upload brands
     this.brandLogoUrlMap = await this.s3UploadService.uploadBrandLogos();
-    
+
     // Upload products
     this.productImageUrlMap = await this.s3UploadService.uploadProductImages();
-    
+
     // Upload avatars
     this.avatarUrlMap = await this.s3UploadService.uploadAvatars();
-    
+
     // Upload shop logos
     this.shopLogoUrlMap = await this.s3UploadService.uploadShopLogos();
-    
+
     // Upload shop banners
     this.shopBannerUrlMap = await this.s3UploadService.uploadShopBanners();
-    
+
     // Upload post images
     this.postImageUrlMap = await this.s3UploadService.uploadPostImages();
-    
-    const totalUploaded = this.brandLogoUrlMap.size + 
-      this.productImageUrlMap.size + 
-      this.avatarUrlMap.size + 
-      this.shopLogoUrlMap.size + 
+
+    const totalUploaded = this.brandLogoUrlMap.size +
+      this.productImageUrlMap.size +
+      this.avatarUrlMap.size +
+      this.shopLogoUrlMap.size +
       this.shopBannerUrlMap.size +
       this.postImageUrlMap.size;
-    
+
     this.logger.log('=== HOÀN THÀNH UPLOAD TẤT CẢ ẢNH LÊN S3 ===');
     this.logger.log(`✅ Tổng số ảnh đã upload: ${totalUploaded}`);
-    
+
     if (totalUploaded === 0) {
       this.logger.warn('⚠️  Không có ảnh nào được upload. Kiểm tra folder uploads/');
     }
   }
-  
+
   /**
    * Convert local path to S3 URL
    * Nếu không có S3 URL (chưa upload), trả về local path
    */
   private convertToS3Url(localPath: string): string {
     if (!localPath) return '';
-    
+
     // Parse local path: /uploads/brands/logo.png -> brands/logo.png
     const match = localPath.match(/\/uploads\/([^/]+)\/(.+)/);
     if (!match) return localPath;
-    
+
     const [, folder, fileName] = match;
-    
+
     // Tìm trong map tương ứng
     let urlMap: Map<string, string> | null = null;
     if (folder === 'brands') urlMap = this.brandLogoUrlMap;
@@ -153,17 +155,17 @@ export class DataInitService implements OnModuleInit {
     else if (folder === 'logoshops') urlMap = this.shopLogoUrlMap;
     else if (folder === 'bannershops') urlMap = this.shopBannerUrlMap;
     else if (folder === 'postimages') urlMap = this.postImageUrlMap;
-    
+
     // Nếu có trong map, dùng S3 URL
     if (urlMap && urlMap.has(fileName)) {
       return urlMap.get(fileName)!;
     }
-    
+
     // Nếu có AWS config, generate S3 URL
     if (process.env.AWS_S3_BUCKET_NAME && process.env.AWS_ACCESS_KEY_ID) {
       return this.s3UploadService.generateS3Url(`${folder}/${fileName}`);
     }
-    
+
     // Fallback: giữ nguyên local path
     return localPath;
   }
@@ -192,7 +194,7 @@ export class DataInitService implements OnModuleInit {
     for (const brand of brandsData) {
       // Convert local path to S3 URL
       const s3LogoUrl = this.convertToS3Url(brand.logo_url);
-      
+
       await this.prisma.brands.create({
         data: {
           name: brand.name,
@@ -287,8 +289,8 @@ export class DataInitService implements OnModuleInit {
   private async seedPermissions() {
     const allPermissions = getAllPermissions();
 
-    const existing = await this.prisma.permission.findMany({ 
-      select: { name: true } 
+    const existing = await this.prisma.permission.findMany({
+      select: { name: true }
     });
     const existingNames = existing.map(p => p.name);
 
@@ -312,7 +314,7 @@ export class DataInitService implements OnModuleInit {
 
   private async seedRolePermissions() {
     this.logger.log('🔄 Đang sync role-permissions...');
-    
+
     let totalCreated = 0;
 
     // Duyệt qua từng role trong RolePermissions mapping
@@ -427,7 +429,7 @@ export class DataInitService implements OnModuleInit {
         return;
       }
 
-      const hashedPassword = await bcrypt.hash('Admin@123456', 10);
+      const hashedPassword = await bcrypt.hash('123456', 10);
 
       const adminUser = await this.prisma.users.create({
         data: {
@@ -437,13 +439,14 @@ export class DataInitService implements OnModuleInit {
           phone: '0999999999',
           role_id: adminRole.id,
           is_active: true,
+          firstlogin: false,
           created_at: new Date(),
         },
       });
 
       this.logger.log('✅ Đã tạo admin user thành công');
       this.logger.log('📧 Email: admin@pbl6.com');
-      this.logger.log('🔑 Password: Admin@123456');
+      this.logger.log('🔑 Password: 123456');
     } catch (error) {
       this.logger.error('❌ Lỗi khi tạo admin user:', error);
     }
@@ -460,6 +463,16 @@ export class DataInitService implements OnModuleInit {
 
     if (existingUsers > 0) {
       this.logger.log('Regular users đã tồn tại, không khởi tạo mới');
+      return;
+    }
+
+    // Fetch user role by name (role name is 'user' not 'customer')
+    const userRole = await this.prisma.role.findFirst({
+      where: { name: 'user' },
+    });
+
+    if (!userRole) {
+      this.logger.error('❌ User role không tồn tại');
       return;
     }
 
@@ -480,13 +493,13 @@ export class DataInitService implements OnModuleInit {
     for (const user of usersData) {
       try {
         const hashedPassword = await bcrypt.hash(user.password, 10);
-        
+
         // Convert avatar URL if exists
         let avatarUrl = user.avatar_url;
         if (avatarUrl) {
           avatarUrl = this.convertToS3Url(avatarUrl);
         }
-        
+
         await this.prisma.users.create({
           data: {
             email: user.email,
@@ -494,8 +507,9 @@ export class DataInitService implements OnModuleInit {
             full_name: user.full_name,
             phone: user.phone,
             avatar_url: avatarUrl,
-            role_id: user.role_id,
+            role_id: userRole.id,
             is_active: true,
+            firstlogin: false,
             created_at: new Date(user.created_at),
             updated_at: new Date(user.updated_at),
           },
@@ -515,14 +529,27 @@ export class DataInitService implements OnModuleInit {
       return;
     }
 
+    // Fetch seller role by name
+    const sellerRole = await this.prisma.role.findFirst({
+      where: { name: 'seller' },
+    });
+
+    if (!sellerRole) {
+      this.logger.error('❌ Seller role không tồn tại');
+      return;
+    }
+
     // --- Shop 1: BeautyShop ---
+    const hashedPasswordOwner1 = await bcrypt.hash('123456', 10);
     const owner1 = await this.prisma.users.create({
       data: {
         email: 'owner1@shop.com',
-        password_hash: '$2b$10$example',
+        password_hash: hashedPasswordOwner1,
         full_name: 'BeautyShop Owner',
         phone: '0345671392',
+        role_id: sellerRole.id,
         is_active: true,
+        firstlogin: false,
       },
     });
 
@@ -533,38 +560,71 @@ export class DataInitService implements OnModuleInit {
         slug: 'beautyshop',
         description: 'Cửa hàng BeautyShop',
         is_verified: true,
-        ghn_shop_id: 198073,
+        // ghn_shop_id will be set after GHN registration
       },
     });
 
-    await this.prisma.shop_addresses.create({
+    const shop1Address = await this.prisma.shop_addresses.create({
       data: {
         shop_id: shop1.id,
-        name: 'BeautyShop',
+        name: 'BeautyShop - Cửa hàng chính',
         phone: '0345671392',
-        province: 'Đà Nẵng',
-        district: 'Liên Chiểu',
-        ward: 'Hoà Hiệp Nam',
-        street: '541 Nguyễn Lương Bằng',
+        province: 'Thành phố Hà Nội',
+        district: 'Quận Hoàn Kiếm',
+        ward: 'Phường Hàng Bạc',
+        street: '25 Hàng Bạc',
         is_default: true,
-        // Placeholder GHN IDs
-        ghn_province_id: 203,
-        ghn_district_id: 1530,
-        ghn_ward_code: '40502',
+        // GHN IDs for Hà Nội
+        ghn_province_id: 201,
+        ghn_district_id: 1482,
+        ghn_ward_code: '1A0101',
       },
     });
+
+    // Register shop with GHN
+    try {
+      const ghnRegistration = await this.deliveryService.registerShop({
+        district_id: shop1Address.ghn_district_id!,
+        ward_code: shop1Address.ghn_ward_code!,
+        name: shop1Address.name,
+        phone: shop1Address.phone,
+        address: shop1Address.street,
+      });
+
+      if (ghnRegistration && ghnRegistration.shop_id) {
+        await this.prisma.shops.update({
+          where: { id: shop1.id },
+          data: { ghn_shop_id: ghnRegistration.shop_id },
+        });
+        this.logger.log(
+          `✅ Đã đăng ký shop ${shop1.name} với GHN, shop_id: ${ghnRegistration.shop_id}`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `❌ Lỗi khi đăng ký shop ${shop1.name} với GHN:`,
+        error.message,
+      );
+      this.logger.warn(
+        `⚠️  Shop ${shop1.name} sẽ không thể tạo đơn vận chuyển GHN`,
+      );
+    }
+
     this.logger.log(
       `Đã tạo shop: ${shop1.name} với owner: ${owner1.full_name}`,
     );
 
     // --- Shop 2: SkincareShop ---
+    const hashedPasswordOwner2 = await bcrypt.hash('123456', 10);
     const owner2 = await this.prisma.users.create({
       data: {
         email: 'owner2@shop.com',
-        password_hash: '$2b$10$example',
+        password_hash: hashedPasswordOwner2,
         full_name: 'SkincareShop Owner',
-        phone: '0345671392',
+        phone: '0345671393',
+        role_id: sellerRole.id,
         is_active: true,
+        firstlogin: false,
       },
     });
 
@@ -575,28 +635,202 @@ export class DataInitService implements OnModuleInit {
         slug: 'skincareshop',
         description: 'Cửa hàng SkincareShop',
         is_verified: true,
-        ghn_shop_id: 198074,
       },
     });
 
-    await this.prisma.shop_addresses.create({
+    const shop2Address = await this.prisma.shop_addresses.create({
       data: {
         shop_id: shop2.id,
-        name: 'SkincareShop',
-        phone: '0345671392',
-        province: 'Đà Nẵng',
-        district: 'Liên Chiểu',
-        ward: 'Hoà Hiệp Nam',
-        street: '541 Nguyễn Lương Bằng',
+        name: 'SkincareShop - Cửa hàng chính',
+        phone: '0345671393',
+        province: 'Thành phố Hồ Chí Minh',
+        district: 'Quận 1',
+        ward: 'Phường Bến Nghé',
+        street: '123 Nguyễn Huệ',
         is_default: true,
-        // Placeholder GHN IDs
-        ghn_province_id: 203,
-        ghn_district_id: 1530,
-        ghn_ward_code: '40502',
+        // GHN IDs for TP.HCM
+        ghn_province_id: 202,
+        ghn_district_id: 1442,
+        ghn_ward_code: '1B0101',
       },
     });
+
+    try {
+      const ghnRegistration = await this.deliveryService.registerShop({
+        district_id: shop2Address.ghn_district_id!,
+        ward_code: shop2Address.ghn_ward_code!,
+        name: shop2Address.name,
+        phone: shop2Address.phone,
+        address: shop2Address.street,
+      });
+
+      if (ghnRegistration && ghnRegistration.shop_id) {
+        await this.prisma.shops.update({
+          where: { id: shop2.id },
+          data: { ghn_shop_id: ghnRegistration.shop_id },
+        });
+        this.logger.log(
+          `✅ Đã đăng ký shop ${shop2.name} với GHN, shop_id: ${ghnRegistration.shop_id}`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `❌ Lỗi khi đăng ký shop ${shop2.name} với GHN:`,
+        error.message,
+      );
+      this.logger.warn(
+        `⚠️  Shop ${shop2.name} sẽ không thể tạo đơn vận chuyển GHN`,
+      );
+    }
+
     this.logger.log(
       `Đã tạo shop: ${shop2.name} với owner: ${owner2.full_name}`,
+    );
+
+    // --- Shop 3: MakeupShop ---
+    const hashedPasswordOwner3 = await bcrypt.hash('123456', 10);
+    const owner3 = await this.prisma.users.create({
+      data: {
+        email: 'owner3@shop.com',
+        password_hash: hashedPasswordOwner3,
+        full_name: 'MakeupShop Owner',
+        phone: '0345671394',
+        role_id: sellerRole.id,
+        is_active: true,
+        firstlogin: false,
+      },
+    });
+
+    const shop3 = await this.prisma.shops.create({
+      data: {
+        owner_id: owner3.id,
+        name: 'MakeupShop',
+        slug: 'makeupshop',
+        description: 'Cửa hàng MakeupShop',
+        is_verified: true,
+      },
+    });
+
+    const shop3Address = await this.prisma.shop_addresses.create({
+      data: {
+        shop_id: shop3.id,
+        name: 'MakeupShop - Cửa hàng chính',
+        phone: '0345671394',
+        province: 'Thành phố Đà Nẵng',
+        district: 'Quận Hải Châu',
+        ward: 'Phường Hải Châu I',
+        street: '88 Trần Phú',
+        is_default: true,
+        // GHN IDs for Đà Nẵng
+        ghn_province_id: 203,
+        ghn_district_id: 1490,
+        ghn_ward_code: '1C0101',
+      },
+    });
+
+    try {
+      const ghnRegistration = await this.deliveryService.registerShop({
+        district_id: shop3Address.ghn_district_id!,
+        ward_code: shop3Address.ghn_ward_code!,
+        name: shop3Address.name,
+        phone: shop3Address.phone,
+        address: shop3Address.street,
+      });
+
+      if (ghnRegistration && ghnRegistration.shop_id) {
+        await this.prisma.shops.update({
+          where: { id: shop3.id },
+          data: { ghn_shop_id: ghnRegistration.shop_id },
+        });
+        this.logger.log(
+          `✅ Đã đăng ký shop ${shop3.name} với GHN, shop_id: ${ghnRegistration.shop_id}`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `❌ Lỗi khi đăng ký shop ${shop3.name} với GHN:`,
+        error.message,
+      );
+      this.logger.warn(
+        `⚠️  Shop ${shop3.name} sẽ không thể tạo đơn vận chuyển GHN`,
+      );
+    }
+
+    this.logger.log(
+      `Đã tạo shop: ${shop3.name} với owner: ${owner3.full_name}`,
+    );
+
+    // --- Shop 4: CosmeticShop ---
+    const hashedPasswordOwner4 = await bcrypt.hash('123456', 10);
+    const owner4 = await this.prisma.users.create({
+      data: {
+        email: 'owner4@shop.com',
+        password_hash: hashedPasswordOwner4,
+        full_name: 'CosmeticShop Owner',
+        phone: '0345671395',
+        role_id: sellerRole.id,
+        is_active: true,
+        firstlogin: false,
+      },
+    });
+
+    const shop4 = await this.prisma.shops.create({
+      data: {
+        owner_id: owner4.id,
+        name: 'CosmeticShop',
+        slug: 'cosmeticshop',
+        description: 'Cửa hàng CosmeticShop',
+        is_verified: true,
+      },
+    });
+
+    const shop4Address = await this.prisma.shop_addresses.create({
+      data: {
+        shop_id: shop4.id,
+        name: 'CosmeticShop - Cửa hàng chính',
+        phone: '0345671395',
+        province: 'Thành phố Cần Thơ',
+        district: 'Quận Ninh Kiều',
+        ward: 'Phường Tân An',
+        street: '45 Nguyễn Trãi',
+        is_default: true,
+        // GHN IDs for Cần Thơ
+        ghn_province_id: 292,
+        ghn_district_id: 2074,
+        ghn_ward_code: '1D0101',
+      },
+    });
+
+    try {
+      const ghnRegistration = await this.deliveryService.registerShop({
+        district_id: shop4Address.ghn_district_id!,
+        ward_code: shop4Address.ghn_ward_code!,
+        name: shop4Address.name,
+        phone: shop4Address.phone,
+        address: shop4Address.street,
+      });
+
+      if (ghnRegistration && ghnRegistration.shop_id) {
+        await this.prisma.shops.update({
+          where: { id: shop4.id },
+          data: { ghn_shop_id: ghnRegistration.shop_id },
+        });
+        this.logger.log(
+          `✅ Đã đăng ký shop ${shop4.name} với GHN, shop_id: ${ghnRegistration.shop_id}`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `❌ Lỗi khi đăng ký shop ${shop4.name} với GHN:`,
+        error.message,
+      );
+      this.logger.warn(
+        `⚠️  Shop ${shop4.name} sẽ không thể tạo đơn vận chuyển GHN`,
+      );
+    }
+
+    this.logger.log(
+      `Đã tạo shop: ${shop4.name} với owner: ${owner4.full_name}`,
     );
   }
 
@@ -674,7 +908,7 @@ export class DataInitService implements OnModuleInit {
           for (const mediaData of productData.media) {
             // Convert local path to S3 URL
             const s3MediaUrl = this.convertToS3Url(mediaData.url);
-            
+
             await this.prisma.product_media.create({
               data: {
                 product_id: product.id,
@@ -718,7 +952,100 @@ export class DataInitService implements OnModuleInit {
         return { success: false, message: 'Dữ liệu addresses không hợp lệ' };
       }
 
+      // Fetch GHN data once for all addresses
+      let provinces: any[] = [];
+      let districtsByProvince: Map<number, any[]> = new Map();
+      let wardsByDistrict: Map<number, any[]> = new Map();
+
+      try {
+        provinces = await this.deliveryService.getProvinces();
+        this.logger.log(`✅ Đã lấy ${provinces.length} tỉnh/thành từ GHN`);
+      } catch (error) {
+        this.logger.warn('⚠️  Không thể lấy dữ liệu GHN, địa chỉ sẽ thiếu thông tin GHN');
+      }
+
       for (const address of addressesData) {
+        let ghnProvinceId: number | null = null;
+        let ghnDistrictId: number | null = null;
+        let ghnWardCode: string | null = null;
+
+        if (provinces.length > 0) {
+          // Helper function to normalize address names for better matching
+          const normalize = (name: string): string => {
+            return name
+              .toLowerCase()
+              .replace(/^(thành phố|tỉnh|tp\.?)\s*/i, '')
+              .replace(/^(quận|huyện|thị xã|thành phố)\s*/i, '')
+              .replace(/^(phường|xã|thị trấn)\s*/i, '')
+              .trim();
+          };
+
+          // Find matching province
+          const normalizedProvince = normalize(address.province);
+          const province = provinces.find((p) => {
+            const ghnProvinceName = normalize(p.ProvinceName);
+            return (
+              ghnProvinceName === normalizedProvince ||
+              ghnProvinceName.includes(normalizedProvince) ||
+              normalizedProvince.includes(ghnProvinceName)
+            );
+          });
+
+          if (province) {
+            ghnProvinceId = province.ProvinceID;
+
+            // Fetch districts for this province if not cached
+            if (ghnProvinceId !== null && !districtsByProvince.has(ghnProvinceId)) {
+              try {
+                const districts = await this.deliveryService.getDistricts(ghnProvinceId);
+                districtsByProvince.set(ghnProvinceId, districts);
+              } catch (error) {
+                this.logger.warn(`⚠️  Không thể lấy quận/huyện cho ${address.province}`);
+              }
+            }
+
+            const districts = ghnProvinceId !== null ? (districtsByProvince.get(ghnProvinceId) || []) : [];
+            const normalizedDistrict = normalize(address.district);
+            const district = districts.find((d) => {
+              const ghnDistrictName = normalize(d.DistrictName);
+              return (
+                ghnDistrictName === normalizedDistrict ||
+                ghnDistrictName.includes(normalizedDistrict) ||
+                normalizedDistrict.includes(ghnDistrictName)
+              );
+            });
+
+            if (district) {
+              ghnDistrictId = district.DistrictID;
+
+              // Fetch wards for this district if not cached
+              if (ghnDistrictId !== null && !wardsByDistrict.has(ghnDistrictId)) {
+                try {
+                  const wards = await this.deliveryService.getWards(ghnDistrictId);
+                  wardsByDistrict.set(ghnDistrictId, wards);
+                } catch (error) {
+                  this.logger.warn(`⚠️  Không thể lấy phường/xã cho ${address.district}`);
+                }
+              }
+
+              const wards = ghnDistrictId !== null ? (wardsByDistrict.get(ghnDistrictId) || []) : [];
+              const normalizedWard = normalize(address.ward);
+              const ward = wards.find((w) => {
+                const ghnWardName = normalize(w.WardName);
+                return (
+                  ghnWardName === normalizedWard ||
+                  ghnWardName.includes(normalizedWard) ||
+                  normalizedWard.includes(ghnWardName)
+                );
+              });
+
+              if (ward) {
+                ghnWardCode = ward.WardCode;
+              }
+            }
+          }
+        }
+
         await this.prisma.addresses.create({
           data: {
             user_id: address.user_id,
@@ -730,9 +1057,22 @@ export class DataInitService implements OnModuleInit {
             ward: address.ward,
             street: address.street,
             is_default: address.is_default,
+            ghn_province_id: ghnProvinceId,
+            ghn_district_id: ghnDistrictId,
+            ghn_ward_code: ghnWardCode,
             created_at: new Date(),
           },
         });
+
+        if (ghnProvinceId && ghnDistrictId && ghnWardCode) {
+          this.logger.log(
+            `✅ ${address.recipient} - ${address.province}/${address.district}/${address.ward} (GHN: ${ghnProvinceId}/${ghnDistrictId}/${ghnWardCode})`,
+          );
+        } else {
+          this.logger.warn(
+            `⚠️  ${address.recipient} - ${address.province}/${address.district}/${address.ward} (Thiếu GHN data)`,
+          );
+        }
       }
 
       this.logger.log(`Đã tạo ${addressesData.length} địa chỉ thành công`);
@@ -819,11 +1159,10 @@ export class DataInitService implements OnModuleInit {
         return { success: false, message: 'Orders đã tồn tại' };
       }
 
-      // Lấy danh sách products từ DB để map ID
+      // Lấy danh sách products từ DB để map ID (TẤT CẢ SHOPS, không chỉ shop 2!)
       const productsInDB = await this.prisma.products.findMany({
-        where: { shop_id: 2 },
         orderBy: { id: 'asc' },
-        select: { id: true, name: true },
+        select: { id: true, name: true, shop_id: true },
       });
 
       if (productsInDB.length === 0) {
@@ -1441,7 +1780,7 @@ export class DataInitService implements OnModuleInit {
       'data-init',
       'reviews.json',
     );
-    
+
     if (!fs.existsSync(reviewsFilePath)) {
       this.logger.warn('File reviews.json không tồn tại, bỏ qua seed reviews');
       return;
@@ -1507,7 +1846,7 @@ export class DataInitService implements OnModuleInit {
       'data-init',
       'wishlists.json',
     );
-    
+
     if (!fs.existsSync(wishlistsFilePath)) {
       this.logger.warn('File wishlists.json không tồn tại, bỏ qua seed wishlists');
       return;
@@ -1568,7 +1907,7 @@ export class DataInitService implements OnModuleInit {
       'data-init',
       'follows.json',
     );
-    
+
     if (!fs.existsSync(followsFilePath)) {
       this.logger.warn('File follows.json không tồn tại, bỏ qua seed follows');
       return;
@@ -1584,10 +1923,10 @@ export class DataInitService implements OnModuleInit {
 
     for (const follow of followsData) {
       try {
-        await this.prisma.follows.create({
+        await this.prisma.shop_follows.create({
           data: {
-            follower_id: follow.follower_id,
-            following_id: follow.following_id,
+            user_id: follow.user_id,
+            shop_id: follow.shop_id,
             created_at: new Date(follow.created_at),
           },
         });
@@ -1612,7 +1951,7 @@ export class DataInitService implements OnModuleInit {
       'data-init',
       'posts.json',
     );
-    
+
     if (!fs.existsSync(postsFilePath)) {
       this.logger.warn('File posts.json không tồn tại, bỏ qua seed posts');
       return;
@@ -1717,7 +2056,7 @@ export class DataInitService implements OnModuleInit {
       'data-init',
       'likes.json',
     );
-    
+
     if (!fs.existsSync(likesFilePath)) {
       this.logger.warn('File likes.json không tồn tại, bỏ qua seed likes');
       return;
@@ -1779,7 +2118,7 @@ export class DataInitService implements OnModuleInit {
       'data-init',
       'comments.json',
     );
-    
+
     if (!fs.existsSync(commentsFilePath)) {
       this.logger.warn('File comments.json không tồn tại, bỏ qua seed comments');
       return;
@@ -1806,7 +2145,7 @@ export class DataInitService implements OnModuleInit {
 
     // Create comments in order (parent first, then children)
     const commentIdMap = new Map<number, number>(); // JSON id -> DB id
-    
+
     for (const comment of commentsData) {
       try {
         const realPostId = postIdMap.get(comment.post_id);
@@ -1860,7 +2199,7 @@ export class DataInitService implements OnModuleInit {
       'data-init',
       'saved_posts.json',
     );
-    
+
     if (!fs.existsSync(savedPostsFilePath)) {
       this.logger.warn('File saved_posts.json không tồn tại, bỏ qua seed saved_posts');
       return;

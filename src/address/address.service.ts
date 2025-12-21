@@ -38,7 +38,8 @@ export class AddressService {
       );
       if (foundProvince) result.province = foundProvince.ProvinceName;
 
-      const districts = await this.deliveryService.getDistricts(ghn_province_id);
+      const districts =
+        await this.deliveryService.getDistricts(ghn_province_id);
       const foundDistrict = districts.find(
         (d) => d.DistrictID === ghn_district_id,
       );
@@ -125,7 +126,8 @@ export class AddressService {
 
     const dataToUpdate: any = {};
     if (dto.label !== undefined) dataToUpdate.label = dto.label;
-    if (dto.receiver_name !== undefined) dataToUpdate.recipient = dto.receiver_name;
+    if (dto.receiver_name !== undefined)
+      dataToUpdate.recipient = dto.receiver_name;
     if (dto.phone !== undefined) dataToUpdate.phone = dto.phone;
     if (dto.street !== undefined) dataToUpdate.street = dto.street;
 
@@ -222,7 +224,9 @@ export class AddressService {
     // Check if user has manage_shop_address permission
     let hasManageAddressPermission = false;
     if (!isOwner && !isManager) {
-      const staffMember = shop.shop_staffs.find(staff => staff.user_id === userId);
+      const staffMember = shop.shop_staffs.find(
+        (staff) => staff.user_id === userId,
+      );
       if (staffMember) {
         const userPermissions = await this.prisma.userpermission.findMany({
           where: { user_id: userId },
@@ -253,6 +257,14 @@ export class AddressService {
       if (resolvedNames.province) officialProvinceName = resolvedNames.province;
       if (resolvedNames.district) officialDistrictName = resolvedNames.district;
       if (resolvedNames.ward) officialWardName = resolvedNames.ward;
+    }
+
+    // If no addresses exist, make this one default
+    const addressCount = await this.prisma.shop_addresses.count({
+      where: { shop_id: dto.shop_id },
+    });
+    if (addressCount === 0) {
+      dto.is_default = true;
     }
 
     // If this is set as default, unset other defaults
@@ -318,7 +330,9 @@ export class AddressService {
     // Check if user has manage_shop_address permission
     let hasManageAddressPermission = false;
     if (!isOwner && !isManager) {
-      const staffMember = existingAddress.shop.shop_staffs.find(staff => staff.user_id === userId);
+      const staffMember = existingAddress.shop.shop_staffs.find(
+        (staff) => staff.user_id === userId,
+      );
       if (staffMember) {
         const userPermissions = await this.prisma.userpermission.findMany({
           where: { user_id: userId },
@@ -416,7 +430,9 @@ export class AddressService {
     // Check if user has manage_shop_address permission
     let hasManageAddressPermission = false;
     if (!isOwner && !isManager) {
-      const staffMember = existingAddress.shop.shop_staffs.find(staff => staff.user_id === userId);
+      const staffMember = existingAddress.shop.shop_staffs.find(
+        (staff) => staff.user_id === userId,
+      );
       if (staffMember) {
         const userPermissions = await this.prisma.userpermission.findMany({
           where: { user_id: userId },
@@ -462,7 +478,8 @@ export class AddressService {
 
     const dataToUpdate: any = {};
     if (dto.label !== undefined) dataToUpdate.label = dto.label;
-    if (dto.receiver_name !== undefined) dataToUpdate.recipient = dto.receiver_name;
+    if (dto.receiver_name !== undefined)
+      dataToUpdate.recipient = dto.receiver_name;
     if (dto.phone !== undefined) dataToUpdate.phone = dto.phone;
     if (dto.street !== undefined) dataToUpdate.street = dto.street;
 
@@ -489,10 +506,10 @@ export class AddressService {
     if (dto.is_default !== undefined) {
       if (dto.is_default) {
         await this.prisma.addresses.updateMany({
-          where: { 
-            user_id: existingAddress.user_id, 
-            is_default: true, 
-            id: { not: addressId } 
+          where: {
+            user_id: existingAddress.user_id,
+            is_default: true,
+            id: { not: addressId },
           },
           data: { is_default: false },
         });
@@ -593,10 +610,7 @@ export class AddressService {
   /**
    * Admin: Update shop address without ownership check
    */
-  async adminUpdateShopAddress(
-    addressId: number,
-    dto: UpdateShopAddressDto,
-  ) {
+  async adminUpdateShopAddress(addressId: number, dto: UpdateShopAddressDto) {
     const existingAddress = await this.prisma.shop_addresses.findUnique({
       where: { id: addressId },
     });

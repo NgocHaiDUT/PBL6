@@ -1,66 +1,74 @@
 [
   {
     "cart_id": 1,
-    "product_id": 3,
-    "variant_id": 5,
-    "quantity": 2,
-    "price_snapshot": 320000,
-    "created_at": "2025-12-01T10:00:00Z"
-  },
-  {
-    "cart_id": 1,
-    "product_id": 7,
-    "variant_id": 13,
+    "product_id": 1,
+    "variant_id": 1,
     "quantity": 1,
-    "price_snapshot": 150000,
-    "created_at": "2025-12-03T14:30:00Z"
+    "price_snapshot": 298000,
+    "created_at": "2025-12-20T06:11:42.918Z"
   },
   {
     "cart_id": 1,
-    "product_id": 10,
-    "variant_id": 19,
-    "quantity": 3,
-    "price_snapshot": 200000,
-    "created_at": "2025-12-05T09:15:00Z"
+    "product_id": 2,
+    "variant_id": 3,
+    "quantity": 2,
+    "price_snapshot": 180000,
+    "created_at": "2025-12-20T08:11:42.918Z"
   },
   {
     "cart_id": 2,
-    "product_id": 1,
-    "variant_id": 2,
+    "product_id": 4,
+    "variant_id": 7,
     "quantity": 1,
-    "price_snapshot": 450000,
-    "created_at": "2025-12-02T11:20:00Z"
+    "price_snapshot": 320000,
+    "created_at": "2025-12-20T04:11:42.919Z"
   },
   {
     "cart_id": 2,
     "product_id": 5,
     "variant_id": 9,
     "quantity": 2,
-    "price_snapshot": 280000,
-    "created_at": "2025-12-04T16:45:00Z"
+    "price_snapshot": 95000,
+    "created_at": "2025-12-20T06:11:42.919Z"
+  },
+  {
+    "cart_id": 2,
+    "product_id": 6,
+    "variant_id": 11,
+    "quantity": 3,
+    "price_snapshot": 85000,
+    "created_at": "2025-12-20T08:11:42.919Z"
   },
   {
     "cart_id": 3,
-    "product_id": 2,
-    "variant_id": 3,
+    "product_id": 7,
+    "variant_id": 13,
     "quantity": 1,
-    "price_snapshot": 180000,
-    "created_at": "2025-12-01T13:00:00Z"
+    "price_snapshot": 280000,
+    "created_at": "2025-12-20T02:11:42.919Z"
   },
   {
     "cart_id": 3,
     "product_id": 8,
     "variant_id": 15,
     "quantity": 2,
-    "price_snapshot": 95000,
-    "created_at": "2025-12-05T10:30:00Z"
+    "price_snapshot": 450000,
+    "created_at": "2025-12-20T04:11:42.919Z"
   },
   {
     "cart_id": 3,
-    "product_id": 12,
-    "variant_id": 23,
+    "product_id": 9,
+    "variant_id": 17,
+    "quantity": 3,
+    "price_snapshot": 180000,
+    "created_at": "2025-12-20T06:11:42.919Z"
+  },
+  {
+    "cart_id": 3,
+    "product_id": 10,
+    "variant_id": 19,
     "quantity": 1,
-    "price_snapshot": 420000,
-    "created_at": "2025-12-06T15:00:00Z"
+    "price_snapshot": 165000,
+    "created_at": "2025-12-20T08:11:42.919Z"
   }
 ]

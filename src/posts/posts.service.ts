@@ -303,7 +303,7 @@ export class PostsService {
     };
   }
 
-  async getPosts(queryDto: QueryPostsDto) {
+  async getPosts(queryDto: QueryPostsDto, currentUserId?: number) {
     const {
       page = 1,
       limit = 10,
@@ -320,11 +320,32 @@ export class PostsService {
       is_story: false, // Exclude stories from posts list
     };
 
+    // ✅ Default filters: only show approved and public posts
+    // These will be overridden if user is viewing their own posts or if explicitly specified
+    let shouldApplyDefaultFilters = true;
+
+    // If viewing specific user's posts and it's the current user, show all their posts
+    if (user_id && currentUserId && user_id === currentUserId) {
+      shouldApplyDefaultFilters = false;
+    }
+
+    // Apply default filters unless viewing own posts
+    if (shouldApplyDefaultFilters) {
+      where.moderation_status = 'approved';
+      where.visibility = 'public';
+    }
+
+    // Allow explicit override of filters (for admin/moderation purposes)
+    if (moderation_status !== undefined) {
+      where.moderation_status = moderation_status;
+    }
+    if (visibility !== undefined) {
+      where.visibility = visibility;
+    }
+
     if (user_id) where.user_id = user_id;
     if (shop_id) where.shop_id = shop_id;
     if (post_type) where.post_type = post_type;
-    if (visibility) where.visibility = visibility;
-    if (moderation_status) where.moderation_status = moderation_status;
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
@@ -370,7 +391,155 @@ export class PostsService {
                     select: { url: true },
                   },
                   product_variants: {
-                    select: { shade_hex: true },
+                    select: { shade_hex: true, price: true },
+                  },
+                },
+              },
+            },
+          },
+          post_tags: {
+            include: {
+              tag: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.posts.count({ where }),
+    ]);
+
+    // Add like count and comment count for each post
+    const postsWithCounts = await Promise.all(
+      posts.map(async (post) => {
+        const [likeCount, commentCount] = await Promise.all([
+          this.prisma.likes.count({
+            where: {
+              target_type: 'post',
+              target_id: post.id,
+            },
+          }),
+          this.prisma.comments.count({
+            where: {
+              target_type: 'post',
+              target_id: post.id,
+            },
+          }),
+        ]);
+
+        return {
+          ...post,
+          like_count: likeCount,
+          comment_count: commentCount,
+        };
+      }),
+    );
+
+    // Normalize post URLs
+    const normalizedPosts = postsWithCounts.map((post) =>
+      this.normalizePostUrls(post),
+    );
+
+    return {
+      success: true,
+      data: normalizedPosts,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Get posts from users that the current user is following
+   * Only shows approved and public posts
+   */
+  async getFollowingPosts(userId: number, queryDto: QueryPostsDto) {
+    const { page = 1, limit = 10, search } = queryDto;
+    const skip = (page - 1) * limit;
+
+    // Get list of users that current user is following
+    const following = await this.prisma.follows.findMany({
+      where: { follower_id: userId },
+      select: { following_id: true },
+    });
+
+    const followingIds = following.map((f) => f.following_id);
+
+    // If not following anyone, return empty result
+    if (followingIds.length === 0) {
+      return {
+        success: true,
+        data: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          pages: 0,
+        },
+      };
+    }
+
+    // Build where clause
+    const where: any = {
+      is_story: false,
+      moderation_status: 'approved',
+      visibility: 'public',
+      user_id: { in: followingIds },
+    };
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { content_md: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [posts, total] = await Promise.all([
+      this.prisma.posts.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              full_name: true,
+              avatar_url: true,
+            },
+          },
+          shop: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              logo_url: true,
+            },
+          },
+          post_media: {
+            orderBy: { sort_order: 'asc' },
+          },
+          post_products: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  product_media: {
+                    take: 1,
+                    orderBy: { sort_order: 'asc' },
+                    select: { url: true },
+                  },
+                  product_variants: {
+                    select: { shade_hex: true, price: true },
                   },
                 },
               },
@@ -470,7 +639,7 @@ export class PostsService {
                   select: { url: true },
                 },
                 product_variants: {
-                  select: { shade_hex: true },
+                  select: { shade_hex: true, price: true },
                 },
               },
             },
@@ -669,26 +838,31 @@ export class PostsService {
       throw new NotFoundException('Post not found');
     }
 
+    // Check if user has admin DELETE_POST permission
+    const userPermissions = await this.prisma.userpermission.findMany({
+      where: { user_id: userId },
+      include: { permission: true },
+    });
+
+    const hasAdminDeletePermission = userPermissions.some(
+      (up) => up.permission.name === 'delete_post',
+    );
+
     // Kiểm tra quyền: cho phép xóa nếu:
-    // 1. Là người tạo post
-    // 2. Post thuộc shop VÀ (user là owner hoặc staff có quyền delete_post)
+    // 1. Có quyền DELETE_POST (Admin)
+    // 2. Là người tạo post
+    // 3. Post thuộc shop VÀ (user là owner hoặc staff có quyền delete_post)
+    if (hasAdminDeletePermission) {
+      // Admin can delete any post
+      await this.deletePostData(id);
+      return { message: 'Post deleted successfully' };
+    }
+
     const isPostOwner = post.user_id === userId;
     const isShopOwner = post.shop_id && post.shop?.owner_id === userId;
     const isShopStaff = post.shop_id && post.shop?.shop_staffs && post.shop.shop_staffs.length > 0;
 
-    // Check if staff has delete_post permission
-    let hasDeletePostPermission = false;
-    if (isShopStaff && !isShopOwner && post.shop_id) {
-      const userPermissions = await this.prisma.userpermission.findMany({
-        where: { user_id: userId },
-        include: { permission: true },
-      });
-      hasDeletePostPermission = userPermissions.some(
-        (up) => up.permission.name === 'delete_post',
-      );
-    }
-
-    if (!isPostOwner && !isShopOwner && (!isShopStaff || !hasDeletePostPermission)) {
+    if (!isPostOwner && !isShopOwner && !isShopStaff) {
       throw new ForbiddenException('You can only delete your own posts or posts in your shop');
     }
 
@@ -1200,26 +1374,25 @@ export class PostsService {
    * Get moderation statistics (Admin only)
    */
   async getModerationStats() {
-    const [pending, approved, rejected, removed, total] = await Promise.all([
+    const [approved, rejected, removed, total] = await Promise.all([
       this.prisma.posts.count({
-        where: { moderation_status: 'pending' },
+        where: { moderation_status: 'approved', is_story: false },
       }),
       this.prisma.posts.count({
-        where: { moderation_status: 'approved' },
+        where: { moderation_status: 'rejected', is_story: false },
       }),
       this.prisma.posts.count({
-        where: { moderation_status: 'rejected' },
+        where: { moderation_status: 'removed', is_story: false },
       }),
       this.prisma.posts.count({
-        where: { moderation_status: 'removed' },
+        where: { is_story: false },
       }),
-      this.prisma.posts.count(),
     ]);
 
     return {
       success: true,
       data: {
-        pending,
+        pending: 0, // Deprecated
         approved,
         rejected,
         removed,

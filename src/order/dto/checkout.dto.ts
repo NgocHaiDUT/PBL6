@@ -53,4 +53,18 @@ export class QueryOrdersDto {
   @IsOptional()
   @IsString()
   status?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  shopId?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  userId?: number;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

@@ -1071,6 +1071,28 @@ export class OrderService {
                 unit_price: true,
                 quantity: true,
                 line_total: true,
+                variant: {
+                  select: {
+                    id: true,
+                    name: true,
+                    price: true,
+                    product: {
+                      select: {
+                        id: true,
+                        name: true,
+                        slug: true,
+                        product_media: {
+                          take: 1,
+                          orderBy: { id: 'asc' },
+                          select: {
+                            url: true,
+                            type: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
               },
             },
             payments: {
@@ -1165,10 +1187,36 @@ export class OrderService {
   // Admin
   async adminListOrders(query?: any) {
     try {
-      const { page = 1, limit = 10, status } = query || {};
+      const { page = 1, limit = 10, status, shopId, userId, search } = query || {};
       const skip = (page - 1) * limit;
       const where: any = {};
       if (status) where.status = status;
+      if (shopId) where.shop_id = Number(shopId);
+      if (userId) where.user_id = Number(userId);
+
+      // Add search functionality
+      if (search) {
+        const searchTerm = search.trim();
+        const searchConditions: any[] = [];
+
+        // Search by order ID if search term is a number
+        const orderId = parseInt(searchTerm);
+        if (!isNaN(orderId)) {
+          searchConditions.push({ id: orderId });
+        }
+
+        // Search by customer name or email
+        searchConditions.push({
+          user: {
+            OR: [
+              { full_name: { contains: searchTerm, mode: 'insensitive' } },
+              { email: { contains: searchTerm, mode: 'insensitive' } },
+            ],
+          },
+        });
+
+        where.OR = searchConditions;
+      }
 
       const [orders, total] = await Promise.all([
         this.prisma.orders.findMany({

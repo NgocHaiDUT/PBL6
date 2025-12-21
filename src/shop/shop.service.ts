@@ -1,8 +1,17 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { DeliveryService } from 'src/delivery/delivery.service';
 @Injectable()
 export class ShopService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private deliveryService: DeliveryService,
+  ) {}
 
   async addstaff(
     userid: number,
@@ -467,7 +476,7 @@ export class ShopService {
     // Get all available permissions
     const allPermissions = await this.prisma.permission.findMany({
       select: { id: true, name: true },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     });
 
     // Get staff's current permissions
@@ -476,13 +485,15 @@ export class ShopService {
       select: { permission_id: true },
     });
 
-    const staffPermissionIds = new Set(staffPermissions.map(sp => sp.permission_id));
+    const staffPermissionIds = new Set(
+      staffPermissions.map((sp) => sp.permission_id),
+    );
 
     // Map all permissions with isGranted status
-    const permissionsWithStatus = allPermissions.map(permission => ({
+    const permissionsWithStatus = allPermissions.map((permission) => ({
       id: permission.id,
       name: permission.name,
-      isGranted: staffPermissionIds.has(permission.id)
+      isGranted: staffPermissionIds.has(permission.id),
     }));
 
     return permissionsWithStatus;
@@ -635,9 +646,7 @@ export class ShopService {
       0,
     );
     const avgShopRating =
-      publishedProducts.length > 0
-        ? totalRating / publishedProducts.length
-        : 0;
+      publishedProducts.length > 0 ? totalRating / publishedProducts.length : 0;
 
     // Get total review count
     const totalReviews = await this.prisma.reviews.count({
@@ -799,9 +808,53 @@ export class ShopService {
 
     return {
       success: true,
-      message: `Shop "${shop.name}" đã bị ban (is_verified = false)`,
+      message: `Shop "${shop.name}" đã bị ban`,
     };
   }
+
+  async unbanShop(userid: number, shopid: number) {
+    // Check if user is admin
+    const user = await this.prisma.users.findUnique({
+      where: { id: userid },
+      select: {
+        role: {
+          select: { name: true },
+        },
+      },
+    });
+
+    if (user?.role?.name !== 'admin') {
+      return {
+        success: false,
+        message: 'Chỉ admin mới có quyền unban shop',
+      };
+    }
+
+    // Check if shop exists
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopid },
+      select: { id: true, is_verified: true, name: true },
+    });
+
+    if (!shop) {
+      return { success: false, message: 'Cửa hàng không tồn tại' };
+    }
+
+    // Update shop verification status
+    await this.prisma.shops.update({
+      where: { id: shopid },
+      data: {
+        is_verified: true,
+        updated_at: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      message: `Shop "${shop.name}" đã được unban`,
+    };
+  }
+
 
   async updateShop(
     userid: number,
@@ -949,9 +1002,9 @@ export class ShopService {
         where: {
           user_id_shop_id: {
             user_id: currentUserId,
-            shop_id: shopid
-          }
-        }
+            shop_id: shopid,
+          },
+        },
       });
       isFollowing = !!follow;
     }
@@ -975,9 +1028,7 @@ export class ShopService {
       0,
     );
     const avgShopRating =
-      publishedProducts.length > 0
-        ? totalRating / publishedProducts.length
-        : 0;
+      publishedProducts.length > 0 ? totalRating / publishedProducts.length : 0;
 
     // Get total review count (only for published products)
     const totalReviews = await this.prisma.reviews.count({
@@ -1017,7 +1068,7 @@ export class ShopService {
   async followShop(userId: number, shopId: number) {
     // Check if shop exists
     const shop = await this.prisma.shops.findUnique({
-      where: { id: shopId }
+      where: { id: shopId },
     });
     if (!shop) {
       throw new NotFoundException('Shop not found');
@@ -1028,9 +1079,9 @@ export class ShopService {
       where: {
         user_id_shop_id: {
           user_id: userId,
-          shop_id: shopId
-        }
-      }
+          shop_id: shopId,
+        },
+      },
     });
 
     if (existingFollow) {
@@ -1040,8 +1091,8 @@ export class ShopService {
     await this.prisma.shop_follows.create({
       data: {
         user_id: userId,
-        shop_id: shopId
-      }
+        shop_id: shopId,
+      },
     });
 
     return { success: true, message: 'Followed shop successfully' };
@@ -1051,8 +1102,8 @@ export class ShopService {
     const deleteResult = await this.prisma.shop_follows.deleteMany({
       where: {
         user_id: userId,
-        shop_id: shopId
-      }
+        shop_id: shopId,
+      },
     });
 
     if (deleteResult.count === 0) {
@@ -1067,9 +1118,9 @@ export class ShopService {
       where: {
         user_id_shop_id: {
           user_id: userId,
-          shop_id: shopId
-        }
-      }
+          shop_id: shopId,
+        },
+      },
     });
     return { is_following: !!follow };
   }
@@ -1139,7 +1190,12 @@ export class ShopService {
    * Get shop products with pagination - No authentication required
    */
   async getShopProducts(shopId: number, query: any) {
-    const { page = 1, limit = 20, sortBy = 'created_at', order = 'desc' } = query;
+    const {
+      page = 1,
+      limit = 20,
+      sortBy = 'created_at',
+      order = 'desc',
+    } = query;
 
     // Verify shop exists
     const shop = await this.prisma.shops.findUnique({
@@ -1208,7 +1264,7 @@ export class ShopService {
 
     return {
       success: true,
-      data: products.map(product => {
+      data: products.map((product) => {
         const variant = product.product_variants[0];
         const soldCount = 0; // TODO: Calculate from orders
 
@@ -1218,7 +1274,9 @@ export class ShopService {
           slug: product.slug,
           description: product.description,
           price: variant ? Number(variant.price) : 0,
-          discount_price: variant?.compare_at_price ? Number(variant.compare_at_price) : null,
+          discount_price: variant?.compare_at_price
+            ? Number(variant.compare_at_price)
+            : null,
           stock_quantity: variant?.stock || 0,
           sold_count: soldCount,
           rating: product.avg_rating ? Number(product.avg_rating) : 0,
@@ -1443,5 +1501,100 @@ export class ShopService {
         },
       },
     };
+  }
+  // ============================================
+  //Create GHN Shop
+  /**
+   * Register a shop with GHN using an existing shop address
+   */
+  async registerGHNShop(userId: number, shopId: number, addressShopId: number) {
+    // 1. Verify shop existence and ownership/management
+    const shop = await this.prisma.shops.findUnique({
+      where: { id: shopId },
+      select: {
+        id: true,
+        owner_id: true,
+        name: true,
+        phone: true,
+        email: true,
+      },
+    });
+
+    if (!shop) {
+      throw new NotFoundException('Cửa hàng không tồn tại');
+    }
+
+    // Check permissions (Owner, Manager, or Admin)
+    const isOwner = shop.owner_id === userId;
+    const staff = await this.prisma.shop_staffs.findFirst({
+      where: { shop_id: shopId, user_id: userId, is_manager: true },
+    });
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: { role: { select: { name: true } } },
+    });
+    const isAdmin = user?.role?.name === 'admin';
+
+    if (!isOwner && !staff && !isAdmin) {
+      throw new ForbiddenException(
+        'Bạn không có quyền thực hiện hành động này',
+      );
+    }
+
+    // 2. Fetch the shop address
+    const address = await this.prisma.shop_addresses.findFirst({
+      where: { id: addressShopId, shop_id: shopId },
+    });
+
+    if (!address) {
+      throw new NotFoundException(
+        'Địa chỉ cửa hàng không tồn tại hoặc không thuộc cửa hàng này',
+      );
+    }
+
+    // 3. Validate GHN location identifiers
+    if (!address.ghn_district_id || !address.ghn_ward_code) {
+      throw new BadRequestException(
+        'Địa chỉ này chưa có thông tin Quận/Huyện hoặc Phường/Xã hợp lệ từ GHN',
+      );
+    }
+
+    // 4. Call GHN API
+    const ghnShopData = {
+      district_id: address.ghn_district_id,
+      ward_code: address.ghn_ward_code,
+      name: shop.name,
+      phone: address.phone || shop.phone || '',
+      address: `${address.street}, ${address.ward}, ${address.district}, ${address.province}`,
+    };
+
+    try {
+      const ghnResponse = await this.deliveryService.registerShop(ghnShopData);
+      const ghnShopId = ghnResponse.shop_id;
+
+      if (!ghnShopId) {
+        throw new BadRequestException('GHN không trả về shop_id hợp lệ');
+      }
+
+      // 5. Update local shop with ghn_shop_id
+      await this.prisma.shops.update({
+        where: { id: shopId },
+        data: { ghn_shop_id: ghnShopId },
+      });
+
+      return {
+        success: true,
+        message: 'Đăng ký cửa hàng trên GHN thành công',
+        ghn_shop_id: ghnShopId,
+      };
+    } catch (error) {
+      console.error(
+        'GHN Registration Error:',
+        error.response?.data || error.message,
+      );
+      throw new BadRequestException(
+        error.message || 'Lỗi khi đăng ký cửa hàng trên GHN',
+      );
+    }
   }
 }

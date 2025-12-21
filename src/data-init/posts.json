@@ -1,104 +1,882 @@
 [
   {
-    "user_id": 1,
-    "shop_id": null,
-    "post_type": "post",
-    "title": "Routine chăm sóc da buổi sáng của tôi",
-    "content_md": "# Routine buổi sáng\n\nChia sẻ routine chăm sóc da buổi sáng giúp da sáng khỏe cả ngày:\n\n1. Sữa rửa mặt dịu nhẹ\n2. Toner cân bằng da\n3. Serum Vitamin C\n4. Kem dưỡng ẩm\n5. Kem chống nắng SPF 50+\n\nĐây là routine tối giản nhưng hiệu quả mà tôi đã duy trì được 3 tháng!",
+    "user_id": 5,
+    "shop_id": 1,
+    "post_type": "tutorial",
+    "title": "Hướng dẫn trang điểm tự nhiên cho ngày hè",
+    "content_md": "# Hướng dẫn trang điểm tự nhiên cho ngày hè\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **KEM NỀN LÂU TRÔI SUPER STAY ACTIVE WEAR**: Kem Nền Maybelline Super Stay® Full Coverage Foundation đem lại khả năng che phủ đậm đặc tới 24 giờ ...\n\n2. **SON LÌ SLIM LIPSTICK**: Son Lì Color Sensational Ultimatte đem đến màu sắc đậm hơn với lớp son cực lì cùng cảm giác nhẹ, tho...\n\n3. **Chì Kẻ Mày 36H Lâu Trôi Maybelline Tattoo Brow Pigmented Pencil**: Chì Kẻ Mày Maybelline Tattoo Brow Pigmented Pencil mới ra mắt từ thương hiệu Maybelline New York với...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
     "moderation_status": "approved",
     "visibility": "public",
-    "view_count": 256,
-    "like_count": 48,
+    "view_count": 150,
+    "like_count": 15,
     "is_story": false,
-    "created_at": "2024-08-01T08:30:00Z",
-    "updated_at": "2024-08-01T08:30:00Z",
+    "created_at": "2025-10-24T10:25:58.530Z",
+    "updated_at": "2025-10-24T10:25:58.530Z",
     "media": [
       {
-        "media_url": "/uploads/postimages/post1-routine.jpg",
+        "media_url": "/uploads/products/super-stay-full-coverage-foundation.jpg",
         "media_type": "image",
         "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/color-sensational-ultimatte-slim-lipstick-makeup.jpg",
+        "media_type": "image",
+        "sort_order": 1
       }
     ],
-    "products": [1, 2, 3]
+    "products": [
+      1,
+      2,
+      3
+    ]
+  },
+  {
+    "user_id": 5,
+    "shop_id": 1,
+    "post_type": "tutorial",
+    "title": "Review chi tiết sản phẩm mới nhất",
+    "content_md": "# Review chi tiết sản phẩm mới nhất\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **SON LÌ SLIM LIPSTICK**: Son Lì Color Sensational Ultimatte đem đến màu sắc đậm hơn với lớp son cực lì cùng cảm giác nhẹ, tho...\n\n2. **Chì Kẻ Mày 36H Lâu Trôi Maybelline Tattoo Brow Pigmented Pencil**: Chì Kẻ Mày Maybelline Tattoo Brow Pigmented Pencil mới ra mắt từ thương hiệu Maybelline New York với...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho da sensitive.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 200,
+    "like_count": 20,
+    "is_story": false,
+    "created_at": "2025-10-26T10:25:58.531Z",
+    "updated_at": "2025-10-26T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/color-sensational-ultimatte-slim-lipstick-makeup.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/tattoo-brow-pigmented-pencil.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      2,
+      3
+    ]
+  },
+  {
+    "user_id": 5,
+    "shop_id": 1,
+    "post_type": "tutorial",
+    "title": "Bí quyết chăm sóc da mùa hanh khô",
+    "content_md": "# Bí quyết chăm sóc da mùa hanh khô\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **Chì Kẻ Mày 36H Lâu Trôi Maybelline Tattoo Brow Pigmented Pencil**: Chì Kẻ Mày Maybelline Tattoo Brow Pigmented Pencil mới ra mắt từ thương hiệu Maybelline New York với...\n\n2. **Mascara Làm Tơi và Dài Mi Lash Sensational Sky High**: Mascara làm dày và dài mi Sky High mang đến hàng mi cong vút ở mọi góc độ. Mascara lâu trôi mang lại...\n\n3. **Son mịn mượt cao cấp Color Riche Satin**: Son mịn mượt cao cấp Color Riche Satin với công thức 50% thành phần dưỡng chiết xuất từ tinh dầu cao...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 250,
+    "like_count": 25,
+    "is_story": false,
+    "created_at": "2025-10-28T10:25:58.531Z",
+    "updated_at": "2025-10-28T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/tattoo-brow-pigmented-pencil.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/lash-sensational-sky-high-waterproof-mascara.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      3,
+      4,
+      5
+    ]
+  },
+  {
+    "user_id": 5,
+    "shop_id": 1,
+    "post_type": "tutorial",
+    "title": "Makeup tutorial: Trang điểm dự tiệc",
+    "content_md": "# Makeup tutorial: Trang điểm dự tiệc\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **Mascara Làm Tơi và Dài Mi Lash Sensational Sky High**: Mascara làm dày và dài mi Sky High mang đến hàng mi cong vút ở mọi góc độ. Mascara lâu trôi mang lại...\n\n2. **Son mịn mượt cao cấp Color Riche Satin**: Son mịn mượt cao cấp Color Riche Satin với công thức 50% thành phần dưỡng chiết xuất từ tinh dầu cao...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 300,
+    "like_count": 30,
+    "is_story": false,
+    "created_at": "2025-10-30T10:25:58.531Z",
+    "updated_at": "2025-10-30T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/lash-sensational-sky-high-waterproof-mascara.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/son-min-muot-color-riche-satin.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      4,
+      5
+    ]
+  },
+  {
+    "user_id": 5,
+    "shop_id": 1,
+    "post_type": "tutorial",
+    "title": "Top 5 sản phẩm yêu thích tháng này",
+    "content_md": "# Top 5 sản phẩm yêu thích tháng này\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **Son mịn mượt cao cấp Color Riche Satin**: Son mịn mượt cao cấp Color Riche Satin với công thức 50% thành phần dưỡng chiết xuất từ tinh dầu cao...\n\n2. **KEM NỀN LÂU TRÔI SUPER STAY ACTIVE WEAR**: Kem Nền Maybelline Super Stay® Full Coverage Foundation đem lại khả năng che phủ đậm đặc tới 24 giờ ...\n\n3. **SON LÌ SLIM LIPSTICK**: Son Lì Color Sensational Ultimatte đem đến màu sắc đậm hơn với lớp son cực lì cùng cảm giác nhẹ, tho...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 350,
+    "like_count": 35,
+    "is_story": false,
+    "created_at": "2025-11-01T10:25:58.531Z",
+    "updated_at": "2025-11-01T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/son-min-muot-color-riche-satin.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/super-stay-full-coverage-foundation.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      5,
+      1,
+      2
+    ]
+  },
+  {
+    "user_id": 6,
+    "shop_id": 2,
+    "post_type": "tutorial",
+    "title": "Skincare routine buổi sáng của tôi",
+    "content_md": "# Skincare routine buổi sáng của tôi\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **L'Oreal Paris Infallible 24H Matte Cover Foundation**: L'Oreal Paris Infallible 24H Matte Cover Foundation là một loại kem nền dạng lỏng có kết cấu siêu nh...\n\n2. **Bút Kẻ Mắt Lâu Trôi L'Oreal Paris Flash Cat Eye By Superliner**: Bút Kẻ Mắt Lâu Trôi L'Oreal Paris Flash Cat Eye By Superliner là bút kẻ mắt nước đầu tiên trên thị t...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 400,
+    "like_count": 40,
+    "is_story": false,
+    "created_at": "2025-11-03T10:25:58.531Z",
+    "updated_at": "2025-11-03T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/kem-nen-kiem-dau-lau-troi-24h-infallible-matte-cover.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/but-ke-mat-lau-troi-l-oreal-paris-flash-cat-eye-by-superliner.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      6,
+      7
+    ]
+  },
+  {
+    "user_id": 6,
+    "shop_id": 2,
+    "post_type": "tutorial",
+    "title": "Cách chọn kem nền phù hợp với làn da",
+    "content_md": "# Cách chọn kem nền phù hợp với làn da\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **Bút Kẻ Mắt Lâu Trôi L'Oreal Paris Flash Cat Eye By Superliner**: Bút Kẻ Mắt Lâu Trôi L'Oreal Paris Flash Cat Eye By Superliner là bút kẻ mắt nước đầu tiên trên thị t...\n\n2. **L'Oréal Paris Rouge Signature Liquid Lip Ink**: Với sắc thái màu theo xu hướng từ nâu đất đến đỏ mận và đỏ cam - mọi phụ nữ đều có thể tạo nên dấu ấ...\n\n3. **Chuốt mi L'Oreal Paris Curl Impact Collagene Mascara**: Mascara làm dài và dày mi L'Oréal Paris Voluminous Lash Paradise Mascara 7.6ml là sản phẩm chống thấ...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 450,
+    "like_count": 45,
+    "is_story": false,
+    "created_at": "2025-11-05T10:25:58.531Z",
+    "updated_at": "2025-11-05T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/but-ke-mat-lau-troi-l-oreal-paris-flash-cat-eye-by-superliner.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/velvet-soft-matte-chiffon-signature.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "user_id": 6,
+    "shop_id": 2,
+    "post_type": "tutorial",
+    "title": "Unboxing sản phẩm mới về shop",
+    "content_md": "# Unboxing sản phẩm mới về shop\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **L'Oréal Paris Rouge Signature Liquid Lip Ink**: Với sắc thái màu theo xu hướng từ nâu đất đến đỏ mận và đỏ cam - mọi phụ nữ đều có thể tạo nên dấu ấ...\n\n2. **Chuốt mi L'Oreal Paris Curl Impact Collagene Mascara**: Mascara làm dài và dày mi L'Oréal Paris Voluminous Lash Paradise Mascara 7.6ml là sản phẩm chống thấ...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 500,
+    "like_count": 50,
+    "is_story": false,
+    "created_at": "2025-11-07T10:25:58.531Z",
+    "updated_at": "2025-11-07T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/velvet-soft-matte-chiffon-signature.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/mascara-l-oreal-lam-cong-va-day-mi-curl-impact-collagene.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      8,
+      9
+    ]
+  },
+  {
+    "user_id": 6,
+    "shop_id": 2,
+    "post_type": "tutorial",
+    "title": "10 tips chăm sóc da cho người bận rộn",
+    "content_md": "# 10 tips chăm sóc da cho người bận rộn\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **Chuốt mi L'Oreal Paris Curl Impact Collagene Mascara**: Mascara làm dài và dày mi L'Oréal Paris Voluminous Lash Paradise Mascara 7.6ml là sản phẩm chống thấ...\n\n2. **LES TAROTS DE CHANEL**: Kết cấu phấn mềm mượt, chinh phục mọi giác quan của sản phẩm đem đến một hiệu ứng mịn lì, tôn lên gò...\n\n3. **L'Oreal Paris Infallible 24H Matte Cover Foundation**: L'Oreal Paris Infallible 24H Matte Cover Foundation là một loại kem nền dạng lỏng có kết cấu siêu nh...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 550,
+    "like_count": 55,
+    "is_story": false,
+    "created_at": "2025-11-09T10:25:58.531Z",
+    "updated_at": "2025-11-09T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/mascara-l-oreal-lam-cong-va-day-mi-curl-impact-collagene.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/les-tarots-de-chanel-phan-ma-hong-hieu-ung-min-li.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      9,
+      10,
+      6
+    ]
+  },
+  {
+    "user_id": 6,
+    "shop_id": 2,
+    "post_type": "tutorial",
+    "title": "Makeup look cho công sở",
+    "content_md": "# Makeup look cho công sở\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **LES TAROTS DE CHANEL**: Kết cấu phấn mềm mượt, chinh phục mọi giác quan của sản phẩm đem đến một hiệu ứng mịn lì, tôn lên gò...\n\n2. **L'Oreal Paris Infallible 24H Matte Cover Foundation**: L'Oreal Paris Infallible 24H Matte Cover Foundation là một loại kem nền dạng lỏng có kết cấu siêu nh...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 600,
+    "like_count": 60,
+    "is_story": false,
+    "created_at": "2025-11-11T10:25:58.531Z",
+    "updated_at": "2025-11-11T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/les-tarots-de-chanel-phan-ma-hong-hieu-ung-min-li.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/kem-nen-kiem-dau-lau-troi-24h-infallible-matte-cover.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      10,
+      6
+    ]
+  },
+  {
+    "user_id": 7,
+    "shop_id": 3,
+    "post_type": "tutorial",
+    "title": "Skincare routine ban đêm hiệu quả",
+    "content_md": "# Skincare routine ban đêm hiệu quả\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **JOUES CONTRASTE INTENSE**: Má hồng JOUES CONTRASTE INTENSE vừa có dạng kem mượt mà vừa đa năng, nổi bật với kết cấu mới, siêu m...\n\n2. **SUBLIMAGE L'ESSENCE DE TEINT CUSHION FOUNDATION - LÕI THAY THẾ**: Kết cấu tươi mát và mỏng nhẹ, chứa hỗn hợp các hạt bắt sáng và hạt sắc tố bao bọc, mang lại làn da đ...\n\n3. **ROUGE ALLURE VELVET**: Thỏi son ROUGE ALLURE VELVET khoác lên mình thiết kế đặc biệt cho dịp lễ hội: một phiên bản giới hạn...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 650,
+    "like_count": 65,
+    "is_story": false,
+    "created_at": "2025-11-13T10:25:58.531Z",
+    "updated_at": "2025-11-13T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/joues-contraste-intense-ma-hong-dang-kem-phan.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/sublimage-lessence-de-teint-cushion-foundation.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      11,
+      12,
+      13
+    ]
+  },
+  {
+    "user_id": 7,
+    "shop_id": 3,
+    "post_type": "tutorial",
+    "title": "Cách dưỡng môi mềm mại",
+    "content_md": "# Cách dưỡng môi mềm mại\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **SUBLIMAGE L'ESSENCE DE TEINT CUSHION FOUNDATION - LÕI THAY THẾ**: Kết cấu tươi mát và mỏng nhẹ, chứa hỗn hợp các hạt bắt sáng và hạt sắc tố bao bọc, mang lại làn da đ...\n\n2. **ROUGE ALLURE VELVET**: Thỏi son ROUGE ALLURE VELVET khoác lên mình thiết kế đặc biệt cho dịp lễ hội: một phiên bản giới hạn...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 700,
+    "like_count": 70,
+    "is_story": false,
+    "created_at": "2025-11-15T10:25:58.531Z",
+    "updated_at": "2025-11-15T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/sublimage-lessence-de-teint-cushion-foundation.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/rouge-allure-velvet-son-moi.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      12,
+      13
+    ]
+  },
+  {
+    "user_id": 7,
+    "shop_id": 3,
+    "post_type": "tutorial",
+    "title": "Review son môi hot nhất hiện nay",
+    "content_md": "# Review son môi hot nhất hiện nay\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **ROUGE ALLURE VELVET**: Thỏi son ROUGE ALLURE VELVET khoác lên mình thiết kế đặc biệt cho dịp lễ hội: một phiên bản giới hạn...\n\n2. **ROUGE COCO FLASH**: Chỉ trong nháy mắt, ROUGE COCO FLASH tiết lộ sắc màu chân thực qua phần đầu nắp trong suốt. Chỉ với ...\n\n3. **ROUGE ALLURE L'EXTRAIT**: Thỏi son kết hợp sắc màu sống động, hiệu ứng rạng rỡ ấn tượng và công dụng chăm sóc....\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 750,
+    "like_count": 75,
+    "is_story": false,
+    "created_at": "2025-11-17T10:25:58.531Z",
+    "updated_at": "2025-11-17T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/rouge-allure-velvet-son-moi.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/rouge-coco-flash-sac-son-cang-bong.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      13,
+      14,
+      15
+    ]
+  },
+  {
+    "user_id": 7,
+    "shop_id": 3,
+    "post_type": "tutorial",
+    "title": "Bí quyết có làn da sáng khỏe",
+    "content_md": "# Bí quyết có làn da sáng khỏe\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **ROUGE COCO FLASH**: Chỉ trong nháy mắt, ROUGE COCO FLASH tiết lộ sắc màu chân thực qua phần đầu nắp trong suốt. Chỉ với ...\n\n2. **ROUGE ALLURE L'EXTRAIT**: Thỏi son kết hợp sắc màu sống động, hiệu ứng rạng rỡ ấn tượng và công dụng chăm sóc....\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho da sensitive.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 800,
+    "like_count": 80,
+    "is_story": false,
+    "created_at": "2025-11-19T10:25:58.531Z",
+    "updated_at": "2025-11-19T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/rouge-coco-flash-sac-son-cang-bong.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/rouge-allure-lextrait-mau-sac-ca-tinh.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      14,
+      15
+    ]
+  },
+  {
+    "user_id": 7,
+    "shop_id": 3,
+    "post_type": "tutorial",
+    "title": "Makeup cho da dầu mụn",
+    "content_md": "# Makeup cho da dầu mụn\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **ROUGE ALLURE L'EXTRAIT**: Thỏi son kết hợp sắc màu sống động, hiệu ứng rạng rỡ ấn tượng và công dụng chăm sóc....\n\n2. **JOUES CONTRASTE INTENSE**: Má hồng JOUES CONTRASTE INTENSE vừa có dạng kem mượt mà vừa đa năng, nổi bật với kết cấu mới, siêu m...\n\n3. **SUBLIMAGE L'ESSENCE DE TEINT CUSHION FOUNDATION - LÕI THAY THẾ**: Kết cấu tươi mát và mỏng nhẹ, chứa hỗn hợp các hạt bắt sáng và hạt sắc tố bao bọc, mang lại làn da đ...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 850,
+    "like_count": 85,
+    "is_story": false,
+    "created_at": "2025-11-21T10:25:58.531Z",
+    "updated_at": "2025-11-21T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/rouge-allure-lextrait-mau-sac-ca-tinh.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/joues-contraste-intense-ma-hong-dang-kem-phan.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      15,
+      11,
+      12
+    ]
+  },
+  {
+    "user_id": 8,
+    "shop_id": 4,
+    "post_type": "tutorial",
+    "title": "Cách chọn sản phẩm phù hợp với da",
+    "content_md": "# Cách chọn sản phẩm phù hợp với da\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **ROUGE ALLURE VELVET LES PERLES**: Phiên bản màu sắc rạng rỡ, nhẹ nhàng của ROUGE ALLURE VELVET mang đến sắc son tươi sáng rạng ngời và...\n\n2. **ROUGE ALLURE VELVET NUIT BLANCHE**: Son môi hiệu ứng lì với sắc màu rạng rỡ: mang đến sự dễ chịu như làn da thứ hai với hàm lượng cao cá...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 900,
+    "like_count": 90,
+    "is_story": false,
+    "created_at": "2025-11-23T10:25:58.531Z",
+    "updated_at": "2025-11-23T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/rouge-allure-velvet-les-perles-phien-ban-gioi-han.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/rouge-allure-velvet-nuit-blanche-phien-ban-gioi-han.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      16,
+      17
+    ]
+  },
+  {
+    "user_id": 8,
+    "shop_id": 4,
+    "post_type": "tutorial",
+    "title": "Routine chăm sóc da tuổi 30+",
+    "content_md": "# Routine chăm sóc da tuổi 30+\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **ROUGE ALLURE VELVET NUIT BLANCHE**: Son môi hiệu ứng lì với sắc màu rạng rỡ: mang đến sự dễ chịu như làn da thứ hai với hàm lượng cao cá...\n\n2. **ROUGE COCO BLOOM**: ROUGE COCO BLOOM, dòng son mới với sắc màu rực rỡ, tỏa sáng vẻ đẹp năng động tràn đầy năng lượng. ...\n\n3. **INIMITABLE EXTRÊME**: Một loại mascara mang lại hiệu quả trang điểm 3D, tự nhiên và lâu trôi. Sản phẩm giúp người sử dụng ...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 950,
+    "like_count": 95,
+    "is_story": false,
+    "created_at": "2025-11-25T10:25:58.531Z",
+    "updated_at": "2025-11-25T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/rouge-allure-velvet-nuit-blanche-phien-ban-gioi-han.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/rouge-coco-bloom-son-moi-duong-am.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      17,
+      18,
+      19
+    ]
+  },
+  {
+    "user_id": 8,
+    "shop_id": 4,
+    "post_type": "tutorial",
+    "title": "Makeup tự nhiên đi học đi làm",
+    "content_md": "# Makeup tự nhiên đi học đi làm\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **ROUGE COCO BLOOM**: ROUGE COCO BLOOM, dòng son mới với sắc màu rực rỡ, tỏa sáng vẻ đẹp năng động tràn đầy năng lượng. ...\n\n2. **INIMITABLE EXTRÊME**: Một loại mascara mang lại hiệu quả trang điểm 3D, tự nhiên và lâu trôi. Sản phẩm giúp người sử dụng ...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 1000,
+    "like_count": 100,
+    "is_story": false,
+    "created_at": "2025-11-27T10:25:58.531Z",
+    "updated_at": "2025-11-27T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/rouge-coco-bloom-son-moi-duong-am.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/inimitable-extreme-mascara-dinh-hinh-mi-va-chong-lem.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      18,
+      19
+    ]
+  },
+  {
+    "user_id": 8,
+    "shop_id": 4,
+    "post_type": "tutorial",
+    "title": "Cách sử dụng serum hiệu quả",
+    "content_md": "# Cách sử dụng serum hiệu quả\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **INIMITABLE EXTRÊME**: Một loại mascara mang lại hiệu quả trang điểm 3D, tự nhiên và lâu trôi. Sản phẩm giúp người sử dụng ...\n\n2. **LE VOLUME STRETCH EXTRÊME**: Công thức chống nước dễ dàng tẩy sạch bằng nước ấm, kết hợp với đầu cọ in 3D rỗng tạo độ linh hoạt t...\n\n3. **ROUGE ALLURE VELVET LES PERLES**: Phiên bản màu sắc rạng rỡ, nhẹ nhàng của ROUGE ALLURE VELVET mang đến sắc son tươi sáng rạng ngời và...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 1050,
+    "like_count": 105,
+    "is_story": false,
+    "created_at": "2025-11-29T10:25:58.531Z",
+    "updated_at": "2025-11-29T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/inimitable-extreme-mascara-dinh-hinh-mi-va-chong-lem.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/le-volume-stretch-extreme-mascara-lam-cong-va-dai-mi-chong-lem.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      19,
+      20,
+      16
+    ]
+  },
+  {
+    "user_id": 8,
+    "shop_id": 4,
+    "post_type": "tutorial",
+    "title": "Tips trang điểm lâu trôi",
+    "content_md": "# Tips trang điểm lâu trôi\n\nXin chào các bạn! Hôm nay mình muốn chia sẻ về những sản phẩm tuyệt vời này:\n\n1. **LE VOLUME STRETCH EXTRÊME**: Công thức chống nước dễ dàng tẩy sạch bằng nước ấm, kết hợp với đầu cọ in 3D rỗng tạo độ linh hoạt t...\n\n2. **ROUGE ALLURE VELVET LES PERLES**: Phiên bản màu sắc rạng rỡ, nhẹ nhàng của ROUGE ALLURE VELVET mang đến sắc son tươi sáng rạng ngời và...\n\n## Đánh giá\n\nMình đã sử dụng những sản phẩm này và thực sự hài lòng với chất lượng. Đặc biệt phù hợp cho mọi loại da.\n\n**Ưu điểm:**\n- Chất lượng cao\n- Giá cả hợp lý\n- Hiệu quả rõ rệt\n\nCác bạn có thể tham khảo thêm tại shop nhé! 💄✨",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 1100,
+    "like_count": 110,
+    "is_story": false,
+    "created_at": "2025-12-01T10:25:58.531Z",
+    "updated_at": "2025-12-01T10:25:58.531Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/le-volume-stretch-extreme-mascara-lam-cong-va-dai-mi-chong-lem.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/rouge-allure-velvet-les-perles-phien-ban-gioi-han.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      20,
+      16
+    ]
   },
   {
     "user_id": 2,
     "shop_id": null,
     "post_type": "post",
-    "title": "Review kem chống nắng cho da dầu",
-    "content_md": "## Review chi tiết\n\nMình đã thử nhiều loại kem chống nắng và đây là top pick cho da dầu:\n\n**Ưu điểm:**\n- Không gây nhờn rít\n- Thấm nhanh\n- Không gây mụn\n- Chống nước tốt\n\n**Nhược điểm:**\n- Giá hơi cao\n- Dung tích nhỏ\n\n**Đánh giá: 4.5/5**",
+    "title": "Chia sẻ routine chăm sóc da của mình",
+    "content_md": "# Chia sẻ routine chăm sóc da của mình\n\nHôm nay mình muốn chia sẻ với các bạn về những sản phẩm mình đang dùng:\n\n**KEM NỀN LÂU TRÔI SUPER STAY ACTIVE WEAR**\n\nKem Nền Maybelline Super Stay® Full Coverage Foundation đem lại khả năng che phủ đậm đặc tới 24 giờ với lớp nền hoàn hảo...\n\n**SON LÌ SLIM LIPSTICK**\n\nSon Lì Color Sensational Ultimatte đem đến màu sắc đậm hơn với lớp son cực lì cùng cảm giác nhẹ, thoải mái khi sử dụng....\n\nMình rất thích những sản phẩm này và muốn giới thiệu đến mọi người! 💕\n\n#beauty #skincare #makeup #review",
     "moderation_status": "approved",
     "visibility": "public",
-    "view_count": 189,
-    "like_count": 32,
+    "view_count": 680,
+    "like_count": 68,
     "is_story": false,
-    "created_at": "2024-08-05T14:20:00Z",
-    "updated_at": "2024-08-05T14:20:00Z",
-    "media": [],
-    "products": [1]
+    "created_at": "2025-12-13T10:25:58.532Z",
+    "updated_at": "2025-12-13T10:25:58.532Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/super-stay-full-coverage-foundation.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/color-sensational-ultimatte-slim-lipstick-makeup.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      1,
+      2
+    ]
+  },
+  {
+    "user_id": 2,
+    "shop_id": null,
+    "post_type": "post",
+    "title": "Makeup look yêu thích hôm nay",
+    "content_md": "# Makeup look yêu thích hôm nay\n\nHôm nay mình muốn chia sẻ với các bạn về những sản phẩm mình đang dùng:\n\n**Mascara Làm Tơi và Dài Mi Lash Sensational Sky High**\n\nMascara làm dày và dài mi Sky High mang đến hàng mi cong vút ở mọi góc độ. Mascara lâu trôi mang lại hàng mi cong dày cù...\n\n**Son mịn mượt cao cấp Color Riche Satin**\n\nSon mịn mượt cao cấp Color Riche Satin với công thức 50% thành phần dưỡng chiết xuất từ tinh dầu cao cấp. Thiết kế vỏ án...\n\nMình rất thích những sản phẩm này và muốn giới thiệu đến mọi người! 💕\n\n#beauty #skincare #makeup #review",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 710,
+    "like_count": 71,
+    "is_story": false,
+    "created_at": "2025-12-15T10:25:58.532Z",
+    "updated_at": "2025-12-15T10:25:58.532Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/lash-sensational-sky-high-waterproof-mascara.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/son-min-muot-color-riche-satin.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      4,
+      5
+    ]
+  },
+  {
+    "user_id": 2,
+    "shop_id": null,
+    "post_type": "post",
+    "title": "Review sản phẩm mình vừa mua",
+    "content_md": "# Review sản phẩm mình vừa mua\n\nHôm nay mình muốn chia sẻ với các bạn về những sản phẩm mình đang dùng:\n\n**Bút Kẻ Mắt Lâu Trôi L'Oreal Paris Flash Cat Eye By Superliner**\n\nBút Kẻ Mắt Lâu Trôi L'Oreal Paris Flash Cat Eye By Superliner là bút kẻ mắt nước đầu tiên trên thị trường với thước canh...\n\n**L'Oréal Paris Rouge Signature Liquid Lip Ink**\n\nVới sắc thái màu theo xu hướng từ nâu đất đến đỏ mận và đỏ cam - mọi phụ nữ đều có thể tạo nên dấu ấn phong cách với màu...\n\nMình rất thích những sản phẩm này và muốn giới thiệu đến mọi người! 💕\n\n#beauty #skincare #makeup #review",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 740,
+    "like_count": 74,
+    "is_story": false,
+    "created_at": "2025-12-17T10:25:58.532Z",
+    "updated_at": "2025-12-17T10:25:58.532Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/but-ke-mat-lau-troi-l-oreal-paris-flash-cat-eye-by-superliner.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/velvet-soft-matte-chiffon-signature.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      7,
+      8
+    ]
   },
   {
     "user_id": 3,
-    "shop_id": 2,
+    "shop_id": null,
     "post_type": "post",
-    "title": "Bí quyết dưỡng da mùa đông",
-    "content_md": "# Chăm sóc da mùa đông\n\nMùa đông da dễ khô và bong tróc. Đây là những tips giúp da mềm mại:\n\n- Dùng kem dưỡng ẩm dày đặc hơn\n- Tăng cường essence và serum\n- Đắp mặt nạ giấy 2-3 lần/tuần\n- Uống nhiều nước\n- Tránh tắm nước quá nóng\n\nHy vọng sẽ hữu ích cho các bạn!",
+    "title": "Skincare journey của mình",
+    "content_md": "# Skincare journey của mình\n\nHôm nay mình muốn chia sẻ với các bạn về những sản phẩm mình đang dùng:\n\n**L'Oréal Paris Rouge Signature Liquid Lip Ink**\n\nVới sắc thái màu theo xu hướng từ nâu đất đến đỏ mận và đỏ cam - mọi phụ nữ đều có thể tạo nên dấu ấn phong cách với màu...\n\n**Chuốt mi L'Oreal Paris Curl Impact Collagene Mascara**\n\nMascara làm dài và dày mi L'Oréal Paris Voluminous Lash Paradise Mascara 7.6ml là sản phẩm chống thấm nước của hãng L'Or...\n\nMình rất thích những sản phẩm này và muốn giới thiệu đến mọi người! 💕\n\n#beauty #skincare #makeup #review",
     "moderation_status": "approved",
     "visibility": "public",
-    "view_count": 421,
-    "like_count": 87,
+    "view_count": 770,
+    "like_count": 77,
     "is_story": false,
-    "created_at": "2024-08-10T10:15:00Z",
-    "updated_at": "2024-08-10T10:15:00Z",
+    "created_at": "2025-12-19T10:25:58.532Z",
+    "updated_at": "2025-12-19T10:25:58.532Z",
     "media": [
       {
-        "media_url": "/uploads/postimages/post3-winter.jpg",
+        "media_url": "/uploads/products/velvet-soft-matte-chiffon-signature.jpg",
         "media_type": "image",
         "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/mascara-l-oreal-lam-cong-va-day-mi-curl-impact-collagene.jpg",
+        "media_type": "image",
+        "sort_order": 1
       }
     ],
-    "products": [4, 7]
+    "products": [
+      8,
+      9
+    ]
   },
   {
-    "user_id": 1,
+    "user_id": 3,
     "shop_id": null,
     "post_type": "post",
-    "title": null,
-    "content_md": "Hôm nay thử makeup look tự nhiên 💄✨",
+    "title": "Những sản phẩm tôi đang dùng",
+    "content_md": "# Những sản phẩm tôi đang dùng\n\nHôm nay mình muốn chia sẻ với các bạn về những sản phẩm mình đang dùng:\n\n**JOUES CONTRASTE INTENSE**\n\nMá hồng JOUES CONTRASTE INTENSE vừa có dạng kem mượt mà vừa đa năng, nổi bật với kết cấu mới, siêu mịn như nhung. Khi dù...\n\n**SUBLIMAGE L'ESSENCE DE TEINT CUSHION FOUNDATION - LÕI THAY THẾ**\n\nKết cấu tươi mát và mỏng nhẹ, chứa hỗn hợp các hạt bắt sáng và hạt sắc tố bao bọc, mang lại làn da đều màu, rạng rỡ tron...\n\nMình rất thích những sản phẩm này và muốn giới thiệu đến mọi người! 💕\n\n#beauty #skincare #makeup #review",
     "moderation_status": "approved",
     "visibility": "public",
-    "view_count": 156,
-    "like_count": 43,
-    "is_story": true,
-    "story_type": "image",
-    "media_url": "/uploads/postimages/story1-makeup.jpg",
-    "caption": "Natural makeup look 💄",
-    "duration": null,
-    "expires_at": "2024-08-16T09:00:00Z",
-    "created_at": "2024-08-15T09:00:00Z",
-    "updated_at": "2024-08-15T09:00:00Z",
-    "media": [],
-    "products": []
+    "view_count": 800,
+    "like_count": 80,
+    "is_story": false,
+    "created_at": "2025-12-21T10:25:58.532Z",
+    "updated_at": "2025-12-21T10:25:58.532Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/joues-contraste-intense-ma-hong-dang-kem-phan.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/sublimage-lessence-de-teint-cushion-foundation.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      11,
+      12
+    ]
   },
   {
-    "user_id": 2,
+    "user_id": 3,
     "shop_id": null,
     "post_type": "post",
-    "title": null,
-    "content_md": "Unboxing sản phẩm mới 📦🎁",
+    "title": "Get ready with me - Makeup tutorial",
+    "content_md": "# Get ready with me - Makeup tutorial\n\nHôm nay mình muốn chia sẻ với các bạn về những sản phẩm mình đang dùng:\n\n**ROUGE COCO FLASH**\n\nChỉ trong nháy mắt, ROUGE COCO FLASH tiết lộ sắc màu chân thực qua phần đầu nắp trong suốt. Chỉ với một lần thoa, chất s...\n\n**ROUGE ALLURE L'EXTRAIT**\n\nThỏi son kết hợp sắc màu sống động, hiệu ứng rạng rỡ ấn tượng và công dụng chăm sóc....\n\nMình rất thích những sản phẩm này và muốn giới thiệu đến mọi người! 💕\n\n#beauty #skincare #makeup #review",
     "moderation_status": "approved",
     "visibility": "public",
-    "view_count": 203,
-    "like_count": 56,
-    "is_story": true,
-    "story_type": "image",
-    "media_url": "/uploads/postimages/story2-unbox.jpg",
-    "caption": "New products! 🎉",
-    "duration": null,
-    "expires_at": "2024-08-17T15:30:00Z",
-    "created_at": "2024-08-16T15:30:00Z",
-    "updated_at": "2024-08-16T15:30:00Z",
-    "media": [],
-    "products": [2, 3]
+    "view_count": 830,
+    "like_count": 83,
+    "is_story": false,
+    "created_at": "2025-12-23T10:25:58.532Z",
+    "updated_at": "2025-12-23T10:25:58.532Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/rouge-coco-flash-sac-son-cang-bong.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/rouge-allure-lextrait-mau-sac-ca-tinh.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      14,
+      15
+    ]
+  },
+  {
+    "user_id": 4,
+    "shop_id": null,
+    "post_type": "post",
+    "title": "Sản phẩm yêu thích tháng này",
+    "content_md": "# Sản phẩm yêu thích tháng này\n\nHôm nay mình muốn chia sẻ với các bạn về những sản phẩm mình đang dùng:\n\n**ROUGE ALLURE L'EXTRAIT**\n\nThỏi son kết hợp sắc màu sống động, hiệu ứng rạng rỡ ấn tượng và công dụng chăm sóc....\n\n**ROUGE ALLURE VELVET LES PERLES**\n\nPhiên bản màu sắc rạng rỡ, nhẹ nhàng của ROUGE ALLURE VELVET mang đến sắc son tươi sáng rạng ngời và dễ dàng tùy chỉnh. ...\n\nMình rất thích những sản phẩm này và muốn giới thiệu đến mọi người! 💕\n\n#beauty #skincare #makeup #review",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 860,
+    "like_count": 86,
+    "is_story": false,
+    "created_at": "2025-12-25T10:25:58.532Z",
+    "updated_at": "2025-12-25T10:25:58.532Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/rouge-allure-lextrait-mau-sac-ca-tinh.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/rouge-allure-velvet-les-perles-phien-ban-gioi-han.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      15,
+      16
+    ]
+  },
+  {
+    "user_id": 4,
+    "shop_id": null,
+    "post_type": "post",
+    "title": "Makeup cho buổi hẹn hò",
+    "content_md": "# Makeup cho buổi hẹn hò\n\nHôm nay mình muốn chia sẻ với các bạn về những sản phẩm mình đang dùng:\n\n**ROUGE COCO BLOOM**\n\nROUGE COCO BLOOM, dòng son mới với sắc màu rực rỡ, tỏa sáng vẻ đẹp năng động tràn đầy năng lượng. ...\n\n**INIMITABLE EXTRÊME**\n\nMột loại mascara mang lại hiệu quả trang điểm 3D, tự nhiên và lâu trôi. Sản phẩm giúp người sử dụng có một hàng mi dài, ...\n\nMình rất thích những sản phẩm này và muốn giới thiệu đến mọi người! 💕\n\n#beauty #skincare #makeup #review",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 890,
+    "like_count": 89,
+    "is_story": false,
+    "created_at": "2025-12-27T10:25:58.532Z",
+    "updated_at": "2025-12-27T10:25:58.532Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/rouge-coco-bloom-son-moi-duong-am.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/inimitable-extreme-mascara-dinh-hinh-mi-va-chong-lem.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      18,
+      19
+    ]
+  },
+  {
+    "user_id": 4,
+    "shop_id": null,
+    "post_type": "post",
+    "title": "Routine buổi tối của tôi",
+    "content_md": "# Routine buổi tối của tôi\n\nHôm nay mình muốn chia sẻ với các bạn về những sản phẩm mình đang dùng:\n\n**KEM NỀN LÂU TRÔI SUPER STAY ACTIVE WEAR**\n\nKem Nền Maybelline Super Stay® Full Coverage Foundation đem lại khả năng che phủ đậm đặc tới 24 giờ với lớp nền hoàn hảo...\n\n**SON LÌ SLIM LIPSTICK**\n\nSon Lì Color Sensational Ultimatte đem đến màu sắc đậm hơn với lớp son cực lì cùng cảm giác nhẹ, thoải mái khi sử dụng....\n\nMình rất thích những sản phẩm này và muốn giới thiệu đến mọi người! 💕\n\n#beauty #skincare #makeup #review",
+    "moderation_status": "approved",
+    "visibility": "public",
+    "view_count": 920,
+    "like_count": 92,
+    "is_story": false,
+    "created_at": "2025-12-29T10:25:58.532Z",
+    "updated_at": "2025-12-29T10:25:58.532Z",
+    "media": [
+      {
+        "media_url": "/uploads/products/super-stay-full-coverage-foundation.jpg",
+        "media_type": "image",
+        "sort_order": 0
+      },
+      {
+        "media_url": "/uploads/products/color-sensational-ultimatte-slim-lipstick-makeup.jpg",
+        "media_type": "image",
+        "sort_order": 1
+      }
+    ],
+    "products": [
+      1,
+      2
+    ]
   }
 ]

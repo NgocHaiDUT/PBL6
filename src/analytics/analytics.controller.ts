@@ -22,7 +22,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 @Controller('analytics')
 @UseGuards(JwtAuthGuard)
 export class AnalyticsController {
-  constructor(private readonly analyticsService: AnalyticsService) {}
+  constructor(private readonly analyticsService: AnalyticsService) { }
 
   // 1. Get Shop Overview
   @Get('shop/:shopId/overview')
@@ -162,5 +162,31 @@ export class AnalyticsController {
       req.user.userId,
       query,
     );
+  }
+
+  // ============ ADMIN DASHBOARD ENDPOINTS ============
+
+  // Get platform-wide statistics
+  @Get('admin/stats')
+  async getAdminStats(
+    @Request() req,
+    @Query() query: { period?: string; startDate?: string; endDate?: string },
+  ) {
+    return this.analyticsService.getAdminStats(req.user.userId, query);
+  }
+
+  // Get platform-wide revenue trends
+  @Get('admin/revenue-trend')
+  async getAdminRevenueTrend(
+    @Request() req,
+    @Query() query: { period?: string; limit?: number },
+  ) {
+    return this.analyticsService.getAdminRevenueTrend(req.user.userId, query);
+  }
+
+  // Get product category distribution
+  @Get('admin/product-categories')
+  async getAdminProductCategories(@Request() req) {
+    return this.analyticsService.getAdminProductCategories(req.user.userId);
   }
 }

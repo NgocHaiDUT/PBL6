@@ -1,58 +1,604 @@
 [
   {
-    "post_id": 1,
     "user_id": 2,
-    "parent_id": null,
-    "content": "Routine này hay quá! Mình cũng đang dùng toner và serum tương tự. Hiệu quả thật sự rất tốt 👍",
-    "created_at": "2024-08-01T09:15:00Z",
-    "updated_at": "2024-08-01T09:15:00Z"
+    "post_id": 1,
+    "content": "Sản phẩm này rất tốt, mình đã dùng và thấy hiệu quả!",
+    "created_at": "2025-10-24T12:25:58.530Z",
+    "updated_at": "2025-10-24T12:25:58.530Z"
   },
   {
-    "post_id": 1,
-    "user_id": 1,
-    "parent_id": 1,
-    "content": "Cảm ơn bạn! Mình dùng được 3 tháng rồi và thấy da cải thiện rõ rệt 😊",
-    "created_at": "2024-08-01T09:30:00Z",
-    "updated_at": "2024-08-01T09:30:00Z"
-  },
-  {
-    "post_id": 1,
     "user_id": 3,
-    "parent_id": null,
-    "content": "Cho mình hỏi serum vitamin C bạn dùng của hãng nào vậy? Mình đang tìm loại phù hợp",
-    "created_at": "2024-08-01T10:00:00Z",
-    "updated_at": "2024-08-01T10:00:00Z"
+    "post_id": 1,
+    "content": "Cảm ơn bạn đã chia sẻ, rất hữu ích!",
+    "created_at": "2025-10-24T13:25:58.530Z",
+    "updated_at": "2025-10-24T13:25:58.530Z"
   },
   {
+    "user_id": 2,
     "post_id": 2,
+    "content": "Cảm ơn bạn đã chia sẻ, rất hữu ích!",
+    "created_at": "2025-10-26T12:25:58.531Z",
+    "updated_at": "2025-10-26T12:25:58.531Z"
+  },
+  {
     "user_id": 3,
-    "parent_id": null,
-    "content": "Review rất chi tiết! Mình cũng đang tìm kem chống nắng cho da dầu. Thanks for sharing!",
-    "created_at": "2024-08-05T15:30:00Z",
-    "updated_at": "2024-08-05T15:30:00Z"
-  },
-  {
     "post_id": 2,
-    "user_id": 2,
-    "parent_id": 4,
-    "content": "Không có gì! Hy vọng sẽ giúp ích cho bạn. Sản phẩm này mình đã dùng 2 tháng rồi nhé 😄",
-    "created_at": "2024-08-05T16:00:00Z",
-    "updated_at": "2024-08-05T16:00:00Z"
+    "content": "Mình cũng đang dùng sản phẩm này, rất ưng!",
+    "created_at": "2025-10-26T13:25:58.531Z",
+    "updated_at": "2025-10-26T13:25:58.531Z"
   },
   {
-    "post_id": 3,
-    "user_id": 1,
-    "parent_id": null,
-    "content": "Tips rất hữu ích! Mùa đông vừa rồi da mình khô lắm, năm nay sẽ áp dụng theo 💙",
-    "created_at": "2024-08-10T11:45:00Z",
-    "updated_at": "2024-08-10T11:45:00Z"
+    "user_id": 4,
+    "post_id": 2,
+    "content": "Review chi tiết quá, thanks bạn nhé!",
+    "created_at": "2025-10-26T14:25:58.531Z",
+    "updated_at": "2025-10-26T14:25:58.531Z"
   },
   {
-    "post_id": 3,
     "user_id": 2,
-    "parent_id": null,
-    "content": "Mình cũng hay bị khô da mùa đông. Cảm ơn bạn đã chia sẻ nhé!",
-    "created_at": "2024-08-10T12:30:00Z",
-    "updated_at": "2024-08-10T12:30:00Z"
+    "post_id": 3,
+    "content": "Mình cũng đang dùng sản phẩm này, rất ưng!",
+    "created_at": "2025-10-28T12:25:58.531Z",
+    "updated_at": "2025-10-28T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 3,
+    "content": "Review chi tiết quá, thanks bạn nhé!",
+    "created_at": "2025-10-28T13:25:58.531Z",
+    "updated_at": "2025-10-28T13:25:58.531Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 3,
+    "content": "Giá bao nhiêu vậy bạn?",
+    "created_at": "2025-10-28T14:25:58.531Z",
+    "updated_at": "2025-10-28T14:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 3,
+    "content": "Shop có ship toàn quốc không ạ?",
+    "created_at": "2025-10-28T15:25:58.531Z",
+    "updated_at": "2025-10-28T15:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 4,
+    "content": "Review chi tiết quá, thanks bạn nhé!",
+    "created_at": "2025-10-30T12:25:58.531Z",
+    "updated_at": "2025-10-30T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 4,
+    "content": "Giá bao nhiêu vậy bạn?",
+    "created_at": "2025-10-30T13:25:58.531Z",
+    "updated_at": "2025-10-30T13:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 5,
+    "content": "Giá bao nhiêu vậy bạn?",
+    "created_at": "2025-11-01T12:25:58.531Z",
+    "updated_at": "2025-11-01T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 5,
+    "content": "Shop có ship toàn quốc không ạ?",
+    "created_at": "2025-11-01T13:25:58.531Z",
+    "updated_at": "2025-11-01T13:25:58.531Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 5,
+    "content": "Sản phẩm này phù hợp với da dầu không bạn?",
+    "created_at": "2025-11-01T14:25:58.531Z",
+    "updated_at": "2025-11-01T14:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 6,
+    "content": "Shop có ship toàn quốc không ạ?",
+    "created_at": "2025-11-03T12:25:58.531Z",
+    "updated_at": "2025-11-03T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 6,
+    "content": "Sản phẩm này phù hợp với da dầu không bạn?",
+    "created_at": "2025-11-03T13:25:58.531Z",
+    "updated_at": "2025-11-03T13:25:58.531Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 6,
+    "content": "Mình sẽ thử sản phẩm này, cảm ơn bạn!",
+    "created_at": "2025-11-03T14:25:58.531Z",
+    "updated_at": "2025-11-03T14:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 6,
+    "content": "Đã order rồi, chờ ship về test thử!",
+    "created_at": "2025-11-03T15:25:58.531Z",
+    "updated_at": "2025-11-03T15:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 7,
+    "content": "Sản phẩm này phù hợp với da dầu không bạn?",
+    "created_at": "2025-11-05T12:25:58.531Z",
+    "updated_at": "2025-11-05T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 7,
+    "content": "Mình sẽ thử sản phẩm này, cảm ơn bạn!",
+    "created_at": "2025-11-05T13:25:58.531Z",
+    "updated_at": "2025-11-05T13:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 8,
+    "content": "Mình sẽ thử sản phẩm này, cảm ơn bạn!",
+    "created_at": "2025-11-07T12:25:58.531Z",
+    "updated_at": "2025-11-07T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 8,
+    "content": "Đã order rồi, chờ ship về test thử!",
+    "created_at": "2025-11-07T13:25:58.531Z",
+    "updated_at": "2025-11-07T13:25:58.531Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 8,
+    "content": "Bài viết rất chi tiết và dễ hiểu!",
+    "created_at": "2025-11-07T14:25:58.531Z",
+    "updated_at": "2025-11-07T14:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 9,
+    "content": "Đã order rồi, chờ ship về test thử!",
+    "created_at": "2025-11-09T12:25:58.531Z",
+    "updated_at": "2025-11-09T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 9,
+    "content": "Bài viết rất chi tiết và dễ hiểu!",
+    "created_at": "2025-11-09T13:25:58.531Z",
+    "updated_at": "2025-11-09T13:25:58.531Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 9,
+    "content": "Sản phẩm này rất tốt, mình đã dùng và thấy hiệu quả!",
+    "created_at": "2025-11-09T14:25:58.531Z",
+    "updated_at": "2025-11-09T14:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 9,
+    "content": "Cảm ơn bạn đã chia sẻ, rất hữu ích!",
+    "created_at": "2025-11-09T15:25:58.531Z",
+    "updated_at": "2025-11-09T15:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 10,
+    "content": "Bài viết rất chi tiết và dễ hiểu!",
+    "created_at": "2025-11-11T12:25:58.531Z",
+    "updated_at": "2025-11-11T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 10,
+    "content": "Sản phẩm này rất tốt, mình đã dùng và thấy hiệu quả!",
+    "created_at": "2025-11-11T13:25:58.531Z",
+    "updated_at": "2025-11-11T13:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 11,
+    "content": "Sản phẩm này rất tốt, mình đã dùng và thấy hiệu quả!",
+    "created_at": "2025-11-13T12:25:58.531Z",
+    "updated_at": "2025-11-13T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 11,
+    "content": "Cảm ơn bạn đã chia sẻ, rất hữu ích!",
+    "created_at": "2025-11-13T13:25:58.531Z",
+    "updated_at": "2025-11-13T13:25:58.531Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 11,
+    "content": "Mình cũng đang dùng sản phẩm này, rất ưng!",
+    "created_at": "2025-11-13T14:25:58.531Z",
+    "updated_at": "2025-11-13T14:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 12,
+    "content": "Cảm ơn bạn đã chia sẻ, rất hữu ích!",
+    "created_at": "2025-11-15T12:25:58.531Z",
+    "updated_at": "2025-11-15T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 12,
+    "content": "Mình cũng đang dùng sản phẩm này, rất ưng!",
+    "created_at": "2025-11-15T13:25:58.531Z",
+    "updated_at": "2025-11-15T13:25:58.531Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 12,
+    "content": "Review chi tiết quá, thanks bạn nhé!",
+    "created_at": "2025-11-15T14:25:58.531Z",
+    "updated_at": "2025-11-15T14:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 12,
+    "content": "Giá bao nhiêu vậy bạn?",
+    "created_at": "2025-11-15T15:25:58.531Z",
+    "updated_at": "2025-11-15T15:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 13,
+    "content": "Mình cũng đang dùng sản phẩm này, rất ưng!",
+    "created_at": "2025-11-17T12:25:58.531Z",
+    "updated_at": "2025-11-17T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 13,
+    "content": "Review chi tiết quá, thanks bạn nhé!",
+    "created_at": "2025-11-17T13:25:58.531Z",
+    "updated_at": "2025-11-17T13:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 14,
+    "content": "Review chi tiết quá, thanks bạn nhé!",
+    "created_at": "2025-11-19T12:25:58.531Z",
+    "updated_at": "2025-11-19T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 14,
+    "content": "Giá bao nhiêu vậy bạn?",
+    "created_at": "2025-11-19T13:25:58.531Z",
+    "updated_at": "2025-11-19T13:25:58.531Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 14,
+    "content": "Shop có ship toàn quốc không ạ?",
+    "created_at": "2025-11-19T14:25:58.531Z",
+    "updated_at": "2025-11-19T14:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 15,
+    "content": "Giá bao nhiêu vậy bạn?",
+    "created_at": "2025-11-21T12:25:58.531Z",
+    "updated_at": "2025-11-21T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 15,
+    "content": "Shop có ship toàn quốc không ạ?",
+    "created_at": "2025-11-21T13:25:58.531Z",
+    "updated_at": "2025-11-21T13:25:58.531Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 15,
+    "content": "Sản phẩm này phù hợp với da dầu không bạn?",
+    "created_at": "2025-11-21T14:25:58.531Z",
+    "updated_at": "2025-11-21T14:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 15,
+    "content": "Mình sẽ thử sản phẩm này, cảm ơn bạn!",
+    "created_at": "2025-11-21T15:25:58.531Z",
+    "updated_at": "2025-11-21T15:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 16,
+    "content": "Shop có ship toàn quốc không ạ?",
+    "created_at": "2025-11-23T12:25:58.531Z",
+    "updated_at": "2025-11-23T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 16,
+    "content": "Sản phẩm này phù hợp với da dầu không bạn?",
+    "created_at": "2025-11-23T13:25:58.531Z",
+    "updated_at": "2025-11-23T13:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 17,
+    "content": "Sản phẩm này phù hợp với da dầu không bạn?",
+    "created_at": "2025-11-25T12:25:58.531Z",
+    "updated_at": "2025-11-25T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 17,
+    "content": "Mình sẽ thử sản phẩm này, cảm ơn bạn!",
+    "created_at": "2025-11-25T13:25:58.531Z",
+    "updated_at": "2025-11-25T13:25:58.531Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 17,
+    "content": "Đã order rồi, chờ ship về test thử!",
+    "created_at": "2025-11-25T14:25:58.531Z",
+    "updated_at": "2025-11-25T14:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 18,
+    "content": "Mình sẽ thử sản phẩm này, cảm ơn bạn!",
+    "created_at": "2025-11-27T12:25:58.531Z",
+    "updated_at": "2025-11-27T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 18,
+    "content": "Đã order rồi, chờ ship về test thử!",
+    "created_at": "2025-11-27T13:25:58.531Z",
+    "updated_at": "2025-11-27T13:25:58.531Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 18,
+    "content": "Bài viết rất chi tiết và dễ hiểu!",
+    "created_at": "2025-11-27T14:25:58.531Z",
+    "updated_at": "2025-11-27T14:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 18,
+    "content": "Sản phẩm này rất tốt, mình đã dùng và thấy hiệu quả!",
+    "created_at": "2025-11-27T15:25:58.531Z",
+    "updated_at": "2025-11-27T15:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 19,
+    "content": "Đã order rồi, chờ ship về test thử!",
+    "created_at": "2025-11-29T12:25:58.531Z",
+    "updated_at": "2025-11-29T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 19,
+    "content": "Bài viết rất chi tiết và dễ hiểu!",
+    "created_at": "2025-11-29T13:25:58.531Z",
+    "updated_at": "2025-11-29T13:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 20,
+    "content": "Bài viết rất chi tiết và dễ hiểu!",
+    "created_at": "2025-12-01T12:25:58.531Z",
+    "updated_at": "2025-12-01T12:25:58.531Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 20,
+    "content": "Sản phẩm này rất tốt, mình đã dùng và thấy hiệu quả!",
+    "created_at": "2025-12-01T13:25:58.531Z",
+    "updated_at": "2025-12-01T13:25:58.531Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 20,
+    "content": "Cảm ơn bạn đã chia sẻ, rất hữu ích!",
+    "created_at": "2025-12-01T14:25:58.531Z",
+    "updated_at": "2025-12-01T14:25:58.531Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 21,
+    "content": "Sản phẩm này rất tốt, mình đã dùng và thấy hiệu quả!",
+    "created_at": "2025-12-13T12:25:58.532Z",
+    "updated_at": "2025-12-13T12:25:58.532Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 21,
+    "content": "Cảm ơn bạn đã chia sẻ, rất hữu ích!",
+    "created_at": "2025-12-13T13:25:58.532Z",
+    "updated_at": "2025-12-13T13:25:58.532Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 21,
+    "content": "Mình cũng đang dùng sản phẩm này, rất ưng!",
+    "created_at": "2025-12-13T14:25:58.532Z",
+    "updated_at": "2025-12-13T14:25:58.532Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 21,
+    "content": "Review chi tiết quá, thanks bạn nhé!",
+    "created_at": "2025-12-13T15:25:58.532Z",
+    "updated_at": "2025-12-13T15:25:58.532Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 22,
+    "content": "Cảm ơn bạn đã chia sẻ, rất hữu ích!",
+    "created_at": "2025-12-15T12:25:58.532Z",
+    "updated_at": "2025-12-15T12:25:58.532Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 22,
+    "content": "Mình cũng đang dùng sản phẩm này, rất ưng!",
+    "created_at": "2025-12-15T13:25:58.532Z",
+    "updated_at": "2025-12-15T13:25:58.532Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 23,
+    "content": "Mình cũng đang dùng sản phẩm này, rất ưng!",
+    "created_at": "2025-12-17T12:25:58.532Z",
+    "updated_at": "2025-12-17T12:25:58.532Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 23,
+    "content": "Review chi tiết quá, thanks bạn nhé!",
+    "created_at": "2025-12-17T13:25:58.532Z",
+    "updated_at": "2025-12-17T13:25:58.532Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 23,
+    "content": "Giá bao nhiêu vậy bạn?",
+    "created_at": "2025-12-17T14:25:58.532Z",
+    "updated_at": "2025-12-17T14:25:58.532Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 24,
+    "content": "Review chi tiết quá, thanks bạn nhé!",
+    "created_at": "2025-12-19T12:25:58.532Z",
+    "updated_at": "2025-12-19T12:25:58.532Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 24,
+    "content": "Giá bao nhiêu vậy bạn?",
+    "created_at": "2025-12-19T13:25:58.532Z",
+    "updated_at": "2025-12-19T13:25:58.532Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 24,
+    "content": "Shop có ship toàn quốc không ạ?",
+    "created_at": "2025-12-19T14:25:58.532Z",
+    "updated_at": "2025-12-19T14:25:58.532Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 24,
+    "content": "Sản phẩm này phù hợp với da dầu không bạn?",
+    "created_at": "2025-12-19T15:25:58.532Z",
+    "updated_at": "2025-12-19T15:25:58.532Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 25,
+    "content": "Giá bao nhiêu vậy bạn?",
+    "created_at": "2025-12-21T12:25:58.532Z",
+    "updated_at": "2025-12-21T12:25:58.532Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 25,
+    "content": "Shop có ship toàn quốc không ạ?",
+    "created_at": "2025-12-21T13:25:58.532Z",
+    "updated_at": "2025-12-21T13:25:58.532Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 26,
+    "content": "Shop có ship toàn quốc không ạ?",
+    "created_at": "2025-12-23T12:25:58.532Z",
+    "updated_at": "2025-12-23T12:25:58.532Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 26,
+    "content": "Sản phẩm này phù hợp với da dầu không bạn?",
+    "created_at": "2025-12-23T13:25:58.532Z",
+    "updated_at": "2025-12-23T13:25:58.532Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 26,
+    "content": "Mình sẽ thử sản phẩm này, cảm ơn bạn!",
+    "created_at": "2025-12-23T14:25:58.532Z",
+    "updated_at": "2025-12-23T14:25:58.532Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 27,
+    "content": "Sản phẩm này phù hợp với da dầu không bạn?",
+    "created_at": "2025-12-25T12:25:58.532Z",
+    "updated_at": "2025-12-25T12:25:58.532Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 27,
+    "content": "Mình sẽ thử sản phẩm này, cảm ơn bạn!",
+    "created_at": "2025-12-25T13:25:58.532Z",
+    "updated_at": "2025-12-25T13:25:58.532Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 27,
+    "content": "Đã order rồi, chờ ship về test thử!",
+    "created_at": "2025-12-25T14:25:58.532Z",
+    "updated_at": "2025-12-25T14:25:58.532Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 27,
+    "content": "Bài viết rất chi tiết và dễ hiểu!",
+    "created_at": "2025-12-25T15:25:58.532Z",
+    "updated_at": "2025-12-25T15:25:58.532Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 28,
+    "content": "Mình sẽ thử sản phẩm này, cảm ơn bạn!",
+    "created_at": "2025-12-27T12:25:58.532Z",
+    "updated_at": "2025-12-27T12:25:58.532Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 28,
+    "content": "Đã order rồi, chờ ship về test thử!",
+    "created_at": "2025-12-27T13:25:58.532Z",
+    "updated_at": "2025-12-27T13:25:58.532Z"
+  },
+  {
+    "user_id": 2,
+    "post_id": 29,
+    "content": "Đã order rồi, chờ ship về test thử!",
+    "created_at": "2025-12-29T12:25:58.532Z",
+    "updated_at": "2025-12-29T12:25:58.532Z"
+  },
+  {
+    "user_id": 3,
+    "post_id": 29,
+    "content": "Bài viết rất chi tiết và dễ hiểu!",
+    "created_at": "2025-12-29T13:25:58.532Z",
+    "updated_at": "2025-12-29T13:25:58.532Z"
+  },
+  {
+    "user_id": 4,
+    "post_id": 29,
+    "content": "Sản phẩm này rất tốt, mình đã dùng và thấy hiệu quả!",
+    "created_at": "2025-12-29T14:25:58.532Z",
+    "updated_at": "2025-12-29T14:25:58.532Z"
   }
 ]

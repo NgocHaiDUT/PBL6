@@ -1,6 +1,6 @@
 [
   {
-    "user_id": 1,
+    "user_id": 2,
     "product_id": 1,
     "rating": 5,
     "title": "Sản phẩm tuyệt vời!",
@@ -10,7 +10,7 @@
     "created_at": "2024-06-15T10:30:00Z"
   },
   {
-    "user_id": 2,
+    "user_id": 3,
     "product_id": 1,
     "rating": 4,
     "title": "Tốt nhưng hơi đắt",
@@ -20,7 +20,7 @@
     "created_at": "2024-06-20T14:20:00Z"
   },
   {
-    "user_id": 3,
+    "user_id": 4,
     "product_id": 2,
     "rating": 5,
     "title": "Serum vitamin C tốt nhất từng dùng",
@@ -30,7 +30,7 @@
     "created_at": "2024-07-01T09:15:00Z"
   },
   {
-    "user_id": 1,
+    "user_id": 2,
     "product_id": 3,
     "rating": 4,
     "title": "Toner dịu nhẹ, phù hợp da nhạy cảm",
@@ -40,7 +40,7 @@
     "created_at": "2024-07-10T16:45:00Z"
   },
   {
-    "user_id": 2,
+    "user_id": 3,
     "product_id": 4,
     "rating": 5,
     "title": "Kem dưỡng ẩm ban đêm xuất sắc",
@@ -50,7 +50,7 @@
     "created_at": "2024-07-15T20:00:00Z"
   },
   {
-    "user_id": 3,
+    "user_id": 4,
     "product_id": 5,
     "rating": 3,
     "title": "Sữa rửa mặt ổn nhưng không đặc biệt",

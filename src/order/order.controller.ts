@@ -120,20 +120,6 @@ export class OrderController {
     return this.orderService.getMyOrders(userId, query);
   }
 
-  @Get(':id')
-  @UseGuards(JwtAuthGuard)
-  async getOrderById(@Param('id') id: string, @Req() req: any) {
-    const userId = req.user.userId;
-    return this.orderService.getOrderById(Number(id), userId);
-  }
-
-  @Post(':id/cancel')
-  @UseGuards(JwtAuthGuard)
-  async cancelOrder(@Param('id') id: string, @Req() req: any) {
-    const userId = req.user.userId;
-    return this.orderService.cancelOrder(Number(id), userId);
-  }
-
   // Seller/Staff APIs
   @Get('seller/orders')
   async getOrdersByShop(
@@ -157,15 +143,35 @@ export class OrderController {
     return this.orderService.updateOrderStatus(Number(id), body.status);
   }
 
-  // Admin APIs
+  // Admin APIs (must be before generic :id routes)
   @Get('admin/orders')
   async adminListOrders(@Query() query?: QueryOrdersDto) {
     return this.orderService.adminListOrders(query);
   }
 
+  @Get('admin/orders/:id')
+  async adminGetOrderById(@Param('id') id: string) {
+    return this.orderService.getOrderById(Number(id));
+  }
+
   @Post('admin/orders/:id/refund')
   async adminRefundOrder(@Param('id') id: string) {
     return this.orderService.adminRefundOrder(Number(id));
+  }
+
+  // Generic user order routes
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  async getOrderById(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user.userId;
+    return this.orderService.getOrderById(Number(id), userId);
+  }
+
+  @Post(':id/cancel')
+  @UseGuards(JwtAuthGuard)
+  async cancelOrder(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user.userId;
+    return this.orderService.cancelOrder(Number(id), userId);
   }
 
   // GHN Order Management Endpoints
