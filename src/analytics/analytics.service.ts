@@ -12,7 +12,7 @@ import {
 
 @Injectable()
 export class AnalyticsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   // Helper: Check if user is admin
   private async isAdmin(userId: number): Promise<boolean> {
@@ -540,47 +540,47 @@ export class AnalyticsService {
     // Get recent orders
     const recentOrders = type === 'all' || type === 'order'
       ? await this.prisma.orders.findMany({
-          where: { shop_id: shopId },
-          orderBy: { created_at: 'desc' },
-          take: limit,
-          select: {
-            id: true,
-            status: true,
-            total_amount: true,
-            created_at: true,
-            user: {
-              select: {
-                full_name: true,
-              },
+        where: { shop_id: shopId },
+        orderBy: { created_at: 'desc' },
+        take: limit,
+        select: {
+          id: true,
+          status: true,
+          total_amount: true,
+          created_at: true,
+          user: {
+            select: {
+              full_name: true,
             },
           },
-        })
+        },
+      })
       : [];
 
     // Get recent messages
     const recentMessages = type === 'all' || type === 'message'
       ? await this.prisma.messages.findMany({
-          where: {
-            conversation: {
-              participants: {
-                some: {
-                  shop_id: shopId,
-                  entity_type: 'shop',
-                },
-              },
-            },
-            sender_type: 'user', // Only user messages to shop
-          },
-          orderBy: { created_at: 'desc' },
-          take: limit,
-          include: {
-            sender: {
-              select: {
-                full_name: true,
+        where: {
+          conversation: {
+            participants: {
+              some: {
+                shop_id: shopId,
+                entity_type: 'shop',
               },
             },
           },
-        })
+          sender_type: 'user', // Only user messages to shop
+        },
+        orderBy: { created_at: 'desc' },
+        take: limit,
+        include: {
+          sender: {
+            select: {
+              full_name: true,
+            },
+          },
+        },
+      })
       : [];
 
     // Format notifications
@@ -758,6 +758,7 @@ export class AnalyticsService {
       },
     });
 
+
     return {
       period,
       funnel: {
@@ -768,4 +769,219 @@ export class AnalyticsService {
       },
     };
   }
+
+  // ============ ADMIN DASHBOARD METHODS ============
+
+  /**
+   * Get platform-wide statistics for admin dashboard
+   */
+  async getAdminStats(userId: number, query: { period?: string; startDate?: string; endDate?: string }) {
+    // Check if user is admin
+    const isUserAdmin = await this.isAdmin(userId);
+    if (!isUserAdmin) {
+      throw new ForbiddenException('Only admins can access platform statistics');
+    }
+
+    const { period = 'month', startDate, endDate } = query;
+    const { start, end } = this.getDateRange(period, startDate, endDate);
+
+    // Get total users
+    const totalUsers = await this.prisma.users.count();
+
+    // Get users created in this period
+    const newUsers = await this.prisma.users.count({
+      where: {
+        created_at: {
+          gte: start,
+          lte: end,
+        },
+      },
+    });
+
+    // Get users from previous period for growth calculation
+    const periodDuration = end.getTime() - start.getTime();
+    const prevStart = new Date(start.getTime() - periodDuration);
+    const prevNewUsers = await this.prisma.users.count({
+      where: {
+        created_at: {
+          gte: prevStart,
+          lt: start,
+        },
+      },
+    });
+
+    const userGrowth = prevNewUsers > 0 ? ((newUsers - prevNewUsers) / prevNewUsers) * 100 : 0;
+
+    // Get active shops (shops with at least one product)
+    const activeShops = await this.prisma.shops.count({
+      where: {
+        products: {
+          some: {},
+        },
+      },
+    });
+
+    // Get new shops in this period
+    const newShops = await this.prisma.shops.count({
+      where: {
+        created_at: {
+          gte: start,
+          lte: end,
+        },
+      },
+    });
+
+    // Get shops from previous period
+    const prevNewShops = await this.prisma.shops.count({
+      where: {
+        created_at: {
+          gte: prevStart,
+          lt: start,
+        },
+      },
+    });
+
+    const shopGrowth = prevNewShops > 0 ? ((newShops - prevNewShops) / prevNewShops) * 100 : 0;
+
+    // Get total products
+    const totalProducts = await this.prisma.products.count({
+      where: {
+        moderation_status: 'approved',
+      },
+    });
+
+    // Get new products in this period
+    const newProducts = await this.prisma.products.count({
+      where: {
+        created_at: {
+          gte: start,
+          lte: end,
+        },
+        moderation_status: 'approved',
+      },
+    });
+
+    // Get products from previous period
+    const prevNewProducts = await this.prisma.products.count({
+      where: {
+        created_at: {
+          gte: prevStart,
+          lt: start,
+        },
+        moderation_status: 'approved',
+      },
+    });
+
+    const productGrowth = prevNewProducts > 0 ? ((newProducts - prevNewProducts) / prevNewProducts) * 100 : 0;
+
+    return {
+      total_users: totalUsers,
+      user_growth: userGrowth,
+      active_sellers: activeShops,
+      seller_growth: shopGrowth,
+      total_products: totalProducts,
+      product_growth: productGrowth,
+    };
+  }
+
+  /**
+   * Get platform-wide revenue trends for admin dashboard
+   */
+  async getAdminRevenueTrend(userId: number, query: { period?: string; limit?: number }) {
+    // Check if user is admin
+    const isUserAdmin = await this.isAdmin(userId);
+    if (!isUserAdmin) {
+      throw new ForbiddenException('Only admins can access platform revenue trends');
+    }
+
+    const { period = 'month', limit = 6 } = query;
+    const trends: Array<{
+      month: string;
+      revenue: number;
+    }> = [];
+
+    for (let i = limit - 1; i >= 0; i--) {
+      let start: Date = new Date();
+      let end: Date = new Date();
+      let label: string = '';
+
+      // For simplicity, we'll use month-based trends
+      start = new Date();
+      start.setMonth(start.getMonth() - i);
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+      end.setHours(23, 59, 59, 999);
+
+      // Format label as "Jan", "Feb", etc.
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      label = monthNames[start.getMonth()];
+
+      const orders = await this.prisma.orders.findMany({
+        where: {
+          created_at: {
+            gte: start,
+            lte: end,
+          },
+          status: {
+            in: ['processing', 'shipped', 'delivered'],
+          },
+        },
+        select: { total_amount: true },
+      });
+
+      const revenue = orders.reduce((sum, order) => sum + Number(order.total_amount), 0);
+
+      trends.push({
+        month: label,
+        revenue,
+      });
+    }
+
+    return trends;
+  }
+
+  /**
+   * Get product category distribution for admin dashboard
+   */
+  async getAdminProductCategories(userId: number) {
+    // Check if user is admin
+    const isUserAdmin = await this.isAdmin(userId);
+    if (!isUserAdmin) {
+      throw new ForbiddenException('Only admins can access product category statistics');
+    }
+
+    // Get all product categories with counts
+    const categories = await this.prisma.categories.findMany({
+      include: {
+        product_categories: {
+          where: {
+            product: {
+              moderation_status: 'approved',
+            },
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+
+    // Define colors for categories
+    const colors = ['#EC4899', '#A855F7', '#3B82F6', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6', '#F97316'];
+
+    // Map categories to the format expected by frontend
+    const categoryData = categories
+      .map((cat, index) => ({
+        category: cat.name,
+        value: cat.product_categories.length,
+        color: colors[index % colors.length],
+      }))
+      .filter(cat => cat.value > 0) // Only include categories with products
+      .sort((a, b) => b.value - a.value) // Sort by count descending
+      .slice(0, 8); // Limit to top 8 categories
+
+    return categoryData;
+  }
 }
+
