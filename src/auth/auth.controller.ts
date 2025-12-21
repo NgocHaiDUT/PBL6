@@ -115,6 +115,21 @@ export class AuthController {
   }
 
   @Post('verify-device')
+  @ApiOperation({ summary: 'Verify device with OTP code' })
+  @ApiBody({ type: VerifyDeviceOtpDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Device verified successfully. Returns access token and refresh token.',
+    schema: {
+      example: {
+        success: true,
+        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - Invalid OTP or missing fields' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - OTP expired or incorrect' })
   async verifyDevice(@Body() dto: VerifyDeviceOtpDto) {
     return this.authService.verifyDevice(dto);
   }
